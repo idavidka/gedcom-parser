@@ -1,0 +1,50 @@
+/**
+ * Individuals List
+ * Simplified version for parser - advanced features moved to app layer
+ */
+
+import {
+type IndiKey,
+type Filter,
+type FilterIterator,
+type Order,
+type OrderIterator,
+} from "../types";
+import { type IIndividuals } from "../interfaces/indis";
+import { type IndiType } from "./indi";
+import { List } from "./list";
+
+export class Individuals
+extends List<IndiKey, IndiType>
+implements IIndividuals
+{
+copy(): Individuals {
+return super.copy(Individuals) as Individuals;
+}
+
+except(item: IndiType): Individuals {
+return super.except(item, Individuals) as Individuals;
+}
+
+filter(filters: Filter | FilterIterator<IndiType, IndiKey>): Individuals {
+return super.filter(filters, Individuals) as Individuals;
+}
+
+find(
+filters: Filter | FilterIterator<IndiType, IndiKey>
+): IndiType | undefined {
+return super.find(filters, Individuals) as IndiType | undefined;
+}
+
+unattachedFilter(useUnattached: boolean) {
+if (useUnattached) {
+return this;
+}
+
+return this.filter((item) => !item.isUnattachedMember());
+}
+
+orderBy(orders: Order | OrderIterator<IndiType, IndiKey>): Individuals {
+return super.orderBy(orders, Individuals) as Individuals;
+}
+}

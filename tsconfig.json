@@ -1,0 +1,26 @@
+{
+	"compilerOptions": {
+		"outDir": "./dist",
+		"rootDir": "./src",
+		"declaration": true,
+		"declarationMap": true,
+		"sourceMap": true,
+		"noEmit": false,
+		"composite": true,
+		"lib": ["ES2021", "ES2023"],
+		"target": "ES2020",
+		"module": "ESNext",
+		"moduleResolution": "node",
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"strict": false,
+		"forceConsistentCasingInFileNames": true,
+		"allowJs": true,
+		"allowSyntheticDefaultImports": true,
+		"downlevelIteration": true,
+		"isolatedModules": true,
+		"resolveJsonModule": true
+	},
+	"include": ["src/**/*.ts"],
+	"exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+}
