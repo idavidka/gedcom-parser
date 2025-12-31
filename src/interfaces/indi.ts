@@ -1,4 +1,4 @@
-import { type IndiKey } from "../types";
+import { type IndiKey } from "../../../types/types";
 import { type Common } from "../classes/common";
 import { type Families } from "../classes/fams";
 import { type IndiType } from "../classes/indi";

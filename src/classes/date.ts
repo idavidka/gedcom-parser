@@ -1,8 +1,10 @@
 import { format, isValid, parse } from "date-fns";
 
-import { getDefaultDateFnsLocale } from "../constants";
-import type { IdType, MultiTag } from "../types";
-import { ACCEPTED_DATE_FORMATS, inRange, type Range } from "../utils";
+import { getDateFnsLocale } from "../../../constants/constants";
+import type { IdType, MultiTag } from "../../../types/types";
+import { ACCEPTED_DATE_FORMATS } from "../../../utils/date-formatter";
+import { inRange } from "../../../utils/range";
+import type { Range } from "../../../utils/range";
 
 import { Common, createCommon, createProxy } from "./common";
 import type { ProxyOriginal } from "./common";
@@ -183,7 +185,7 @@ export class CommonDate extends Common<string> {
 			.replace(/^[.\-\s/]+|[.\-\s/]+$/g, "");
 
 		return format(this._date, validDateFormat, {
-			locale: getDefaultDateFnsLocale() ?? undefined,
+			locale: getDateFnsLocale(),
 		});
 	}
 

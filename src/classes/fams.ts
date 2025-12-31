@@ -4,12 +4,12 @@ import {
 	type Order,
 	type FilterIterator,
 	type OrderIterator,
-} from "../types";
+} from "../../../types/types";
 import { type IFamilies } from "../interfaces/fams";
 
-import { type FamType, Fam } from "../classes/fam";
-import { Individuals } from "../classes/indis";
-import { List } from "../classes/list";
+import { type FamType, Fam } from "./fam";
+import { Individuals } from "./indis";
+import { List } from "./list";
 
 export class Families extends List<FamKey, FamType> implements IFamilies {
 	copy(): Families {

@@ -1,7 +1,7 @@
-import { type SubmKey } from "../types";
+import { type SubmKey } from "../../../types/types";
 
-import { List } from "../classes/list";
-import { type SubmType } from "../classes/subm";
+import { List } from "./list";
+import { type SubmType } from "./subm";
 
 export class Submitters extends List<SubmKey, SubmType> {
 	copy() {

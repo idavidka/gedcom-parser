@@ -1,9 +1,9 @@
-import { type SubmKey } from "../types";
+import { type SubmKey } from "../../../types/types";
 import type ISubm from "../interfaces/subm";
 
-import { Common, createProxy } from "../classes/common";
-import type { ProxyOriginal } from "../classes/common";
-import { type GedComType } from "../classes/gedcom";
+import { Common, createProxy } from "./common";
+import type { ProxyOriginal } from "./common";
+import { type GedComType } from "./gedcom";
 
 export class Subm extends Common<string, SubmKey> implements ISubm {}
 

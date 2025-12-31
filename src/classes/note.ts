@@ -1,9 +1,9 @@
-import type { IdType } from "../types";
+import type { IdType } from "../../../types/types";
 
-import { Common, createCommon, createProxy } from "../classes/common";
-import type { ProxyOriginal } from "../classes/common";
-import { type GedComType } from "../classes/gedcom";
-import { List } from "../classes/list";
+import { Common, createCommon, createProxy } from "./common";
+import type { ProxyOriginal } from "./common";
+import { type GedComType } from "./gedcom";
+import { List } from "./list";
 
 export class CommonNote extends Common<string> {
 	constructor(

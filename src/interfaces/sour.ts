@@ -1,4 +1,4 @@
-import { type SourKey } from "../types";
+import { type SourKey } from "../../../types/types";
 import { type Common } from "../classes/common";
 
 interface ISour extends Common<string, SourKey> {

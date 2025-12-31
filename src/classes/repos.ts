@@ -1,7 +1,7 @@
-import { type RepoKey } from "../types";
+import { type RepoKey } from "../../../types/types";
 
-import { List } from "../classes/list";
-import { type RepoType } from "../classes/repo";
+import { List } from "./list";
+import { type RepoType } from "./repo";
 
 export class Repositories extends List<RepoKey, RepoType> {
 	copy() {

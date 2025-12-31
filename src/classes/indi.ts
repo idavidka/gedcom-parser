@@ -6,7 +6,7 @@ import {
 } from "../../../constants/orders";
 import { type Language } from "../../../translation/i18n";
 import { type AncestryMedia } from "../../../types/ancestry-media";
-import type IIndividualStructure from "../../../types/structures/individual";
+import type IIndividualStructure from "../interfaces/individual";
 import {
 	type IndiKey,
 	type FamKey,
@@ -17,7 +17,7 @@ import {
 	RelationType,
 	type IdType,
 	PartnerType,
-} from "../types";
+} from "../../../types/types";
 import { pathCache, relativesCache } from "../../../utils/cache";
 import { dateFormatter } from "../../../utils/date-formatter";
 import { type Place, PlaceType, getPlaces } from "../../../utils/get-places";
@@ -32,15 +32,15 @@ import {
 } from "../interfaces/indi";
 import type IIndi from "../interfaces/indi";
 
-import { Common, createCommon, createProxy } from "../classes/common";
-import type { ProxyOriginal } from "../classes/common";
-import type { FamType } from "../classes/fam";
-import { Families } from "../classes/fams";
-import { type GedComType } from "../classes/gedcom";
-import { Individuals } from "../classes/indis";
-import { List } from "../classes/list";
-import { CommonName, createCommonName } from "../classes/name";
-import { type ObjeType } from "../classes/obje";
+import { Common, createCommon, createProxy } from "./common";
+import type { ProxyOriginal } from "./common";
+import type { FamType } from "./fam";
+import { Families } from "./fams";
+import { type GedComType } from "./gedcom";
+import { Individuals } from "./indis";
+import { List } from "./list";
+import { CommonName, createCommonName } from "./name";
+import { type ObjeType } from "./obje";
 
 export enum Existed {
 	SPOUSE = "spouse",

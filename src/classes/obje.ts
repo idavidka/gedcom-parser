@@ -1,9 +1,10 @@
-import { type ObjeKey } from "../types";
+import type IMultimediaLinkStructure from "../interfaces/multimedia-link";
+import { type ObjeKey } from "../../../types/types";
 import type IObje from "../interfaces/obje";
 
-import { Common, createCommon, createProxy } from "../classes/common";
-import type { ProxyOriginal } from "../classes/common";
-import { type GedComType } from "../classes/gedcom";
+import { Common, createCommon, createProxy } from "./common";
+import type { ProxyOriginal } from "./common";
+import { type GedComType } from "./gedcom";
 
 export class Obje extends Common<string, ObjeKey> implements IObje {
 	standardizeMedia(

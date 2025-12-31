@@ -7,11 +7,11 @@ import {
 	type Group,
 	type GroupIterator,
 	type OrderIterator,
-} from "../types";
+} from "../../../types/types";
 import { type Common } from "../classes/common";
 import { type List } from "../classes/list";
 
-import { type ConvertOptions } from "../classes/common";
+import { type ConvertOptions } from "./common";
 
 export interface IList<K extends IdType = IdType, T extends Common = Common> {
 	readonly length: number;

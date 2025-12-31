@@ -1,4 +1,4 @@
-import { type ObjeKey } from "../types";
+import { type ObjeKey } from "../../../types/types";
 import { type Common } from "../classes/common";
 
 interface IObje extends Common<string, ObjeKey> {

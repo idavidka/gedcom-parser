@@ -1,9 +1,9 @@
-import type { IdType } from "../types";
+import type { IdType } from "../../../types/types";
 
-import { Common, createCommon, createProxy } from "../classes/common";
-import type { ProxyOriginal } from "../classes/common";
-import { type GedComType } from "../classes/gedcom";
-import { Indi } from "../classes/indi";
+import { Common, createCommon, createProxy } from "./common";
+import type { ProxyOriginal } from "./common";
+import { type GedComType } from "./gedcom";
+import { Indi } from "./indi";
 
 export class CommonName extends Common<string> {
 	NPFX?: Common;

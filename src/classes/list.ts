@@ -15,12 +15,12 @@ import {
 	type Group,
 	type GroupIterator,
 	type GroupDefinition,
-} from "../types";
-import type { GroupMarker } from "../types";
+} from "../../../types/types";
+import type { GroupMarker } from "../../../types/types";
 import { type ConvertOptions } from "../interfaces/common";
 import { type IList } from "../interfaces/list";
 
-import { getValidTag, type Common } from "../classes/common";
+import { getValidTag, type Common } from "./common";
 
 export class List<
 	K extends IdType = IdType,

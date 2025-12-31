@@ -1,4 +1,4 @@
-import type IGedComStructure from "../../../types/structures/gedcom";
+import type IGedComStructure from "../interfaces/gedcom";
 import {
 	type IdType,
 	type IndiKey,
@@ -8,26 +8,26 @@ import {
 	type RepoKey,
 	type SubmKey,
 	type MultiTag,
-} from "../types";
-import type { ListTag } from "../types";
+} from "../../../types/types";
+import type { ListTag } from "../../../types/types";
 import { getVersion } from "../../../utils/get-product-details";
 import { type ConvertOptions } from "../interfaces/common";
 import type IGedcom from "../interfaces/gedcom";
 
-import { Common, createCommon } from "../classes/common";
-import { type FamType } from "../classes/fam";
-import { type Families } from "../classes/fams";
-import { CustomTags, type IndiType } from "../classes/indi";
-import { type Individuals } from "../classes/indis";
-import { List } from "../classes/list";
-import { type ObjeType } from "../classes/obje";
-import { type Objects } from "../classes/objes";
-import { type RepoType } from "../classes/repo";
-import { type Repositories } from "../classes/repos";
-import { type SourType } from "../classes/sour";
-import { type Sources } from "../classes/sours";
-import { type SubmType } from "../classes/subm";
-import { type Submitters } from "../classes/subms";
+import { Common, createCommon } from "./common";
+import { type FamType } from "./fam";
+import { type Families } from "./fams";
+import { CustomTags, type IndiType } from "./indi";
+import { type Individuals } from "./indis";
+import { List } from "./list";
+import { type ObjeType } from "./obje";
+import { type Objects } from "./objes";
+import { type RepoType } from "./repo";
+import { type Repositories } from "./repos";
+import { type SourType } from "./sour";
+import { type Sources } from "./sours";
+import { type SubmType } from "./subm";
+import { type Submitters } from "./subms";
 
 export class GedCom extends Common implements IGedcom {
 	tagMembers: Record<string, { tag: Common; indis: Individuals }> = {};

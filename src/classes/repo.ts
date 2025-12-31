@@ -1,9 +1,10 @@
-import { type RepoKey } from "../types";
+import type IRepositoryStructure from "../interfaces/repository";
+import { type RepoKey } from "../../../types/types";
 import type IRepo from "../interfaces/repo";
 
-import { Common, createProxy } from "../classes/common";
-import type { ProxyOriginal } from "../classes/common";
-import { type GedComType } from "../classes/gedcom";
+import { Common, createProxy } from "./common";
+import type { ProxyOriginal } from "./common";
+import { type GedComType } from "./gedcom";
 
 export class Repo extends Common<string, RepoKey> implements IRepo {}
 

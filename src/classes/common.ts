@@ -3,20 +3,20 @@ import set from "lodash/set";
 import uniqBy from "lodash/uniqBy";
 import unset from "lodash/unset";
 
-import { ID_GETTER_REG, ID_REG } from "../constants";
+import { ID_GETTER_REG, ID_REG } from "../../../constants/constants";
 import {
 	type Tag,
 	type IdType,
 	type MultiTag,
 	type ObjeKey,
-} from "../types";
-import type { ListTag } from "../types";
+} from "../../../types/types";
+import type { ListTag } from "../../../types/types";
 import { type ConvertOptions } from "../interfaces/common";
 import type ICommon from "../interfaces/common";
 import type IObje from "../interfaces/obje";
 
-import { type GedComType } from "../classes/gedcom";
-import { List } from "../classes/list";
+import { type GedComType } from "./gedcom";
+import { List } from "./list";
 
 // import GedcomTree from "../../../utils/parser";
 

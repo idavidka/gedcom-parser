@@ -1,4 +1,4 @@
-import { type IdType, type MultiTag } from "../types";
+import { type IdType, type MultiTag } from "../../../types/types";
 import { type Common } from "../classes/common";
 import { type List } from "../classes/list";
 
