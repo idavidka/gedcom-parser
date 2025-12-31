@@ -19,3 +19,5 @@ export const MAX_FILE_SIZE_TO_SYNC = 1024 * 1024 * 20; // 20MB
 // Note: The parser accepts a locale getter function via options
 // This is a simple default that returns null when not provided
 export const getDefaultDateFnsLocale = () => null;
+export const getDateFnsLocale = getDefaultDateFnsLocale; // Alias for backward compatibility
+

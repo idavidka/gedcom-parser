@@ -1,5 +1,5 @@
 {
-	"name": "@treeviz/gedcom-parser",
+	"name": "gedcom-parser",
 	"version": "1.0.0",
 	"description": "GEDCOM parser library for TreeViz - Parse and manipulate GEDCOM genealogy files",
 	"main": "./dist/index.js",

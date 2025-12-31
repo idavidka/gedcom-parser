@@ -5,8 +5,8 @@ import {
 	BIRTH_DESC,
 	DEATH_ASC,
 	DEATH_DESC,
-} from "../../../constants/orders";
-import { type Settings } from "../../../store/main/reducers";
+} from "../constants-orders";
+import { type Settings } from "../app-types";
 import type IEventDetailStructure from "../interfaces/event-detail-structure";
 import {
 	type IndiKey,
@@ -20,12 +20,12 @@ import {
 	type FilterIterator,
 	type GroupIterator,
 	type Group,
-} from "../../../types/types";
-import type { GroupMarker } from "../../../types/types";
-import { getPlaceParts } from "../../../utils/get-places";
-import { nameFormatter } from "../../../utils/name-formatter";
-import { setNestedGroup } from "../../../utils/nested-group";
-import { placeTranslator } from "../../../utils/place-translator";
+} from "../types";
+import type { GroupMarker } from "../types";
+import { getPlaceParts } from "../utils";
+import { nameFormatter } from "../utils";
+import { setNestedGroup } from "../utils";
+import { placeTranslator } from "../utils";
 import { type IIndividuals } from "../interfaces/indis";
 
 import { type CommonDate } from "./date";

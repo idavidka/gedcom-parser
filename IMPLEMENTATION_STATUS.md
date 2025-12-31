@@ -132,7 +132,7 @@ Once the package builds successfully, these steps are needed:
 1. Create new GitHub repository: `idavidka/gedcom-parser`
 2. Move `packages/gedcom-parser/` contents to new repo
 3. Add as git submodule: `git submodule add https://github.com/idavidka/gedcom-parser.git packages/gedcom-parser`
-4. Update main app to import from `@treeviz/gedcom-parser`
+4. Update main app to import from `gedcom-parser`
 5. Test end-to-end
 
 ---

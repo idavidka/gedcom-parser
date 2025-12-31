@@ -1,5 +1,5 @@
 import type ISourceStructure from "../interfaces/source";
-import { type SourKey } from "../../../types/types";
+import { type SourKey } from "../types";
 import type ISour from "../interfaces/sour";
 
 import { Common, createProxy } from "./common";

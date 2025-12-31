@@ -8,9 +8,9 @@ import {
 	type RepoKey,
 	type SubmKey,
 	type MultiTag,
-} from "../../../types/types";
-import type { ListTag } from "../../../types/types";
-import { getVersion } from "../../../utils/get-product-details";
+} from "../types";
+import type { ListTag } from "../types";
+import { getVersion } from "../utils";
 import { type ConvertOptions } from "../interfaces/common";
 import type IGedcom from "../interfaces/gedcom";
 

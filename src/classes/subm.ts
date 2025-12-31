@@ -1,4 +1,4 @@
-import { type SubmKey } from "../../../types/types";
+import { type SubmKey } from "../types";
 import type ISubm from "../interfaces/subm";
 
 import { Common, createProxy } from "./common";

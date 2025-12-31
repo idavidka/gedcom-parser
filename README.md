@@ -1,4 +1,4 @@
-# @treeviz/gedcom-parser
+# gedcom-parser
 
 A TypeScript library for parsing and manipulating GEDCOM genealogy files.
 
@@ -12,13 +12,13 @@ A TypeScript library for parsing and manipulating GEDCOM genealogy files.
 ## Installation
 
 ```bash
-npm install @treeviz/gedcom-parser
+npm install gedcom-parser
 ```
 
 ## Usage
 
 ```typescript
-import GedcomParser from '@treeviz/gedcom-parser';
+import GedcomParser from 'gedcom-parser';
 
 // Parse a GEDCOM string
 const gedcomContent = `

@@ -2,7 +2,7 @@
 
 ## Overview
 
-I've created the initial structure for the `@treeviz/gedcom-parser` package at `packages/gedcom-parser/`. The package includes all core GEDCOM parsing files and basic configuration, but **cannot compile yet** due to dependencies on main app utilities.
+I've created the initial structure for the `gedcom-parser` package at `packages/gedcom-parser/`. The package includes all core GEDCOM parsing files and basic configuration, but **cannot compile yet** due to dependencies on main app utilities.
 
 ## What I've Completed
 
@@ -136,7 +136,7 @@ After package builds successfully:
 
 # Update imports in main app:
 # From: import GedcomTree from '../../utils/parser'
-# To:   import GedcomTree from '@treeviz/gedcom-parser'
+# To:   import GedcomTree from 'gedcom-parser'
 ```
 
 ## 🔨 Building the Package

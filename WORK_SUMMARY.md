@@ -222,7 +222,7 @@ Before continuing, decide:
 
 - All code follows existing conventions
 - Commit messages use Conventional Commits
-- Package name matches pattern: `@treeviz/gedcom-parser`
+- Package name matches pattern: `gedcom-parser`
 - Version starts at 1.0.0
 - MIT License (same as main project)
 

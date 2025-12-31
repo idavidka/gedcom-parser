@@ -1,5 +1,5 @@
 import type IRepositoryStructure from "../interfaces/repository";
-import { type RepoKey } from "../../../types/types";
+import { type RepoKey } from "../types";
 import type IRepo from "../interfaces/repo";
 
 import { Common, createProxy } from "./common";

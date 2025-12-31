@@ -1,5 +1,5 @@
 import type IFamilyStructure from "../interfaces/family";
-import { type FamKey, type IndiKey } from "../../../types/types";
+import { type FamKey, type IndiKey } from "../types";
 import type IFam from "../interfaces/fam";
 
 import { Common, createProxy } from "./common";

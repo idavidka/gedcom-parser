@@ -7,7 +7,7 @@ import {
 	type Group,
 	type GroupIterator,
 	type OrderIterator,
-} from "../../../types/types";
+} from "../types";
 import { type Common } from "../classes/common";
 import { type List } from "../classes/list";
 

@@ -1,4 +1,4 @@
-import { type Position, type Size } from "../../../types/graphic-types";
+import { type Position, type Size } from "../app-types";
 import type IIndividualStructure from "../interfaces/individual";
 import { type GeneratedIndiMethods } from "../interfaces/indi";
 
