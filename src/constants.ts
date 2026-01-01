@@ -2,6 +2,9 @@
  * Constants for GEDCOM parser
  */
 
+// File size limits
+export const MAX_FILE_SIZE_TO_SYNC = 5 * 1024 * 1024; // 5 MB
+
 // Regular expressions for parsing
 export const REF_LINE_REG =
 	/^0 (?:(@[_a-zA-Z0-9]*@) )?(?<type>_[_A-Z][_a-zA-Z]{2,}|_?[A-Z][a-zA-Z]{2,}) ?(?<value>.*)/gm;

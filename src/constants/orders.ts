@@ -1,11 +1,9 @@
-import type IEventDetailStructure from "../structures/event-detail";
 import { isCommonDate } from "../classes/date";
 import { type IndiType } from "../classes/indi";
-
 import { type NameOrder } from "../settings";
+import type IEventDetailStructure from "../structures/event-detail";
 import { type Order, type OrderIterator, type IndiKey } from "../types";
-
-// import { getFamilyWith } from "./get-family-with" // Not part of parser
+import { getFamilyWith } from "../utils/get-family-with";
 
 export const DEFAULT: Order = {};
 
