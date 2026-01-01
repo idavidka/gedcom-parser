@@ -1,48 +1,64 @@
 // Parser
-export * from './parser.js';
+export * from "./parser";
+export { default } from "./parser";
+export { default as GedcomTree } from "./parser";
 
-// Classes
-export * from './classes/gedcom/classes/gedcom.js';
-export * from './classes/gedcom/classes/indis.js';
-export * from './classes/gedcom/classes/fam.js';
-export * from './classes/gedcom/classes/sour.js';
-export * from './classes/gedcom/classes/sours.js';
-export * from './classes/gedcom/classes/repo.js';
-export * from './classes/gedcom/classes/subm.js';
-export * from './classes/gedcom/classes/subms.js';
-export * from './classes/gedcom/classes/note.js';
-export * from './classes/gedcom/classes/name.js';
-export * from './classes/gedcom/classes/date.js';
+// Classes - export everything from each class
+export * from "./classes/common";
+export * from "./classes/gedcom";
+export * from "./classes/indis";
+export * from "./classes/fam";
+export * from "./classes/fams";
+export * from "./classes/sour";
+export * from "./classes/sours";
+export * from "./classes/repo";
+export * from "./classes/repos";
+export * from "./classes/subm";
+export * from "./classes/subms";
+export * from "./classes/note";
+export * from "./classes/name";
+export * from "./classes/date";
+export * from "./classes/indi";
+export * from "./classes/indi-with-dimension";
+export * from "./classes/obje";
+export * from "./classes/objes";
+export * from "./classes/list";
 
-// Interfaces
-export * from './classes/gedcom/interfaces/gedcom.js';
-export * from './classes/gedcom/interfaces/indis.js';
-export * from './classes/gedcom/interfaces/fam.js';
-export * from './classes/gedcom/interfaces/fams.js';
-export * from './classes/gedcom/interfaces/repo.js';
-export * from './classes/gedcom/interfaces/subm.js';
-export * from './classes/gedcom/interfaces/obje.js';
-export * from './classes/gedcom/interfaces/list.js';
-export * from './classes/gedcom/interfaces/common.js';
+// Class interfaces
+export type { default as GedComInterface } from "./interfaces/gedcom";
+export type { default as FamInterface } from "./interfaces/fam";
+export type { IFamilies as FamsInterface } from "./interfaces/fams";
+export type { default as RepoInterface } from "./interfaces/repo";
+export type { default as SubmInterface } from "./interfaces/subm";
+export type { default as ObjeInterface } from "./interfaces/obje";
+export type { IIndividuals as IndisInterface } from "./interfaces/indis";
+export type { default as IndiInterface } from "./interfaces/indi";
+export type { default as CommonInterface } from "./interfaces/common";
+export type { IList as ListInterface } from "./interfaces/list";
+export type { default as SourInterface } from "./interfaces/sour";
 
-// Type structures (now interfaces)
-export * from './interfaces/gedcom.js';
-export * from './interfaces/individual.js';
-export * from './interfaces/family.js';
-export * from './interfaces/source.js';
-export * from './interfaces/repository.js';
-export * from './interfaces/note.js';
-export * from './interfaces/date.js';
-export * from './interfaces/place.js';
-export * from './interfaces/personal-name.js';
-export * from './interfaces/personal-name-pieces.js';
-export * from './interfaces/source-citation.js';
-export * from './interfaces/event-detail-structure.js';
-export * from './interfaces/change-date.js';
-export * from './interfaces/creation-date.js';
-export * from './interfaces/multimedia-link.js';
-export * from './interfaces/non-event.js';
-export * from './interfaces/marriage-date.js';
-export * from './interfaces/lds-ordinance-detail.js';
-export * from './interfaces/lds-spouse-sealing.js';
-export * from './interfaces/source-repository-citation.js';
+// Type structures
+export type * from "./structures/gedcom";
+export type * from "./structures/individual";
+export type * from "./structures/family";
+export type * from "./structures/source";
+export type * from "./structures/repository";
+export type * from "./structures/note";
+export type * from "./structures/date";
+export type * from "./structures/place";
+export type * from "./structures/address";
+export type * from "./structures/personal-name";
+export type * from "./structures/personal-name-pieces";
+export type * from "./structures/source-citation";
+export type * from "./structures/event-detail-structure";
+export type * from "./structures/individual-event-structure";
+export type * from "./structures/individual-event-detail-structure";
+export type * from "./structures/association";
+export type * from "./structures/change-date";
+export type * from "./structures/creation-date";
+export type * from "./structures/multimedia-link";
+export type * from "./structures/non-event";
+export type * from "./structures/marriage-date";
+export type * from "./structures/lds-ordinance-detail";
+export type * from "./structures/lds-spouse-sealing";
+export type * from "./structures/source-repository-citation";

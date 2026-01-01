@@ -1,66 +1,49 @@
-import { type Common } from "../../classes/gedcom/classes/common";
-import type { Families } from "../../classes/gedcom/classes/fams";
-import type { Individuals } from "../../classes/gedcom/classes/indis";
-import type { List } from "../../classes/gedcom/classes/list";
-import type { Objects } from "../../classes/gedcom/classes/objes";
-import type { Repositories } from "../../classes/gedcom/classes/repos";
-import type { Sources } from "../../classes/gedcom/classes/sours";
-import type { Submitters } from "../../classes/gedcom/classes/subms";
-import { type NonStandard } from "../types";
-import type { ListTag } from "../types";
+import {
+	type FamKey,
+	type IndiKey,
+	type ObjeKey,
+	type RepoKey,
+	type SourKey,
+	type SubmKey,
+} from "../../../types/types";
+import { type Common } from "../classes/common";
+import { type FamType } from "../classes/fam";
+import { type Families } from "../classes/fams";
+import { type IndiType } from "../classes/indi";
+import { type Individuals } from "../classes/indis";
+import { type ObjeType } from "../classes/obje";
+import { type Objects } from "../classes/objes";
+import { type RepoType } from "../classes/repo";
+import { type Repositories } from "../classes/repos";
+import { type SourType } from "../classes/sour";
+import { type Sources } from "../classes/sours";
+import { type SubmType } from "../classes/subm";
+import { type Submitters } from "../classes/subms";
 
-import type IAddressStructure from "./address";
-import type INoteStructure from "./note";
+interface IGedcom extends Common {
+	indis: () => Individuals | undefined;
 
-interface IGedComStructure
-	extends
-		Common,
-		Omit<NonStandard, "id" | "value">,
-		Partial<Record<`${ListTag}`, List>> {
-	"@@INDI"?: Individuals;
-	"@@_INDI"?: Individuals;
-	"@@FAM"?: Families;
-	"@@OBJE"?: Objects;
-	"@@REPO"?: Repositories;
-	"@@SOUR"?: Sources;
-	"@@SUBM"?: Submitters;
-	HEAD?: Common & {
-		GEDC?: Common & {
-			VERS?: Common;
-		};
-		SCHMA?: Common & {
-			TAG?: Common;
-		};
-		SOUR?: Common & {
-			VERS?: Common;
-			NAME?: Common;
-			CORP?: Common & {
-				PHON?: Common;
-				EMAIL?: Common;
-				FAX?: Common;
-				WWW?: Common;
-			} & IAddressStructure;
-			DATA?: Common & {
-				DATE?: Common & {
-					TIME?: Common;
-				};
-				CORP?: Common;
-			};
-			_TREE?: Common & {
-				RIN?: Common;
-			};
-		};
+	fams: () => Families | undefined;
 
-		DEST?: Common;
-		DATE?: Common & {
-			TIME?: Common;
-		};
-		SUBM?: Common;
-		CORP?: Common;
-		LANG?: Common;
-		PLAC?: Common & {
-			FORM?: Common;
-		};
-	} & INoteStructure;
+	objes: () => Objects | undefined;
+
+	sours: () => Sources | undefined;
+
+	repos: () => Repositories | undefined;
+
+	subms: () => Submitters | undefined;
+
+	indi: (index: number | IndiKey) => IndiType | undefined;
+
+	fam: (index: number | FamKey) => FamType | undefined;
+
+	obje: (index: number | ObjeKey) => ObjeType | undefined;
+
+	sour: (index: number | SourKey) => SourType | undefined;
+
+	repo: (index: number | RepoKey) => RepoType | undefined;
+
+	subm: (index: number | SubmKey) => SubmType | undefined;
 }
-export default IGedComStructure;
+
+export default IGedcom;
