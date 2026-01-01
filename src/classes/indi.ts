@@ -1,3 +1,4 @@
+import { type AncestryMedia } from "../ancestry-media";
 import * as Filters from "../constants/filters";
 import {
 	BIRTH_ASC,
@@ -5,7 +6,6 @@ import {
 	getMarriageAscAndChildBirth,
 } from "../constants/orders";
 import { type Language } from "../translation/i18n";
-import { type AncestryMedia } from "../ancestry-media";
 import type IIndividualStructure from "../structures/individual";
 import {
 	type IndiKey,

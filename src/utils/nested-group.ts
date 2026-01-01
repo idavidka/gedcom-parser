@@ -2,9 +2,8 @@ import get from "lodash/get";
 import set from "lodash/set";
 
 import { Individuals as IndividualsClass } from "../classes/indis";
-import { type NestedGroup } from "../types";
-
 import type { Individuals } from "../classes/indis";
+import { type NestedGroup } from "../types";
 
 // Use a WeakMap to track unique items for each node without polluting the object
 const uniqueItemsCache = new WeakMap<NestedGroup, Individuals>();

@@ -12,26 +12,26 @@ export type LinkedPersons = "merge" | "clone" | "skip";
 export interface Settings {
 	// Date formatting
 	dateFormatPattern?: string; // e.g., "YYYY-MM-DD", "DD/MM/YYYY"
-	
+
 	// Place formatting
 	placeOrder?: PlaceOrder;
 	currentNameOfTown?: CurrentNameOfTown;
-	
+
 	// Name formatting
 	nameOrder?: NameOrder;
 	maxGivennames?: number; // Maximum number of given names to show
 	maxSurnames?: number; // Maximum number of surnames to show
 	showSuffix?: boolean; // Whether to show name suffixes (Jr., Sr., etc.)
-	
+
 	// Display options
 	showMarriages?: boolean;
 	showKinship?: boolean;
 	showAlternateDates?: boolean;
-	
+
 	// Linking settings
 	linkedPersons?: LinkedPersons;
 	linkingKey?: string; // MultiTag type
-	
+
 	// Other settings - extensible
 	[key: string]: unknown;
 }
