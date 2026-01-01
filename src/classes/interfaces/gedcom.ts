@@ -1,0 +1,49 @@
+import {
+	type FamKey,
+	type IndiKey,
+	type ObjeKey,
+	type RepoKey,
+	type SourKey,
+	type SubmKey,
+} from "../../../types/types";
+import { type Common } from "../classes/common";
+import { type FamType } from "../classes/fam";
+import { type Families } from "../classes/fams";
+import { type IndiType } from "../classes/indi";
+import { type Individuals } from "../classes/indis";
+import { type ObjeType } from "../classes/obje";
+import { type Objects } from "../classes/objes";
+import { type RepoType } from "../classes/repo";
+import { type Repositories } from "../classes/repos";
+import { type SourType } from "../classes/sour";
+import { type Sources } from "../classes/sours";
+import { type SubmType } from "../classes/subm";
+import { type Submitters } from "../classes/subms";
+
+interface IGedcom extends Common {
+	indis: () => Individuals | undefined;
+
+	fams: () => Families | undefined;
+
+	objes: () => Objects | undefined;
+
+	sours: () => Sources | undefined;
+
+	repos: () => Repositories | undefined;
+
+	subms: () => Submitters | undefined;
+
+	indi: (index: number | IndiKey) => IndiType | undefined;
+
+	fam: (index: number | FamKey) => FamType | undefined;
+
+	obje: (index: number | ObjeKey) => ObjeType | undefined;
+
+	sour: (index: number | SourKey) => SourType | undefined;
+
+	repo: (index: number | RepoKey) => RepoType | undefined;
+
+	subm: (index: number | SubmKey) => SubmType | undefined;
+}
+
+export default IGedcom;

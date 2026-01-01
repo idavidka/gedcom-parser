@@ -1,0 +1,38 @@
+{
+  "name": "@treeviz/gedcom-parser",
+  "version": "1.0.0",
+  "description": "GEDCOM parser library for TreeViz - Parse and handle GEDCOM files",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:idavidka/gedcom-parser.git"
+  },
+  "keywords": [
+    "gedcom",
+    "genealogy",
+    "parser",
+    "family-tree",
+    "typescript"
+  ],
+  "author": "idavidka",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.17.23",
+    "typescript": "^5.6.3"
+  }
+}
