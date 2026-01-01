@@ -320,7 +320,7 @@ const GedcomTree = {
 		if (linkingKey) {
 			links.forEach((linkingIndi, _linkingId) => {
 				const linking = linkingIndi as IndiType | undefined;
-				const linked = (linking?.get(linkingKey) as Common | undefined)
+				const linked = (linking?.get(linkingKey as MultiTag) as Common | undefined)
 					?.ref as IndiType | undefined;
 
 				if (!linking) {

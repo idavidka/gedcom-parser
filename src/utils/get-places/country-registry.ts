@@ -181,13 +181,14 @@ export function detectCountryName(countryName?: string): string | undefined {
 			// Check if the value matches a registered country name
 			for (const registeredName of countryRegistry.keys()) {
 				if (
+					typeof value === "string" &&
 					value.toLowerCase().startsWith(registeredName.toLowerCase())
 				) {
 					return registeredName;
 				}
 			}
 			// No registered match, return the value as-is
-			return value;
+			return typeof value === "string" ? value : undefined;
 		}
 	}
 
@@ -230,8 +231,9 @@ export function detectCountryName(countryName?: string): string | undefined {
 	for (const translations of allTranslationFiles) {
 		for (const [key, value] of Object.entries(translations)) {
 			if (
-				key.toLowerCase() === lowerName ||
-				value.toLowerCase() === lowerName
+				typeof value === "string" &&
+				(key.toLowerCase() === lowerName ||
+					value.toLowerCase() === lowerName)
 			) {
 				// Use the key (which is the English name) as the standardized name
 				// If the match was on the value, we need to find the corresponding key
@@ -242,7 +244,10 @@ export function detectCountryName(countryName?: string): string | undefined {
 					for (const [englishName, translatedName] of Object.entries(
 						translations
 					)) {
-						if (translatedName.toLowerCase() === lowerName) {
+						if (
+							typeof translatedName === "string" &&
+							translatedName.toLowerCase() === lowerName
+						) {
 							return englishName;
 						}
 					}
@@ -665,8 +670,9 @@ export function isCountryName(name: string): boolean {
 	for (const translations of allTranslationFiles) {
 		for (const [key, value] of Object.entries(translations)) {
 			if (
-				key.toLowerCase() === lowerName ||
-				value.toLowerCase() === lowerName
+				typeof value === "string" &&
+				(key.toLowerCase() === lowerName ||
+					value.toLowerCase() === lowerName)
 			) {
 				return true;
 			}

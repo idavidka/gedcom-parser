@@ -5,9 +5,9 @@
 import type { IndiType } from "../classes/indi";
 import type { RelationType } from "../types";
 // eslint-disable-next-line import/order
-import { Kinship } from "../kinship-translator/kinship-translator.interface";
+import type { Kinship } from "../kinship-translator/kinship-translator.interface";
 
-export { Kinship };
+export type { Kinship };
 
 export interface PathItem {
 	indi: IndiType;

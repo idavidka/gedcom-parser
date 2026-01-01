@@ -31,8 +31,8 @@ export default class KinshipTranslator<T extends boolean | undefined> {
 
 		this.path = this.person1.path(this.person2);
 
-		if (translators[lang]) {
-			this.translator = new translators[lang](
+		if (translators[lang as keyof typeof translators]) {
+			this.translator = new translators[lang as keyof typeof translators](
 				this.path ?? [],
 				displayName
 			);

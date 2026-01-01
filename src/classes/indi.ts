@@ -5,8 +5,17 @@ import {
 	DATE_ASC,
 	getMarriageAscAndChildBirth,
 } from "../constants/orders";
-import { type Language } from "../translation/i18n";
+import {
+	type MediaList,
+	type GeneratedIndiMethods,
+	type GeneratorKey,
+	type GeneratorType,
+} from "../interfaces/indi";
+import type IIndi from "../interfaces/indi";
+import KinshipTranslator from "../kinship-translator/kinship-translator";
+import { type Kinship } from "../kinship-translator/kinship-translator.interface";
 import type IIndividualStructure from "../structures/individual";
+import { type Language } from "../translation/i18n";
 import {
 	type IndiKey,
 	type FamKey,
@@ -22,15 +31,6 @@ import { pathCache, relativesCache } from "../utils/cache";
 import { dateFormatter } from "../utils/date-formatter";
 import { type Place, PlaceType, getPlaces } from "../utils/get-places";
 import { implemented } from "../utils/logger";
-import KinshipTranslator from "../kinship-translator/kinship-translator";
-import { type Kinship } from "../kinship-translator/kinship-translator.interface";
-import {
-	type MediaList,
-	type GeneratedIndiMethods,
-	type GeneratorKey,
-	type GeneratorType,
-} from "../interfaces/indi";
-import type IIndi from "../interfaces/indi";
 
 import { Common, createCommon, createProxy } from "./common";
 import type { ProxyOriginal } from "./common";
@@ -230,6 +230,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			existed: {},
 			tree: {},
 			halves: {},
+			lastItems: {},
 		};
 
 		const families = this.getFamiliesBiologicalFirst("FAMC");
