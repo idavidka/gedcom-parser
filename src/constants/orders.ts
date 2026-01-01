@@ -1,6 +1,6 @@
-import type IEventDetailStructure from "@treeviz/gedcom-parser";
-import { isCommonDate } from "@treeviz/gedcom-parser";
-import { type IndiType } from "@treeviz/gedcom-parser";
+import type IEventDetailStructure from "../structures/event-detail";
+import { isCommonDate } from "../classes/date";
+import { type IndiType } from "../classes/indi";
 
 import { type NameOrder } from "../settings";
 import { type Order, type OrderIterator, type IndiKey } from "../types";

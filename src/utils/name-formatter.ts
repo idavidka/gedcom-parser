@@ -1,5 +1,5 @@
-import { Indi, type IndiType } from "@treeviz/gedcom-parser";
-import { createCommonName, type CommonName } from "@treeviz/gedcom-parser";
+import { Indi, type IndiType } from "../classes/indi";
+import { createCommonName, type CommonName } from "../classes/name";
 import { type Settings } from "../settings";
 
 export const nameFormatter = (

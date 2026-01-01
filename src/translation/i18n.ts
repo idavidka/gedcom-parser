@@ -23,7 +23,7 @@ let currentLanguage: Language = "en";
  *
  * @example
  * ```ts
- * import { setTranslationFunction } from '@treeviz/gedcom-parser';
+ * import { setTranslationFunction } from "../types";
  * import i18next from 'i18next';
  *
  * setTranslationFunction((key, options) => i18next.t(key, options));

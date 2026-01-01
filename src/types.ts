@@ -48,6 +48,9 @@ export type IdType =
 	| SubmKey
 	| UnknownKey;
 
+// ConvertType - subset of MultiTag for entity conversion
+export type ConvertType = "FAM" | "INDI" | "_INDI" | "OBJE" | "SOUR" | "REPO" | "SUBM";
+
 // NonStandard interface
 export interface NonStandard {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any

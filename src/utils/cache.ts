@@ -1,7 +1,7 @@
 import debounce from "lodash/debounce";
 
-import { type Path } from "@treeviz/gedcom-parser";
-import { type Individuals } from "@treeviz/gedcom-parser";
+import { type Path } from "../interfaces/path";
+import { type Individuals } from "../classes/indis";
 import { type IndiKey } from "./types";
 
 import { getInstance } from "./indexed-db-manager";

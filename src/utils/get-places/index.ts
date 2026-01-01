@@ -1,10 +1,10 @@
 import leveinstein from "js-levenshtein";
 
-import { type Common } from "@treeviz/gedcom-parser";
-import { CommonDate } from "@treeviz/gedcom-parser";
-import { type GedComType } from "@treeviz/gedcom-parser";
-import { List } from "@treeviz/gedcom-parser";
-import { type IndiKey, type Tag } from "../types";
+import { type Common } from "../../classes/common";
+import { CommonDate } from "../../classes/date";
+import { type GedComType } from "../../classes/gedcom";
+import { List } from "../../classes/list";
+import { type IndiKey, type Tag } from "../../types";
 import type { PrimitiveRange, Range } from "../range";
 import { inRange, splitRange, fromTuple } from "../range";
 

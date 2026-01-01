@@ -1,10 +1,10 @@
-import { createCommonDate } from "@treeviz/gedcom-parser";
-import type { CommonDate } from "@treeviz/gedcom-parser";
-import { type FamType } from "@treeviz/gedcom-parser";
-import { type IndiType } from "@treeviz/gedcom-parser";
+import { createCommonDate } from "../classes/date";
+import type { CommonDate } from "../classes/date";
+import { type FamType } from "../classes/fam";
+import { type IndiType } from "../classes/indi";
 import i18n from "../translation/i18n";
-import type IDateStructure from "@treeviz/gedcom-parser";
-import type IEventDetailStructure from "@treeviz/gedcom-parser";
+import type IDateStructure from "../structures/date";
+import type IEventDetailStructure from "../structures/event-detail";
 import type { IndiKey } from "./types";
 import { getAllProp } from "./get-all-prop";
 

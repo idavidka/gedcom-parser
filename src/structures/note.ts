@@ -1,5 +1,5 @@
 import { type Common } from "../classes/common";
-import { type CommonNote } from "../../classes/gedcom/classes/note";
+import { type CommonNote } from "../classes/note";
 
 import type ISourceCitationStructure from "./source-citation";
 
