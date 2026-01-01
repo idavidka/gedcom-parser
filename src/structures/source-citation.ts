@@ -1,4 +1,4 @@
-import { type Common } from "../../classes/gedcom/classes/common";
+import { type Common } from "../classes/common";
 
 import type IMultimediaLinkStructure from "./multimedia-link";
 import type INoteStructure from "./note";

@@ -3,14 +3,14 @@ import set from "lodash/set";
 import uniqBy from "lodash/uniqBy";
 import unset from "lodash/unset";
 
-import { ID_GETTER_REG, ID_REG } from "../../../constants/constants";
+import { ID_GETTER_REG, ID_REG } from "../constants";
 import {
 	type Tag,
 	type IdType,
 	type MultiTag,
 	type ObjeKey,
-} from "../../../types/types";
-import type { ListTag } from "../../../types/types";
+} from "../types";
+import type { ListTag } from "../types";
 import { type ConvertOptions } from "../interfaces/common";
 import type ICommon from "../interfaces/common";
 import type IObje from "../interfaces/obje";

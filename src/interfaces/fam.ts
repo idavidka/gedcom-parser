@@ -1,4 +1,4 @@
-import { type FamKey } from "../../../types/types";
+import { type FamKey } from "../types";
 import { type Common } from "../classes/common";
 import { type Individuals } from "../classes/indis";
 

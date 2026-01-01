@@ -1,5 +1,5 @@
-import type IMultimediaLinkStructure from "../../../types/structures/multimedia-link";
-import { type ObjeKey } from "../../../types/types";
+import type IMultimediaLinkStructure from "../structures/multimedia-link";
+import { type ObjeKey } from "../types";
 import type IObje from "../interfaces/obje";
 
 import { Common, createCommon, createProxy } from "./common";

@@ -1,11 +1,11 @@
-import { type Common } from "../../classes/gedcom/classes/common";
-import type { Families } from "../../classes/gedcom/classes/fams";
-import type { Individuals } from "../../classes/gedcom/classes/indis";
-import type { List } from "../../classes/gedcom/classes/list";
-import type { Objects } from "../../classes/gedcom/classes/objes";
-import type { Repositories } from "../../classes/gedcom/classes/repos";
-import type { Sources } from "../../classes/gedcom/classes/sours";
-import type { Submitters } from "../../classes/gedcom/classes/subms";
+import { type Common } from "../classes/common";
+import type { Families } from "../classes/fams";
+import type { Individuals } from "../classes/indis";
+import type { List } from "../classes/list";
+import type { Objects } from "../classes/objes";
+import type { Repositories } from "../classes/repos";
+import type { Sources } from "../classes/sours";
+import type { Submitters } from "../classes/subms";
 import { type NonStandard } from "../types";
 import type { ListTag } from "../types";
 

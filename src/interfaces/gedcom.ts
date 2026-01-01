@@ -5,7 +5,7 @@ import {
 	type RepoKey,
 	type SourKey,
 	type SubmKey,
-} from "../../../types/types";
+} from "../types";
 import { type Common } from "../classes/common";
 import { type FamType } from "../classes/fam";
 import { type Families } from "../classes/fams";

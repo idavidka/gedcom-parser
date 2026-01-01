@@ -1,26 +1,26 @@
-import { Common, getListTag, isId } from "../classes/gedcom/classes/common";
-import { Families } from "../classes/gedcom/classes/fams";
-import { createGedCom } from "../classes/gedcom/classes/gedcom";
-import { Indi } from "../classes/gedcom/classes/indi";
-import type { IndiType } from "../classes/gedcom/classes/indi";
-import { Individuals } from "../classes/gedcom/classes/indis";
-import { List } from "../classes/gedcom/classes/list";
-import { Objects } from "../classes/gedcom/classes/objes";
-import { Repositories } from "../classes/gedcom/classes/repos";
-import { Sources } from "../classes/gedcom/classes/sours";
-import { Submitters } from "../classes/gedcom/classes/subms";
+import { Common, getListTag, isId } from "./classes/common";
+import { Families } from "./classes/fams";
+import { createGedCom } from "./classes/gedcom";
+import { Indi } from "./classes/indi";
+import type { IndiType } from "./classes/indi";
+import { Individuals } from "./classes/indis";
+import { List } from "./classes/list";
+import { Objects } from "./classes/objes";
+import { Repositories } from "./classes/repos";
+import { Sources } from "./classes/sours";
+import { Submitters } from "./classes/subms";
 import {
 	LINE_REG,
 	MAX_FILE_SIZE_TO_SYNC,
 	REF_LINE_REG,
-} from "../constants/constants";
-import type { Settings } from "../store/main/reducers";
-import { getRawSize } from "../store/main/selectors";
-import { type ConvertType, type IdType, type MultiTag } from "../types/types";
-import type { ListTag } from "../types/types";
+} from "./constants";
+import type { Settings } from "../settings";
+import { getRawSize } from "./utils/selectors";
+import { type ConvertType, type IdType, type MultiTag } from "./types";
+import type { ListTag } from "./types";
 
-import { create } from "./common-creator";
-import { isDevelopment } from "./get-product-details";
+import { create } from "./utils/common-creator";
+import { isDevelopment } from "./utils/get-product-details";
 
 const isDev = isDevelopment();
 

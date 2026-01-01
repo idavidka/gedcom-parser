@@ -1,12 +1,12 @@
-import * as Filters from "../../../constants/filters";
+import * as Filters from "../constants/filters";
 import {
 	BIRTH_ASC,
 	DATE_ASC,
 	getMarriageAscAndChildBirth,
-} from "../../../constants/orders";
-import { type Language } from "../../../translation/i18n";
-import { type AncestryMedia } from "../../../types/ancestry-media";
-import type IIndividualStructure from "../../../types/structures/individual";
+} from "../constants/orders";
+import { type Language } from "../translation/i18n";
+import { type AncestryMedia } from "../ancestry-media";
+import type IIndividualStructure from "../structures/individual";
 import {
 	type IndiKey,
 	type FamKey,
@@ -17,13 +17,13 @@ import {
 	RelationType,
 	type IdType,
 	PartnerType,
-} from "../../../types/types";
-import { pathCache, relativesCache } from "../../../utils/cache";
-import { dateFormatter } from "../../../utils/date-formatter";
-import { type Place, PlaceType, getPlaces } from "../../../utils/get-places";
-import { implemented } from "../../../utils/logger";
-import KinshipTranslator from "../../kinship-translator/kinship-translator";
-import { type Kinship } from "../../kinship-translator/kinship-translator.interface";
+} from "../types";
+import { pathCache, relativesCache } from "../utils/cache";
+import { dateFormatter } from "../utils/date-formatter";
+import { type Place, PlaceType, getPlaces } from "../utils/get-places";
+import { implemented } from "../utils/logger";
+import KinshipTranslator from "../kinship-translator/kinship-translator";
+import { type Kinship } from "../kinship-translator/kinship-translator.interface";
 import {
 	type MediaList,
 	type GeneratedIndiMethods,
