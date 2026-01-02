@@ -3,6 +3,19 @@ export * from "./parser";
 export { default } from "./parser";
 export { default as GedcomTree } from "./parser";
 
+// Settings
+export * from "./settings";
+
+// Types (Order, Filter, Group, etc.)
+export * from "./types";
+
+// Pluggable IndexedDB (consumer must provide implementation)
+export { setIndexedDbFactory, getInstance } from "./utils/indexed-db-manager";
+export type {
+	IIndexedDbManager,
+	IndexedDbFactory,
+} from "./utils/indexed-db-manager";
+
 // Classes - export everything from each class
 export * from "./classes/common";
 export * from "./classes/gedcom";

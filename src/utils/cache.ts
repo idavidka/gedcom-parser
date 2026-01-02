@@ -4,8 +4,7 @@ import { type Path } from "../interfaces/path";
 import { type Individuals } from "../classes/indis";
 import { type IndiKey } from "./types";
 
-import { getInstance } from "./indexed-db-manager";
-import type IndexedDbManager from "./indexed-db-manager";
+import { getInstance, type IIndexedDbManager } from "./indexed-db-manager";
 
 interface Caches {
 	pathCache: Record<`${IndiKey}|${IndiKey}`, Path> | undefined;
@@ -22,7 +21,7 @@ type CacheStores = {
 };
 
 type CacheDbs = {
-	[x in keyof Caches]: IndexedDbManager<Caches[x]>;
+	[x in keyof Caches]: IIndexedDbManager<Caches[x]>;
 };
 
 const caches: Caches = {
