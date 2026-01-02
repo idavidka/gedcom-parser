@@ -64,16 +64,11 @@ export interface CountyData {
 export interface TownSource {
 	_source: {
 		en: string;
-		hu: string;
+		hu?: string;
+		de?: string;
 	};
 	_year?: number;
-	data: Record<
-		string,
-		{
-			county: string;
-			current?: string;
-		}
-	>;
+	data: unknown; // Flexible data structure - different formats for different sources
 }
 
 /**
