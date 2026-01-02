@@ -23,6 +23,24 @@ export type {
 	CacheFactory as IndexedDbFactory,
 } from "./utils/cache-manager";
 
+// Pluggable Country Data Provider (consumer must provide country/place data)
+export {
+	setCountryDataProvider,
+	getCountryDataProvider,
+	getCountryTranslations,
+	getCountryData,
+	getAvailableCountries,
+	getAvailableLanguages,
+} from "./utils/get-places/country-data-provider";
+export type {
+	ICountryDataProvider,
+	CountryTranslations,
+	CountyData,
+	TownSource,
+	TownDataCollection,
+	CountryData,
+} from "./utils/get-places/country-data-provider";
+
 // Classes - export everything from each class
 export * from "./classes/common";
 export * from "./classes/gedcom";
