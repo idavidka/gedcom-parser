@@ -1,10 +1,10 @@
 import debounce from "lodash/debounce";
 
-import { type Path } from "../interfaces/path";
 import { type Individuals } from "../classes/indis";
-import { type IndiKey } from "./types";
+import { type Path } from "../interfaces/path";
 
-import { getInstance, type IIndexedDbManager } from "./indexed-db-manager";
+import { getInstance, type ICacheManager } from "./cache-manager";
+import { type IndiKey } from "./types";
 
 interface Caches {
 	pathCache: Record<`${IndiKey}|${IndiKey}`, Path> | undefined;
@@ -21,7 +21,7 @@ type CacheStores = {
 };
 
 type CacheDbs = {
-	[x in keyof Caches]: IIndexedDbManager<Caches[x]>;
+	[x in keyof Caches]: ICacheManager<Caches[x]>;
 };
 
 const caches: Caches = {

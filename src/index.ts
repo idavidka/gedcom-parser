@@ -9,12 +9,19 @@ export * from "./settings";
 // Types (Order, Filter, Group, etc.)
 export * from "./types";
 
-// Pluggable IndexedDB (consumer must provide implementation)
-export { setIndexedDbFactory, getInstance } from "./utils/indexed-db-manager";
+// Pluggable Cache Manager (consumer must provide implementation)
+export { setCacheFactory, getInstance } from "./utils/cache-manager";
 export type {
-	IIndexedDbManager,
-	IndexedDbFactory,
-} from "./utils/indexed-db-manager";
+	ICacheManager,
+	CacheFactory,
+} from "./utils/cache-manager";
+
+// Legacy exports for backward compatibility
+export { setCacheFactory as setIndexedDbFactory } from "./utils/cache-manager";
+export type {
+	ICacheManager as IIndexedDbManager,
+	CacheFactory as IndexedDbFactory,
+} from "./utils/cache-manager";
 
 // Classes - export everything from each class
 export * from "./classes/common";

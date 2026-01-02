@@ -47,7 +47,7 @@ export class GedCom extends Common implements IGedcom {
 		index: number | string
 	): T | undefined {
 		const list =
-			!type || type instanceof List ? type : this.getList<L>(type);
+			!type || type instanceof List ? (type as L | undefined) : this.getList<L>(type);
 
 		if (!list) {
 			return undefined;
