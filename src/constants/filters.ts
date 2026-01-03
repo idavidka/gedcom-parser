@@ -3,7 +3,7 @@ import {
 	type Filter,
 	RelationType,
 	PartnerType,
-} from "../types";
+} from "../types/types";
 
 export const EVERY: Filter = {};
 

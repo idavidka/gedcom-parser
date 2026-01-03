@@ -1,3 +1,5 @@
+import { type ConvertOptions } from "../interfaces/common";
+import type IGedcom from "../interfaces/gedcom";
 import type IGedComStructure from "../structures/gedcom";
 import {
 	type IdType,
@@ -8,11 +10,9 @@ import {
 	type RepoKey,
 	type SubmKey,
 	type MultiTag,
-} from "../types";
-import type { ListTag } from "../types";
+} from "../types/types";
+import type { ListTag } from "../types/types";
 import { getVersion } from "../utils/get-product-details";
-import { type ConvertOptions } from "../interfaces/common";
-import type IGedcom from "../interfaces/gedcom";
 
 import { Common, createCommon } from "./common";
 import { type FamType } from "./fam";
@@ -47,7 +47,7 @@ export class GedCom extends Common implements IGedcom {
 		index: number | string
 	): T | undefined {
 		const list =
-			!type || type instanceof List ? (type as L | undefined) : this.getList<L>(type);
+			!type || type instanceof List ? type : this.getList<L>(type);
 
 		if (!list) {
 			return undefined;

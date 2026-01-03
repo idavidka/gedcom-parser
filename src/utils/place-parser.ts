@@ -14,7 +14,9 @@ export interface PlaceParts {
  * Simple place parser - splits by commas
  * Consumer apps can implement more sophisticated parsing if needed
  */
-export const getPlaceParts = (place: string | (string | undefined)[] = []): PlaceParts[] => {
+export const getPlaceParts = (
+	place: string | (string | undefined)[] = []
+): PlaceParts[] => {
 	const partsString = Array.isArray(place)
 		? place.filter(Boolean).join(", ")
 		: place;
@@ -24,7 +26,10 @@ export const getPlaceParts = (place: string | (string | undefined)[] = []): Plac
 	}
 
 	// Simple split by comma
-	const parts = partsString.split(/,\s*/).map((p) => p.trim()).filter(Boolean);
+	const parts = partsString
+		.split(/,\s*/)
+		.map((p) => p.trim())
+		.filter(Boolean);
 
 	if (parts.length === 0) {
 		return [{}];

@@ -1,6 +1,6 @@
-import { type FamKey } from "../types";
 import { type Common } from "../classes/common";
 import { type Individuals } from "../classes/indis";
+import { type FamKey } from "../types/types";
 
 interface IFam extends Common<string, FamKey> {
 	_IS_ORPHAN_FAMILY?: Common<"Y" | "N">;

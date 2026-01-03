@@ -21,7 +21,7 @@ import type {
 	ObjeKey,
 	IndiKey,
 	FamKey,
-} from "./types";
+} from "../types/types";
 
 export const create = (
 	gedcom: GedComType,

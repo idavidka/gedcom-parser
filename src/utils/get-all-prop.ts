@@ -1,5 +1,5 @@
 import type { IndiType } from "../classes/indi";
-import type { MultiTag } from "./types";
+import type { MultiTag } from "../types/types";
 
 export const getAllProp = <T>(indi?: IndiType, prop?: MultiTag) => {
 	return ((prop &&

@@ -1,4 +1,4 @@
-import { type SubmKey } from "../types";
+import { type SubmKey } from "../../../types/types";
 
 import { List } from "./list";
 import { type SubmType } from "./subm";

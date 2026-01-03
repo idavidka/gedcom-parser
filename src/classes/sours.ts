@@ -1,4 +1,4 @@
-import { type SourKey } from "../types";
+import { type SourKey } from "../../../types/types";
 
 import { List } from "./list";
 import { type SourType } from "./sour";

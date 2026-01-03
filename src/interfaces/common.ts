@@ -1,6 +1,6 @@
-import { type IdType, type MultiTag } from "../types";
 import { type Common } from "../classes/common";
 import { type List } from "../classes/list";
+import { type IdType, type MultiTag } from "../types/types";
 
 export type CommonWild = Partial<Record<`_${string}`, Common>>;
 

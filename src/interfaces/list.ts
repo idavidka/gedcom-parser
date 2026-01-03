@@ -1,3 +1,5 @@
+import { type Common } from "../classes/common";
+import { type List } from "../classes/list";
 import {
 	type Filter,
 	type Order,
@@ -7,9 +9,7 @@ import {
 	type Group,
 	type GroupIterator,
 	type OrderIterator,
-} from "../types";
-import { type Common } from "../classes/common";
-import { type List } from "../classes/list";
+} from "../types/types";
 
 import { type ConvertOptions } from "./common";
 

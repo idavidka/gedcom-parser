@@ -1,6 +1,6 @@
 import { Indi, type IndiType } from "../classes/indi";
 import { createCommonName, type CommonName } from "../classes/name";
-import { type Settings } from "../settings";
+import type { Settings } from "../types/settings";
 
 export const nameFormatter = (
 	indiName?: IndiType | string,

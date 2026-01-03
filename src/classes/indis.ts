@@ -6,8 +6,9 @@ import {
 	DEATH_ASC,
 	DEATH_DESC,
 } from "../constants/orders";
-import { type Settings } from "../settings";
+import { type IIndividuals } from "../interfaces/indis";
 import type IEventDetailStructure from "../structures/event-detail-structure";
+import { type Settings } from "../types/settings";
 import {
 	type IndiKey,
 	type Filter,
@@ -20,13 +21,12 @@ import {
 	type FilterIterator,
 	type GroupIterator,
 	type Group,
-} from "../types";
-import type { GroupMarker } from "../types";
+} from "../types/types";
+import type { GroupMarker } from "../types/types";
 import { nameFormatter } from "../utils/name-formatter";
 import { setNestedGroup } from "../utils/nested-group";
 import { getPlaceParts } from "../utils/place-parser";
 import { placeTranslator } from "../utils/place-translator";
-import { type IIndividuals } from "../interfaces/indis";
 
 import { type CommonDate } from "./date";
 import { type IndiType } from "./indi";

@@ -1,11 +1,3 @@
-import {
-	type FamKey,
-	type IndiKey,
-	type ObjeKey,
-	type RepoKey,
-	type SourKey,
-	type SubmKey,
-} from "../types";
 import { type Common } from "../classes/common";
 import { type FamType } from "../classes/fam";
 import { type Families } from "../classes/fams";
@@ -19,6 +11,14 @@ import { type SourType } from "../classes/sour";
 import { type Sources } from "../classes/sours";
 import { type SubmType } from "../classes/subm";
 import { type Submitters } from "../classes/subms";
+import {
+	type FamKey,
+	type IndiKey,
+	type ObjeKey,
+	type RepoKey,
+	type SourKey,
+	type SubmKey,
+} from "../types/types";
 
 interface IGedcom extends Common {
 	indis: () => Individuals | undefined;

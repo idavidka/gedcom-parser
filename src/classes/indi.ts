@@ -1,5 +1,15 @@
-import { type AncestryMedia } from "../ancestry-media";
+// TODO have ability to pass kinship translator from main project
+// import { type Kinship } from "../../kinship-translator/kinship-translator.interface";
+// import KinshipTranslator from "../classes/kinship-translator/kinship-translator";
+
+// Temporary stub type until kinship translator is made pluggable
+export interface Kinship {
+	text: string;
+	level: number;
+}
+
 import * as Filters from "../constants/filters";
+
 import {
 	BIRTH_ASC,
 	DATE_ASC,
@@ -12,10 +22,8 @@ import {
 	type GeneratorType,
 } from "../interfaces/indi";
 import type IIndi from "../interfaces/indi";
-import KinshipTranslator from "../kinship-translator/kinship-translator";
-import { type Kinship } from "../kinship-translator/kinship-translator.interface";
 import type IIndividualStructure from "../structures/individual";
-import { type Language } from "../translation/i18n";
+import type { AncestryMedia } from "../types/ancestry-media";
 import {
 	type IndiKey,
 	type FamKey,
@@ -26,12 +34,11 @@ import {
 	RelationType,
 	type IdType,
 	PartnerType,
-} from "../types";
+} from "../types/types";
 import { pathCache, relativesCache } from "../utils/cache";
 import { dateFormatter } from "../utils/date-formatter";
-import { getPlaces } from "../utils/get-places";
+import { type Place, PlaceType, getPlaces } from "../utils/get-places";
 import { implemented } from "../utils/logger";
-import { type Place, PlaceType } from "../utils/place-types";
 
 import { Common, createCommon, createProxy } from "./common";
 import type { ProxyOriginal } from "./common";
@@ -454,11 +461,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		return this;
 	}
 
-	/**
-	 * Get places from individual's GEDCOM data (birth, death, marriage)
-	 * Uses minimal place extraction from PLAC tags
-	 */
-	getPlaces(type: PlaceType | PlaceType[] = [PlaceType.All], maxLevel = 1): Place[] {
+	getPlaces(type: PlaceType | PlaceType[] = [PlaceType.All], maxLevel = 1) {
 		if (!this._gedcom || !this.id) {
 			return [];
 		}
@@ -1770,19 +1773,32 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	kinship<T extends boolean | undefined>(
 		other?: IndiKey | IndiType,
 		showMainPerson?: boolean,
-		lang: Language = "en",
+		_lang: string = "en",
 		entirePath?: T,
-		displayName: "none" | "givenname" | "surname" | "all" = "givenname"
+		_displayName: "none" | "givenname" | "surname" | "all" = "givenname"
 	) {
-		const translator = new KinshipTranslator(
-			this,
-			other,
-			lang,
-			entirePath,
-			showMainPerson ? displayName : undefined
-		);
+		// TODO: Make kinship translator pluggable
+		// const translator = new KinshipTranslator(
+		// 	this,
+		// 	other,
+		// 	lang,
+		// 	entirePath,
+		// 	showMainPerson ? displayName : undefined
+		// );
 
-		return translator.translate(showMainPerson) as
+		// return translator.translate(showMainPerson) as
+		// 	| (T extends false | undefined
+		// 			? string
+		// 			: Array<{
+		// 					id?: IndiKey;
+		// 					gen: number;
+		// 					relative?: string;
+		// 					absolute?: string;
+		// 				}>)
+		// 	| undefined;
+		
+		// Temporary stub implementation
+		return undefined as 
 			| (T extends false | undefined
 					? string
 					: Array<{

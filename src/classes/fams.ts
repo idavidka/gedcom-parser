@@ -4,7 +4,7 @@ import {
 	type Order,
 	type FilterIterator,
 	type OrderIterator,
-} from "../types";
+} from "../../../types/types";
 import { type IFamilies } from "../interfaces/fams";
 
 import { type FamType, Fam } from "./fam";

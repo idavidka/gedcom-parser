@@ -1,8 +1,3 @@
-/**
- * Ancestry Media types
- * Types for handling media objects from Ancestry and other genealogy platforms
- */
-
 export interface AncestryMedia {
 	title: string;
 	type: string;

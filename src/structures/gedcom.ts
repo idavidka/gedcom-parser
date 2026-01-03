@@ -6,8 +6,8 @@ import type { Objects } from "../classes/objes";
 import type { Repositories } from "../classes/repos";
 import type { Sources } from "../classes/sours";
 import type { Submitters } from "../classes/subms";
-import { type NonStandard } from "../types";
-import type { ListTag } from "../types";
+import { type NonStandard } from "../types/types";
+import type { ListTag } from "../types/types";
 
 import type IAddressStructure from "./address";
 import type INoteStructure from "./note";
