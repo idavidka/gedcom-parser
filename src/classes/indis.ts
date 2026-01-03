@@ -22,9 +22,9 @@ import {
 	type Group,
 } from "../types";
 import type { GroupMarker } from "../types";
-import { getPlaceParts } from "../utils/get-places";
 import { nameFormatter } from "../utils/name-formatter";
 import { setNestedGroup } from "../utils/nested-group";
+import { getPlaceParts } from "../utils/place-parser";
 import { placeTranslator } from "../utils/place-translator";
 import { type IIndividuals } from "../interfaces/indis";
 

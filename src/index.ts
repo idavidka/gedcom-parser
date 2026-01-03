@@ -9,12 +9,13 @@ export * from "./settings";
 // Types (Order, Filter, Group, etc.)
 export * from "./types";
 
+// Place types (simple enum/interface for place filtering)
+export * from "./utils/place-types";
+export { getPlaces } from "./utils/get-places";
+
 // Pluggable Cache Manager (consumer must provide implementation)
 export { setCacheFactory, getInstance } from "./utils/cache-manager";
-export type {
-	ICacheManager,
-	CacheFactory,
-} from "./utils/cache-manager";
+export type { ICacheManager, CacheFactory } from "./utils/cache-manager";
 
 // Legacy exports for backward compatibility
 export { setCacheFactory as setIndexedDbFactory } from "./utils/cache-manager";
@@ -22,24 +23,6 @@ export type {
 	ICacheManager as IIndexedDbManager,
 	CacheFactory as IndexedDbFactory,
 } from "./utils/cache-manager";
-
-// Pluggable Country Data Provider (consumer must provide country/place data)
-export {
-	setCountryDataProvider,
-	getCountryDataProvider,
-	getCountryTranslations,
-	getCountryData,
-	getAvailableCountries,
-	getAvailableLanguages,
-} from "./utils/get-places/country-data-provider";
-export type {
-	ICountryDataProvider,
-	CountryTranslations,
-	CountyData,
-	TownSource,
-	TownDataCollection,
-	CountryData,
-} from "./utils/get-places/country-data-provider";
 
 // Classes - export everything from each class
 export * from "./classes/common";

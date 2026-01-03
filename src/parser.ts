@@ -9,17 +9,12 @@ import { Objects } from "./classes/objes";
 import { Repositories } from "./classes/repos";
 import { Sources } from "./classes/sours";
 import { Submitters } from "./classes/subms";
-import {
-	LINE_REG,
-	MAX_FILE_SIZE_TO_SYNC,
-	REF_LINE_REG,
-} from "./constants";
+import { LINE_REG, MAX_FILE_SIZE_TO_SYNC, REF_LINE_REG } from "./constants";
 import type { Settings } from "./settings";
 import { type ConvertType, type IdType, type MultiTag } from "./types";
 import type { ListTag } from "./types";
 import { create } from "./utils/common-creator";
 import { isDevelopment } from "./utils/get-product-details";
-import { getRawSize } from "./utils/selectors";
 
 const isDev = isDevelopment();
 
@@ -174,7 +169,7 @@ const GedcomTree = {
 		// printTime{ index: 4, label: "[Debug]" }, { lines: lines.join("\n") });
 		if (
 			!linesJoined.includes("1 _IS_PURGED true") &&
-			getRawSize(linesJoined) > MAX_FILE_SIZE_TO_SYNC
+			linesJoined.length > MAX_FILE_SIZE_TO_SYNC
 		) {
 			linesJoined = linesJoined
 				.replace(
@@ -320,8 +315,9 @@ const GedcomTree = {
 		if (linkingKey) {
 			links.forEach((linkingIndi, _linkingId) => {
 				const linking = linkingIndi as IndiType | undefined;
-				const linked = (linking?.get(linkingKey as MultiTag) as Common | undefined)
-					?.ref as IndiType | undefined;
+				const linked = (
+					linking?.get(linkingKey as MultiTag) as Common | undefined
+				)?.ref as IndiType | undefined;
 
 				if (!linking) {
 					return;

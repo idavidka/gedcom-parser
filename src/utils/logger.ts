@@ -1,13 +1,8 @@
-/* eslint-disable no-console */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-const debugAll = false;
-const debugError = true;
+/**
+ * Logger stub - minimal implementation
+ * Consumer apps can implement proper logging if needed
+ */
 
-export const implemented = (type: string, ...args: any[]) => {
-	debugAll && console.info(`[Implemented] ${type}`, ...args);
-};
-
-export const notImplemented = (type: string, ...args: any[]) => {
-	(debugAll || debugError) &&
-		console.error(`[Not Implemented] ${type}`, ...args);
+export const implemented = (..._args: unknown[]) => {
+	// No-op stub
 };

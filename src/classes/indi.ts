@@ -29,8 +29,9 @@ import {
 } from "../types";
 import { pathCache, relativesCache } from "../utils/cache";
 import { dateFormatter } from "../utils/date-formatter";
-import { type Place, PlaceType, getPlaces } from "../utils/get-places";
+import { getPlaces } from "../utils/get-places";
 import { implemented } from "../utils/logger";
+import { type Place, PlaceType } from "../utils/place-types";
 
 import { Common, createCommon, createProxy } from "./common";
 import type { ProxyOriginal } from "./common";
@@ -453,7 +454,11 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		return this;
 	}
 
-	getPlaces(type: PlaceType | PlaceType[] = [PlaceType.All], maxLevel = 1) {
+	/**
+	 * Get places from individual's GEDCOM data (birth, death, marriage)
+	 * Uses minimal place extraction from PLAC tags
+	 */
+	getPlaces(type: PlaceType | PlaceType[] = [PlaceType.All], maxLevel = 1): Place[] {
 		if (!this._gedcom || !this.id) {
 			return [];
 		}

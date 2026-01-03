@@ -1,122 +1,58 @@
-import debounce from "lodash/debounce";
+/**
+ * Cache stub - minimal implementation for path and relatives caching
+ * Uses in-memory cache with proper TypeScript overloads
+ */
 
-import { type Individuals } from "../classes/indis";
-import { type Path } from "../interfaces/path";
+import type { Individuals } from "../classes/indis";
+import type { Path } from "../interfaces/path";
+import type { IndiKey } from "../types";
 
-import { getInstance, type ICacheManager } from "./cache-manager";
-import { type IndiKey } from "./types";
+type CacheValue = Path | Record<string, unknown> | unknown;
+const memoryCache = new Map<string, CacheValue>();
+const relativesCaches = new Map<string, Map<string, Map<number, Individuals>>>();
 
-interface Caches {
-	pathCache: Record<`${IndiKey}|${IndiKey}`, Path> | undefined;
-	relativesOnLevelCache:
-		| Record<IndiKey, Record<number, Individuals>>
-		| undefined;
-	relativesOnDegreeCache:
-		| Record<IndiKey, Record<number, Individuals>>
-		| undefined;
+// Overload signatures for pathCache
+export function pathCache(key: string): Path | undefined;
+export function pathCache(key: string, value: Path): Path;
+export function pathCache(key: string, value?: Path): Path | undefined {
+	if (value !== undefined) {
+		memoryCache.set(`path:${key}`, value);
+		return value;
+	}
+	const cached = memoryCache.get(`path:${key}`);
+	return cached as Path | undefined;
 }
 
-type CacheStores = {
-	[x in keyof Caches]: (value: Caches[x]) => void;
-};
-
-type CacheDbs = {
-	[x in keyof Caches]: ICacheManager<Caches[x]>;
-};
-
-const caches: Caches = {
-	pathCache: {},
-	relativesOnDegreeCache: {},
-	relativesOnLevelCache: {},
-};
-
-const cacheDbs: CacheDbs = {
-	pathCache: getInstance<Caches["pathCache"]>("ftv", "Main", "path", true),
-	relativesOnDegreeCache: getInstance<Caches["relativesOnDegreeCache"]>(
-		"ftv",
-		"Main",
-		"path",
-		true
-	),
-	relativesOnLevelCache: getInstance<Caches["relativesOnLevelCache"]>(
-		"ftv",
-		"Main",
-		"path",
-		true
-	),
-};
-
-const _storeCache: CacheStores = {
-	pathCache: debounce((value) => {
-		if (value) {
-			cacheDbs.pathCache.setItem("content", value);
-		}
-	}, 50),
-	relativesOnLevelCache: debounce((value) => {
-		if (value) {
-			cacheDbs.relativesOnLevelCache.setItem("content", value);
-		}
-	}, 50),
-	relativesOnDegreeCache: debounce((value) => {
-		if (value) {
-			cacheDbs.relativesOnDegreeCache.setItem("content", value);
-		}
-	}, 50),
-};
-
-export type CacheRelatives<O extends keyof Caches = "pathCache"> = <
-	T extends keyof Omit<Caches, O>,
-	K extends keyof NonNullable<Omit<Caches, O>[T]>,
->(
-	cacheKey: T
-) => (
-	key: K,
-	subKey: number,
-	...values: [keyof NonNullable<Omit<Caches, O>[T]>[K]]
-) => NonNullable<Omit<Caches, O>[T]>[K];
-
-export const resetRelativesCache = () => {
-	caches.relativesOnDegreeCache = {};
-	caches.relativesOnLevelCache = {};
-};
-
-export const relativesCache =
-	(cacheKey: keyof Omit<Caches, "pathCache">) =>
-	<T extends Individuals | undefined>(
+/**
+ * Curried function for relatives caching
+ * Usage: relativesCache("cacheKey")(indiKey, subKey, value)
+ */
+export function relativesCache(cacheKey: string) {
+	return <T extends Individuals | undefined>(
 		key: IndiKey,
 		subKey: number,
 		value?: T
-	) => {
-		if (!caches[cacheKey]) {
-			caches[cacheKey] = {};
+	): T => {
+		// Initialize cache for this cacheKey if not exists
+		if (!relativesCaches.has(cacheKey)) {
+			relativesCaches.set(cacheKey, new Map());
 		}
-
-		if (value && caches[cacheKey]) {
-			if (!caches[cacheKey]![key]) {
-				caches[cacheKey]![key] = {};
+		
+		const cache = relativesCaches.get(cacheKey)!;
+		
+		if (value !== undefined) {
+			// Set value in cache
+			if (!cache.has(key)) {
+				cache.set(key, new Map());
 			}
-
-			caches[cacheKey]![key]![subKey] = value;
-
-			return caches[cacheKey]![key][subKey] as Exclude<T, undefined>;
+			cache.get(key)!.set(subKey, value as Individuals);
+			return value;
 		}
-
-		return caches[cacheKey]?.[key]?.[subKey] as T;
+		
+		// Get value from cache
+		const cached = cache.get(key)?.get(subKey);
+		return cached as T;
 	};
+}
 
-export const pathCache = <T extends Path | undefined>(
-	key: `${IndiKey}|${IndiKey}`,
-	value?: T
-) => {
-	if (!caches.pathCache) {
-		caches.pathCache = {};
-	}
 
-	if (value && caches.pathCache) {
-		caches.pathCache[key] = value;
-
-		return caches.pathCache[key] as Exclude<T, undefined>;
-	}
-
-	return caches.pathCache?.[key] as T;
-};
