@@ -1,4 +1,4 @@
-import type { IdType } from "../../../types/types";
+import type { IdType } from "../types/types";
 
 import { Common, createCommon, createProxy } from "./common";
 import type { ProxyOriginal } from "./common";

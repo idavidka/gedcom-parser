@@ -1,5 +1,18 @@
 // TODO have ability to pass i18n from main project
-import i18n from "../../../../src/translation/i18n";
+// Temporary mock i18n for standalone usage
+const i18n = {
+	t: (key: string, options?: Record<string, unknown>) => {
+		if (key === "dateFormat") return "yyyy.MM.dd.";
+		// Simple template replacement for patterns like "{{date}}"
+		if (options) {
+			return key.replace(/\{\{(\w+)\}\}/g, (_, param) =>
+				String(options[param] ?? `{{${param}}}`)
+			);
+		}
+		return key;
+	},
+};
+
 import { createCommonDate } from "../classes/date";
 import type { CommonDate } from "../classes/date";
 import { type FamType } from "../classes/fam";

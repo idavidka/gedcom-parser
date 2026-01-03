@@ -54,7 +54,7 @@ export class GedCom extends Common implements IGedcom {
 		}
 
 		if (typeof index === "string") {
-			return list.item(index as IdType) as T | undefined;
+			return (list as List).item(index as IdType) as T | undefined;
 		}
 
 		// const keyProbe: IdType[] = [
@@ -78,8 +78,8 @@ export class GedCom extends Common implements IGedcom {
 		// 	return itemProbe as T;
 		// }
 
-		const keys = list.keys() as IdType[];
-		return list.item(keys[index]) as T | undefined;
+		const keys = (list as List).keys() as IdType[];
+		return (list as List).item(keys[index]) as T | undefined;
 	}
 
 	getList<T extends List = List>(type: MultiTag): T | undefined {

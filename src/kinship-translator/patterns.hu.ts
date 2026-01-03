@@ -1,4 +1,4 @@
-import { type IndiType } from "../gedcom/classes/indi";
+import { type IndiType } from "../classes/indi";
 
 import { type CrossCases, type CrossCase } from "./types";
 

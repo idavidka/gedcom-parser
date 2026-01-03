@@ -107,3 +107,24 @@ export type * from "./structures/marriage-date";
 export type * from "./structures/lds-ordinance-detail";
 export type * from "./structures/lds-spouse-sealing";
 export type * from "./structures/source-repository-citation";
+
+// Utils - commonly used utilities
+export * from "./utils/cache";
+export { getRawSize } from "./utils/get-raw-size";
+export * from "./utils/date-formatter";
+export * from "./utils/name-formatter";
+export * from "./utils/place-parser";
+// Range utilities are already exported from types/types
+export {
+	inRange,
+	isIntersectedRange,
+	splitRange,
+	fromTuple,
+	parseRangeBounds,
+	isRangeContained,
+	extractSplitPoints,
+	generateSplitRanges,
+	splitOverlappingRanges,
+	findMatchingRangeForSplitRange,
+	extractSeparationYears,
+} from "./utils/range";

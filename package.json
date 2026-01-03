@@ -1,65 +1,91 @@
 {
-  "name": "@treeviz/gedcom-parser",
-  "version": "1.0.0",
-  "description": "Lightweight, pluggable GEDCOM parser for JavaScript/TypeScript with optional caching and place matching. Zero browser dependencies.",
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
-  ],
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json --watch",
-    "prepublishOnly": "npm run build"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/idavidka/gedcom-parser.git"
-  },
-  "bugs": {
-    "url": "https://github.com/idavidka/gedcom-parser/issues"
-  },
-  "homepage": "https://github.com/idavidka/gedcom-parser#readme",
-  "keywords": [
-    "gedcom",
-    "genealogy",
-    "parser",
-    "family-tree",
-    "typescript",
-    "pluggable",
-    "gedcom-parser",
-    "gedcom55",
-    "gedcom-5.5.1",
-    "family-history",
-    "ancestry",
-    "lineage",
-    "pedigree",
-    "treeviz",
-    "cache",
-    "place-matching",
-    "ssr",
-    "browser",
-    "nodejs"
-  ],
-  "author": {
-    "name": "idavidka & @treeviz contributors",
-    "url": "https://github.com/idavidka"
-  },
-  "license": "MIT",
-  "devDependencies": {
-    "@types/node": "^20.17.23",
-    "typescript": "^5.6.3"
-  },
-  "engines": {
-    "node": ">=14.0.0"
-  }
+	"name": "@treeviz/gedcom-parser",
+	"version": "1.0.0",
+	"description": "Lightweight, pluggable GEDCOM parser for JavaScript/TypeScript with optional caching and place matching. Zero browser dependencies.",
+	"type": "module",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./utils/cache": {
+			"types": "./dist/utils/cache.d.ts",
+			"import": "./dist/utils/cache.js"
+		},
+		"./utils/get-raw-size": {
+			"types": "./dist/utils/get-raw-size.d.ts",
+			"import": "./dist/utils/get-raw-size.js"
+		},
+		"./utils/parser": {
+			"types": "./dist/utils/parser.d.ts",
+			"import": "./dist/utils/parser.js"
+		},
+		"./classes/*": {
+			"types": "./dist/classes/*.d.ts",
+			"import": "./dist/classes/*.js"
+		},
+		"./utils/*": {
+			"types": "./dist/utils/*.d.ts",
+			"import": "./dist/utils/*.js"
+		},
+		"./factories/*": {
+			"types": "./dist/factories/*.d.ts",
+			"import": "./dist/factories/*.js"
+		}
+	},
+	"files": [
+		"dist",
+		"README.md",
+		"LICENSE"
+	],
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"dev": "tsc -p tsconfig.json --watch",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"prepublishOnly": "npm run build"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/idavidka/gedcom-parser.git"
+	},
+	"bugs": {
+		"url": "https://github.com/idavidka/gedcom-parser/issues"
+	},
+	"homepage": "https://github.com/idavidka/gedcom-parser#readme",
+	"keywords": [
+		"gedcom",
+		"genealogy",
+		"parser",
+		"family-tree",
+		"typescript",
+		"pluggable",
+		"gedcom-parser",
+		"gedcom55",
+		"gedcom-5.5.1",
+		"family-history",
+		"ancestry",
+		"lineage",
+		"pedigree",
+		"treeviz",
+		"cache",
+		"place-matching",
+		"ssr",
+		"browser",
+		"nodejs"
+	],
+	"author": {
+		"name": "idavidka & @treeviz contributors",
+		"url": "https://github.com/idavidka"
+	},
+	"license": "MIT",
+	"devDependencies": {
+		"@types/node": "^20.17.23",
+		"typescript": "^5.6.3"
+	},
+	"engines": {
+		"node": ">=14.0.0"
+	}
 }

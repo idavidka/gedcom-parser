@@ -14,13 +14,13 @@ import {
 	MAX_FILE_SIZE_TO_SYNC,
 	REF_LINE_REG,
 } from "../constants/constants";
-import type { Settings } from "../store/main/reducers";
-import { getRawSize } from "../store/main/selectors";
+import type { Settings } from "../types/settings";
 import { type ConvertType, type IdType, type MultiTag } from "../types/types";
 import type { ListTag } from "../types/types";
 
 import { create } from "./common-creator";
 import { isDevelopment } from "./get-product-details";
+import { getRawSize } from "./get-raw-size";
 
 const isDev = isDevelopment();
 

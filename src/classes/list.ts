@@ -15,8 +15,8 @@ import {
 	type Group,
 	type GroupIterator,
 	type GroupDefinition,
-} from "../../../types/types";
-import type { GroupMarker } from "../../../types/types";
+} from "../types/types";
+import type { GroupMarker } from "../types/types";
 import { type ConvertOptions } from "../interfaces/common";
 import { type IList } from "../interfaces/list";
 
