@@ -2,26 +2,17 @@ import debounce from "lodash/debounce";
 
 import { type Path } from "../classes/indi";
 import { type Individuals } from "../classes/indis";
+import { getCacheManagerFactory } from "../factories/cache-factory";
 import { type IndiKey } from "../types/types";
 
-// TODO REPLACE getInstance and IndexedDbManager with cache factory to have ability to pass down from main project to pass indexed-db-manager to cache.ts in gedcom-parser
-// import { getInstance } from "../utils/indexed-db-manager";
-// import type IndexedDbManager from "../utils/indexed-db-manager";
-
-// Temporary stub for ICacheManager until cache factory is implemented
+/**
+ * Cache manager interface for pluggable cache implementations.
+ * The main project can inject custom implementations (e.g., IndexedDB) via setCacheManagerFactory.
+ */
 export interface ICacheManager<T> {
 	getItem: () => Promise<T | null>;
 	setItem: (value: T) => Promise<void>;
 }
-
-const getInstance = <T>(_name: string, _store: string, _type: string, _enc: boolean): ICacheManager<T> => {
-	// In-memory fallback cache
-	let cache: T | null = null;
-	return {
-		getItem: async () => cache,
-		setItem: async (value: T) => { cache = value; }
-	};
-};
 
 interface Caches {
 	pathCache: Record<`${IndiKey}|${IndiKey}`, Path> | undefined;
@@ -38,7 +29,7 @@ type CacheStores = {
 };
 
 type CacheDbs = {
-	[x in keyof Caches]: IndexedDbManager<Caches[x]>;
+	[x in keyof Caches]: ICacheManager<Caches[x]>;
 };
 
 const caches: Caches = {
@@ -46,6 +37,8 @@ const caches: Caches = {
 	relativesOnDegreeCache: {},
 	relativesOnLevelCache: {},
 };
+
+const getInstance = getCacheManagerFactory();
 
 const cacheDbs: CacheDbs = {
 	pathCache: getInstance<Caches["pathCache"]>("ftv", "Main", "path", true),

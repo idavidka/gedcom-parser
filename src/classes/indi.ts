@@ -1,13 +1,3 @@
-// TODO have ability to pass kinship translator from main project
-// import { type Kinship } from "../../kinship-translator/kinship-translator.interface";
-// import KinshipTranslator from "../classes/kinship-translator/kinship-translator";
-
-// Temporary stub type until kinship translator is made pluggable
-export interface Kinship {
-	text: string;
-	level: number;
-}
-
 import * as Filters from "../constants/filters";
 
 import {
@@ -22,6 +12,8 @@ import {
 	type GeneratorType,
 } from "../interfaces/indi";
 import type IIndi from "../interfaces/indi";
+import KinshipTranslator from "../kinship-translator/kinship-translator";
+import { type Kinship } from "../kinship-translator/kinship-translator.interface";
 import type IIndividualStructure from "../structures/individual";
 import type { AncestryMedia } from "../types/ancestry-media";
 import {
@@ -1773,32 +1765,19 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	kinship<T extends boolean | undefined>(
 		other?: IndiKey | IndiType,
 		showMainPerson?: boolean,
-		_lang: string = "en",
+		lang: string = "en",
 		entirePath?: T,
-		_displayName: "none" | "givenname" | "surname" | "all" = "givenname"
+		displayName: "none" | "givenname" | "surname" | "all" = "givenname"
 	) {
-		// TODO: Make kinship translator pluggable
-		// const translator = new KinshipTranslator(
-		// 	this,
-		// 	other,
-		// 	lang,
-		// 	entirePath,
-		// 	showMainPerson ? displayName : undefined
-		// );
+		const translator = new KinshipTranslator(
+			this,
+			other,
+			lang,
+			entirePath,
+			showMainPerson ? displayName : undefined
+		);
 
-		// return translator.translate(showMainPerson) as
-		// 	| (T extends false | undefined
-		// 			? string
-		// 			: Array<{
-		// 					id?: IndiKey;
-		// 					gen: number;
-		// 					relative?: string;
-		// 					absolute?: string;
-		// 				}>)
-		// 	| undefined;
-		
-		// Temporary stub implementation
-		return undefined as 
+		return translator.translate(showMainPerson) as
 			| (T extends false | undefined
 					? string
 					: Array<{
