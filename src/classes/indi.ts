@@ -5,6 +5,7 @@ import {
 	DATE_ASC,
 	getMarriageAscAndChildBirth,
 } from "../constants/orders";
+import { getKinshipTranslatorClass } from "../factories/kinship-factory";
 import {
 	type MediaList,
 	type GeneratedIndiMethods,
@@ -12,8 +13,8 @@ import {
 	type GeneratorType,
 } from "../interfaces/indi";
 import type IIndi from "../interfaces/indi";
-import KinshipTranslator from "../kinship-translator/kinship-translator";
 import { type Kinship } from "../kinship-translator/kinship-translator.interface";
+import type { Language } from "../kinship-translator/types";
 import type IIndividualStructure from "../structures/individual";
 import type { AncestryMedia } from "../types/ancestry-media";
 import {
@@ -1765,11 +1766,12 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	kinship<T extends boolean | undefined>(
 		other?: IndiKey | IndiType,
 		showMainPerson?: boolean,
-		lang: string = "en",
+		lang: Language = "en",
 		entirePath?: T,
 		displayName: "none" | "givenname" | "surname" | "all" = "givenname"
 	) {
-		const translator = new KinshipTranslator(
+		const KinshipTranslatorClass = getKinshipTranslatorClass();
+		const translator = new KinshipTranslatorClass(
 			this,
 			other,
 			lang,
@@ -1777,7 +1779,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			showMainPerson ? displayName : undefined
 		);
 
-		return translator.translate(showMainPerson) as
+		return translator.translate<T>(showMainPerson) as
 			| (T extends false | undefined
 					? string
 					: Array<{

@@ -1,3 +1,5 @@
+export type Language = "en" | "hu" | "de" | "es" | "fr";
+
 export interface Cases {
 	nominativus: string;
 	dativus: string;

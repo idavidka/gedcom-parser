@@ -3,6 +3,29 @@ export * from "./utils/parser";
 export { default } from "./utils/parser";
 export { default as GedcomTree } from "./utils/parser";
 
+// Factories - Pluggable dependencies
+export {
+	setCacheManagerFactory,
+	getCacheManagerFactory,
+	resetCacheManagerFactory,
+	type CacheManagerFactory,
+} from "./factories/cache-factory";
+
+export {
+	setKinshipTranslatorClass,
+	getKinshipTranslatorClass,
+	resetKinshipTranslatorClass,
+	type KinshipTranslatorConstructor,
+} from "./factories/kinship-factory";
+
+// Cache interface for custom implementations
+export type { ICacheManager } from "./utils/cache";
+
+// Kinship translator
+export { default as KinshipTranslator } from "./kinship-translator/kinship-translator";
+export type { default as IKinshipTranslator } from "./kinship-translator/kinship-translator.interface";
+export type { Language } from "./kinship-translator/types";
+
 // Settings
 // export * from "./settings";
 
@@ -40,7 +63,6 @@ export * from "./classes/note";
 export * from "./classes/name";
 export * from "./classes/date";
 export * from "./classes/indi";
-export * from "./classes/indi-with-dimension";
 export * from "./classes/obje";
 export * from "./classes/objes";
 export * from "./classes/list";

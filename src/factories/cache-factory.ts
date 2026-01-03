@@ -30,12 +30,12 @@ let cacheFactory: CacheManagerFactory = defaultCacheFactory;
 /**
  * Set a custom cache manager factory.
  * Call this from the main project to inject IndexedDB or other cache implementations.
- * 
+ *
  * @example
  * ```typescript
  * import { setCacheManagerFactory } from '@treeviz/gedcom-parser/factories/cache-factory';
  * import { getInstance } from './utils/indexed-db-manager';
- * 
+ *
  * setCacheManagerFactory(getInstance);
  * ```
  */

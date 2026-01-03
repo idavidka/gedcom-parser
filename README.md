@@ -39,6 +39,55 @@ individuals.forEach(indi => {
 });
 ```
 
+## Pluggable Dependencies
+
+The package supports two optional pluggable dependencies that can be customized:
+
+### 1. Cache Manager (Optional)
+
+Inject your own caching implementation (IndexedDB, localStorage, Redis, etc.):
+
+```typescript
+import { setCacheManagerFactory } from '@treeviz/gedcom-parser';
+import { getInstance } from './utils/indexed-db-manager';
+
+// Inject custom cache before parsing
+setCacheManagerFactory(getInstance);
+
+const tree = new GedcomTree(gedcomContent);
+// Now uses your cache for path calculations and relatives
+```
+
+**Default:** In-memory cache (suitable for Node.js, testing, or small trees)
+
+### 2. Kinship Translator (Built-in, Overridable)
+
+The package includes a built-in kinship translator supporting EN, HU, DE, ES, FR. You can override it:
+
+```typescript
+import { setKinshipTranslatorClass, KinshipTranslator } from '@treeviz/gedcom-parser';
+
+// Option 1: Use built-in (default - no action needed)
+const person1 = tree.indi('@I1@');
+const person2 = tree.indi('@I2@');
+console.log(person1.kinship(person2, true, 'en')); // "grandmother"
+
+// Option 2: Extend or replace with custom implementation
+class MyCustomTranslator extends KinshipTranslator {
+  translate(showMainPerson) {
+    const result = super.translate(showMainPerson);
+    return result ? `Custom: ${result}` : result;
+  }
+}
+setKinshipTranslatorClass(MyCustomTranslator);
+```
+
+**Default:** Built-in multi-language translator (EN, HU, DE, ES, FR)
+
+📖 **Detailed documentation:** See [PLUGGABLE_DEPENDENCIES.md](./PLUGGABLE_DEPENDENCIES.md) for complete examples and API reference.
+
+---
+
 ### With Caching (IndexedDB Example)
 
 ```typescript

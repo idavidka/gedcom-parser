@@ -1,9 +1,9 @@
-import { type Language } from "../../translation/i18n";
 import { type Path, type IndiType } from "../classes/indi";
 import { type IndiKey } from "../types/types";
 
 import type IKinshipTranslator from "./kinship-translator.interface";
 import * as translators from "./translators";
+import type { Language } from "./types";
 
 export default class KinshipTranslator<T extends boolean | undefined> {
 	private readonly translator?: IKinshipTranslator;
