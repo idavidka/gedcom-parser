@@ -1,6 +1,15 @@
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 import fs from "fs";
 import path from "path";
-import { cwd } from "process";
+import { findPackageRoot } from "./path-utils";
+
+// Get the directory of this file (src/__tests__/test-utils/)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// The package root directory (where package.json is located)
+const packageRoot = findPackageRoot(__dirname);
 
 /**
  * Configuration for snapshot updates
@@ -32,6 +41,7 @@ const UPDATE_SNAPSHOTS = process.env.UPDATE_SNAPSHOTS === "true";
  * @param options.mocksDir - Custom mocks directory (defaults to src/__tests__/mocks)
  * @param options.format - Format the JSON content (only applies to objects)
  * @param options.spaces - Number of spaces for JSON formatting (default: 4)
+ * @param options.baseDir - Optional base directory. If not provided, uses the package root.
  */
 export function maybeUpdateSnapshot(
 	fileName: string,
@@ -41,6 +51,7 @@ export function maybeUpdateSnapshot(
 		format?: boolean;
 		spaces?: number;
 		force?: boolean;
+		baseDir?: string;
 	} = {}
 ): void {
 	if ((!UPDATE_SNAPSHOTS && !options.force) || content === undefined) {
@@ -51,9 +62,11 @@ export function maybeUpdateSnapshot(
 		mocksDir = "src/__tests__/mocks",
 		format = false,
 		spaces = 4,
+		baseDir,
 	} = options;
 
-	const filePath = path.join(cwd(), mocksDir, fileName);
+	const root = baseDir || packageRoot;
+	const filePath = path.join(root, mocksDir, fileName);
 
 	// Ensure directory exists
 	const dir = path.dirname(filePath);
@@ -91,6 +104,7 @@ export function maybeUpdateJsonSnapshot(
 		mocksDir?: string;
 		spaces?: number;
 		force?: boolean;
+		baseDir?: string;
 	} = {}
 ): void {
 	maybeUpdateSnapshot(fileName, content, { ...options, format: true });
