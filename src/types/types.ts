@@ -258,4 +258,3 @@ export type NestedGroup = { [Key: string]: NestedGroup } & {
 export type NameOrder = "first-last" | "last-first";
 export type PlaceOrder = "country-to-city" | "city-to-country";
 export type LinkedPersons = "merge" | "clone" | "skip";
-export type CurrentNameOfTown = "no" | "show" | "merge";

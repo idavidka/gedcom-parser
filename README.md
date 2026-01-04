@@ -331,8 +331,7 @@ interface Settings {
   nameOrder?: NameOrder; // 'FIRST_LAST' | 'LAST_FIRST'
   placeOrder?: PlaceOrder; // 'HIERARCHICAL' | 'REVERSE'
   dateFormatPattern?: string; // Date format pattern
-  linkedPersons?: LinkedPersons; // How to link related persons
-  currentNameOfTown?: CurrentNameOfTown; // Show current or historical name
+  linkedPersons?: LinkedPersons; // How to link related personsname
   // ... other settings
 }
 ```
