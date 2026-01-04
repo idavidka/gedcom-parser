@@ -10,6 +10,10 @@
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
 		},
+		"./utils": {
+			"types": "./dist/utils/index.d.ts",
+			"import": "./dist/utils/index.js"
+		},
 		"./utils/cache": {
 			"types": "./dist/utils/cache.d.ts",
 			"import": "./dist/utils/cache.js"
@@ -22,17 +26,33 @@
 			"types": "./dist/utils/parser.d.ts",
 			"import": "./dist/utils/parser.js"
 		},
+		"./classes": {
+			"types": "./dist/classes/index.d.ts",
+			"import": "./dist/classes/index.js"
+		},
 		"./classes/*": {
 			"types": "./dist/classes/*.d.ts",
 			"import": "./dist/classes/*.js"
 		},
-		"./utils/*": {
-			"types": "./dist/utils/*.d.ts",
-			"import": "./dist/utils/*.js"
+		"./factories": {
+			"types": "./dist/factories/index.d.ts",
+			"import": "./dist/factories/index.js"
 		},
 		"./factories/*": {
 			"types": "./dist/factories/*.d.ts",
 			"import": "./dist/factories/*.js"
+		},
+		"./constants": {
+			"types": "./dist/constants/index.d.ts",
+			"import": "./dist/constants/index.js"
+		},
+		"./constants/*": {
+			"types": "./dist/constants/*.d.ts",
+			"import": "./dist/constants/*.js"
+		},
+		"./utils/*": {
+			"types": "./dist/utils/*.d.ts",
+			"import": "./dist/utils/*.js"
 		}
 	},
 	"files": [
