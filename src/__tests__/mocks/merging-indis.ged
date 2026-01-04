@@ -1,0 +1,24 @@
+0 @indi1@ INDI
+1 NAME P /S/
+2 DISPLAY S P
+2 GIVN P
+2 SURN S
+1 BIRT
+2 DATE 1 Jan 1900
+2 PLAC New York
+1 FAMS @fam2@
+0 @indi2@ INDI
+1 SEX M
+1 DEAT Y
+2 DATE 1 Jan 2000
+2 CAUSE Other
+3 DESCRIPTION death
+2 PLAC New York
+1 ISDEAD Y
+1 FAMC @fam3@
+1 FAMS @fam1@
+1 FAMS @fam2@
+0 @fam1@ FAM
+0 @fam2@ FAM
+0 @fam3@ FAM
+1 CHIL @indi1@
