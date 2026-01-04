@@ -17,6 +17,47 @@ const LONG_NOTES = {
 	"Aft.": "After",
 };
 
+const NOTE_MARKER = "####";
+/**
+ * Format a date based on available components (DAY, MONTH, YEAR, NOTE)
+ */
+const formatDateWithComponents = (
+	date: Date,
+	hasDay: boolean,
+	hasMonth: boolean,
+	hasYear: boolean,
+	noteValue: string | undefined,
+	baseFormat = "dd MMM yyyy"
+): string => {
+	const hasNote = baseFormat.includes("NOTE");
+	let validDateFormat = baseFormat.replace("NOTE", NOTE_MARKER);
+
+	if (!hasDay) {
+		validDateFormat = validDateFormat.replace(/d+/g, "");
+	}
+
+	if (!hasMonth) {
+		validDateFormat = validDateFormat.replace(/[.\-\s/]*M+/g, "");
+	}
+
+	if (!hasYear) {
+		validDateFormat = validDateFormat.replace(/y+[.\-\s/]*/g, "");
+	}
+
+	validDateFormat = validDateFormat
+		.replace(/([.\-\s/])\1+/g, "$1")
+		.replace(/^[.\-\s/]+|[.\-\s/]+$/g, "");
+
+	const formattedDate = format(date, validDateFormat, {
+		locale: getDateFnsLocale(),
+	});
+
+	// Add NOTE prefix if it exists
+	return noteValue && hasNote
+		? formattedDate.replace(NOTE_MARKER, noteValue).trim()
+		: formattedDate.replace(NOTE_MARKER, "").trim();
+};
+
 export class CommonDate extends Common<string> {
 	private _date?: Date;
 
@@ -117,7 +158,13 @@ export class CommonDate extends Common<string> {
 			return this._value;
 		}
 
-		return format(this._date, "dd MMM yyyy");
+		return formatDateWithComponents(
+			this._date,
+			!!this.DAY?.value,
+			!!this.MONTH?.value,
+			!!this.YEAR?.value,
+			this.NOTE?.value
+		);
 	}
 
 	get rawValue() {
@@ -168,25 +215,18 @@ export class CommonDate extends Common<string> {
 			return this._value;
 		}
 
-		let validDateFormat = dateFormat;
-		if (!this.DAY?.value) {
-			validDateFormat = validDateFormat.replace(/d+/g, "");
-		}
+		return formatDateWithComponents(
+			this._date,
+			!!this.DAY?.value,
+			!!this.MONTH?.value,
+			!!this.YEAR?.value,
+			this.NOTE?.value,
+			dateFormat
+		);
+	}
 
-		if (!this.MONTH?.value) {
-			validDateFormat = validDateFormat.replace(/[.\-\s/]*M+/g, "");
-		}
-
-		if (!this.YEAR?.value) {
-			validDateFormat = validDateFormat.replace(/y+[.\-\s/]*/g, "");
-		}
-		validDateFormat = validDateFormat
-			.replace(/([.\-\s/])\1+/g, "$1")
-			.replace(/^[.\-\s/]+|[.\-\s/]+$/g, "");
-
-		return format(this._date, validDateFormat, {
-			locale: getDateFnsLocale(),
-		});
+	exportValue() {
+		return this.toValue("NOTE dd MMM yyyy");
 	}
 
 	inRange(range: Range, trueIfNoYear = false) {
