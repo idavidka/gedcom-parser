@@ -85,6 +85,10 @@
 		"./utils/*": {
 			"types": "./dist/utils/*.d.ts",
 			"import": "./dist/utils/*.js"
+		},
+		"./__tests__/test-utils": {
+			"types": "./src/__tests__/test-utils/index.ts",
+			"import": "./src/__tests__/test-utils/index.ts"
 		}
 	},
 	"files": [
