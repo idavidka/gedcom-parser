@@ -150,7 +150,10 @@ describe("Date Class Functionality", () => {
 					const date = birt.get("DATE");
 					if (date) {
 						const dateStr = date.toValue();
-						if (dateStr.includes("Abt") || dateStr.includes("ABT")) {
+						if (
+							dateStr.includes("Abt") ||
+							dateStr.includes("ABT")
+						) {
 							foundApproximate = true;
 						}
 					}
@@ -180,12 +183,15 @@ describe("Date Class Functionality", () => {
 		it("should compare dates by rawValue", () => {
 			const indis = testGedcom.indis();
 			const datesWithRawValue: Date[] = [];
-			
+
 			indis.forEach((indi) => {
 				const birt = indi.get("BIRT");
 				if (birt) {
 					const date = birt.get("DATE");
-					if (date instanceof CommonDate && date.rawValue !== undefined) {
+					if (
+						date instanceof CommonDate &&
+						date.rawValue !== undefined
+					) {
 						datesWithRawValue.push(date.rawValue);
 					}
 				}
@@ -193,8 +199,12 @@ describe("Date Class Functionality", () => {
 
 			if (datesWithRawValue.length >= 2) {
 				// Dates should be comparable
-				const sorted = [...datesWithRawValue].sort((a, b) => a.getTime() - b.getTime());
-				expect(sorted[0].getTime()).toBeLessThanOrEqual(sorted[sorted.length - 1].getTime());
+				const sorted = [...datesWithRawValue].sort(
+					(a, b) => a.getTime() - b.getTime()
+				);
+				expect(sorted[0].getTime()).toBeLessThanOrEqual(
+					sorted[sorted.length - 1].getTime()
+				);
 			}
 		});
 	});
