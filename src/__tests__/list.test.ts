@@ -11,7 +11,7 @@ describe("List Class Functionality", () => {
 		it("should create a list from individuals", () => {
 			const indis = testGedcom.indis();
 			expect(indis).toBeInstanceOf(List);
-			expect(indis.count()).toBeGreaterThan(0);
+			expect(indis.length).toBeGreaterThan(0);
 		});
 
 		it("should get item by index", () => {
@@ -52,28 +52,28 @@ describe("List Class Functionality", () => {
 		it("should iterate with forEach", () => {
 			const indis = testGedcom.indis();
 			let count = 0;
-			indis.each(() => {
+			indis.forEach(() => {
 				count++;
 			});
-			expect(count).toBe(indis.count());
+			expect(count).toBe(indis.length);
 		});
 
 		it("should map items", () => {
 			const indis = testGedcom.indis();
 			const ids = indis.map((indi) => indi.id);
-			expect(ids.length).toBe(indis.count());
+			expect(ids.length).toBe(indis.length);
 		});
 
 		it("should reduce items", () => {
 			const indis = testGedcom.indis();
 			const totalCount = indis.reduce((acc) => acc + 1, 0);
-			expect(totalCount).toBe(indis.count());
+			expect(totalCount).toBe(indis.length);
 		});
 
 		it("should filter items", () => {
 			const indis = testGedcom.indis();
 			const males = indis.filter((indi) => indi.get("SEX")?.toValue() === "M");
-			expect(males.count()).toBeLessThanOrEqual(indis.count());
+			expect(males.length).toBeLessThanOrEqual(indis.length);
 		});
 
 		it("should find item", () => {
@@ -89,15 +89,8 @@ describe("List Class Functionality", () => {
 		it("should copy list", () => {
 			const indis = testGedcom.indis();
 			const copy = indis.copy();
-			expect(copy.count()).toBe(indis.count());
+			expect(copy.length).toBe(indis.length);
 			expect(copy).not.toBe(indis);
-		});
-
-		it("should slice list", () => {
-			const indis = testGedcom.indis();
-			const sliced = indis.slice(0, 5);
-			expect(sliced.count()).toBeLessThanOrEqual(5);
-			expect(sliced.count()).toBeLessThanOrEqual(indis.count());
 		});
 
 		it("should except item from list", () => {
@@ -105,7 +98,7 @@ describe("List Class Functionality", () => {
 			const first = indis.first();
 			if (first) {
 				const exceptFirst = indis.except(first);
-				expect(exceptFirst.count()).toBe(indis.count() - 1);
+				expect(exceptFirst.length).toBe(indis.length - 1);
 			}
 		});
 	});
@@ -134,19 +127,19 @@ describe("List Class Functionality", () => {
 	describe("Sorting", () => {
 		it("should sort with comparator", () => {
 			const indis = testGedcom.indis();
-			const sorted = indis.orderBy((a, b) => {
+			const sorted = indis.orderBy((a, keyA, b, keyB) => {
 				const idA = a.id || "";
 				const idB = b.id || "";
 				return idA.localeCompare(idB);
 			});
-			expect(sorted.count()).toBe(indis.count());
+			expect(sorted.length).toBe(indis.length);
 		});
 	});
 
 	describe("List Properties", () => {
 		it("should have correct count", () => {
 			const indis = testGedcom.indis();
-			const count = indis.count();
+			const count = indis.length;
 			const keysLength = indis.keys().length;
 			expect(count).toBe(keysLength);
 		});

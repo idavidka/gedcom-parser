@@ -11,7 +11,7 @@ describe("Date Class Functionality", () => {
 		it("should parse birth dates", () => {
 			const indis = testGedcom.indis();
 			let foundDate = false;
-			indis.each((indi) => {
+			indis.forEach((indi) => {
 				const birt = indi.get("BIRT");
 				if (birt) {
 					const date = birt.get("DATE");
@@ -28,7 +28,7 @@ describe("Date Class Functionality", () => {
 		it("should parse death dates", () => {
 			const indis = testGedcom.indis();
 			let foundDate = false;
-			indis.each((indi) => {
+			indis.forEach((indi) => {
 				const deat = indi.get("DEAT");
 				if (deat) {
 					const date = deat.get("DATE");
@@ -48,7 +48,7 @@ describe("Date Class Functionality", () => {
 		it("should parse marriage dates", () => {
 			const fams = testGedcom.fams();
 			let foundDate = false;
-			fams.each((fam) => {
+			fams.forEach((fam) => {
 				const marr = fam.get("MARR");
 				if (marr) {
 					const date = marr.get("DATE");
@@ -69,7 +69,7 @@ describe("Date Class Functionality", () => {
 	describe("Date Components", () => {
 		it("should extract year from dates", () => {
 			const indis = testGedcom.indis();
-			indis.each((indi) => {
+			indis.forEach((indi) => {
 				const birt = indi.get("BIRT");
 				if (birt) {
 					const date = birt.get("DATE");
@@ -88,7 +88,7 @@ describe("Date Class Functionality", () => {
 
 		it("should extract month from dates", () => {
 			const indis = testGedcom.indis();
-			indis.each((indi) => {
+			indis.forEach((indi) => {
 				const birt = indi.get("BIRT");
 				if (birt) {
 					const date = birt.get("DATE");
@@ -106,7 +106,7 @@ describe("Date Class Functionality", () => {
 
 		it("should extract day from dates", () => {
 			const indis = testGedcom.indis();
-			indis.each((indi) => {
+			indis.forEach((indi) => {
 				const birt = indi.get("BIRT");
 				if (birt) {
 					const date = birt.get("DATE");
@@ -128,7 +128,7 @@ describe("Date Class Functionality", () => {
 	describe("Date Formatting", () => {
 		it("should convert date to string", () => {
 			const indis = testGedcom.indis();
-			indis.each((indi) => {
+			indis.forEach((indi) => {
 				const birt = indi.get("BIRT");
 				if (birt) {
 					const date = birt.get("DATE");
@@ -144,7 +144,7 @@ describe("Date Class Functionality", () => {
 		it("should handle approximate dates", () => {
 			const indis = testGedcom.indis();
 			let foundApproximate = false;
-			indis.each((indi) => {
+			indis.forEach((indi) => {
 				const birt = indi.get("BIRT");
 				if (birt) {
 					const date = birt.get("DATE");
@@ -164,7 +164,7 @@ describe("Date Class Functionality", () => {
 
 		it("should have rawValue property", () => {
 			const indis = testGedcom.indis();
-			indis.each((indi) => {
+			indis.forEach((indi) => {
 				const birt = indi.get("BIRT");
 				if (birt) {
 					const date = birt.get("DATE");
@@ -181,7 +181,7 @@ describe("Date Class Functionality", () => {
 			const indis = testGedcom.indis();
 			const datesWithRawValue: Date[] = [];
 			
-			indis.each((indi) => {
+			indis.forEach((indi) => {
 				const birt = indi.get("BIRT");
 				if (birt) {
 					const date = birt.get("DATE");
@@ -202,7 +202,7 @@ describe("Date Class Functionality", () => {
 	describe("Date Validation", () => {
 		it("should handle invalid dates gracefully", () => {
 			const indis = testGedcom.indis();
-			indis.each((indi) => {
+			indis.forEach((indi) => {
 				const birt = indi.get("BIRT");
 				if (birt) {
 					const date = birt.get("DATE");

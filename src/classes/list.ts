@@ -128,7 +128,7 @@ export class List<
 	}
 
 	last() {
-		return this.index(this.keys().length);
+		return this.index(this.keys().length - 1);
 	}
 
 	index(index: number) {

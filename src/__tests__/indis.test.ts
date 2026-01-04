@@ -14,15 +14,15 @@ describe("Individuals Collection Class", () => {
 		});
 
 		it("should have multiple individuals", () => {
-			expect(indis.count()).toBeGreaterThan(0);
+			expect(indis.length).toBeGreaterThan(0);
 			expect(indis.keys().length).toBeGreaterThan(0);
 		});
 
 		it("should filter individuals", () => {
 			const males = indis.filter((indi) => indi.get("SEX")?.toValue() === "M");
 			expect(males).toBeInstanceOf(Individuals);
-			expect(males.count()).toBeGreaterThan(0);
-			expect(males.count()).toBeLessThan(indis.count());
+			expect(males.length).toBeGreaterThan(0);
+			expect(males.length).toBeLessThan(indis.length);
 		});
 
 		it("should find an individual", () => {
@@ -34,7 +34,7 @@ describe("Individuals Collection Class", () => {
 		it("should copy individuals collection", () => {
 			const copy = indis.copy();
 			expect(copy).toBeInstanceOf(Individuals);
-			expect(copy.count()).toBe(indis.count());
+			expect(copy.length).toBe(indis.length);
 			expect(copy).not.toBe(indis);
 		});
 
@@ -43,51 +43,55 @@ describe("Individuals Collection Class", () => {
 			if (firstIndi) {
 				const exceptOne = indis.except(firstIndi);
 				expect(exceptOne).toBeInstanceOf(Individuals);
-				expect(exceptOne.count()).toBe(indis.count() - 1);
+				expect(exceptOne.length).toBe(indis.length - 1);
 			}
 		});
 	});
 
 	describe("Date-based Operations", () => {
-		it("should get first birth event", () => {
+		it("should get first birth individual", () => {
 			const firstBirth = indis.getFirstBirth();
 			if (firstBirth) {
-				expect(firstBirth).toHaveProperty("DATE");
+				expect(firstBirth.get("BIRT")).toBeDefined();
 			}
 		});
 
-		it("should get last birth event", () => {
+		it("should get last birth individual", () => {
 			const lastBirth = indis.getLastBirth();
 			if (lastBirth) {
-				expect(lastBirth).toHaveProperty("DATE");
+				expect(lastBirth.get("BIRT")).toBeDefined();
 			}
 		});
 
-		it("should get first death event", () => {
+		it("should get first death individual", () => {
 			const firstDeath = indis.getFirstDeath();
 			if (firstDeath) {
-				expect(firstDeath).toHaveProperty("DATE");
+				expect(firstDeath.get("DEAT")).toBeDefined();
 			}
 		});
 
-		it("should get last death event", () => {
+		it("should get last death individual", () => {
 			const lastDeath = indis.getLastDeath();
 			if (lastDeath) {
-				expect(lastDeath).toHaveProperty("DATE");
+				expect(lastDeath.get("DEAT")).toBeDefined();
 			}
 		});
 
-		it("should get first event (birth or death)", () => {
+		it("should get first event individual (birth or death)", () => {
 			const firstEvent = indis.getFirstEvent();
 			if (firstEvent) {
-				expect(firstEvent).toHaveProperty("DATE");
+				const hasBirth = firstEvent.get("BIRT");
+				const hasDeath = firstEvent.get("DEAT");
+				expect(hasBirth || hasDeath).toBeTruthy();
 			}
 		});
 
-		it("should get last event (birth or death)", () => {
+		it("should get last event individual (birth or death)", () => {
 			const lastEvent = indis.getLastEvent();
 			if (lastEvent) {
-				expect(lastEvent).toHaveProperty("DATE");
+				const hasBirth = lastEvent.get("BIRT");
+				const hasDeath = lastEvent.get("DEAT");
+				expect(hasBirth || hasDeath).toBeTruthy();
 			}
 		});
 	});
@@ -96,35 +100,35 @@ describe("Individuals Collection Class", () => {
 		it("should order by birth ascending", () => {
 			const ordered = indis.orderBy("BIRTH_ASC");
 			expect(ordered).toBeInstanceOf(Individuals);
-			expect(ordered.count()).toBe(indis.count());
+			expect(ordered.length).toBe(indis.length);
 		});
 
 		it("should order by birth descending", () => {
 			const ordered = indis.orderBy("BIRTH_DESC");
 			expect(ordered).toBeInstanceOf(Individuals);
-			expect(ordered.count()).toBe(indis.count());
+			expect(ordered.length).toBe(indis.length);
 		});
 
 		it("should order by death ascending", () => {
 			const ordered = indis.orderBy("DEATH_ASC");
 			expect(ordered).toBeInstanceOf(Individuals);
-			expect(ordered.count()).toBe(indis.count());
+			expect(ordered.length).toBe(indis.length);
 		});
 
 		it("should order by death descending", () => {
 			const ordered = indis.orderBy("DEATH_DESC");
 			expect(ordered).toBeInstanceOf(Individuals);
-			expect(ordered.count()).toBe(indis.count());
+			expect(ordered.length).toBe(indis.length);
 		});
 
 		it("should order with custom function", () => {
-			const ordered = indis.orderBy((a, b) => {
+			const ordered = indis.orderBy((a, keyA, b, keyB) => {
 				const nameA = a.get("NAME")?.toValue() || "";
 				const nameB = b.get("NAME")?.toValue() || "";
 				return nameA.localeCompare(nameB);
 			});
 			expect(ordered).toBeInstanceOf(Individuals);
-			expect(ordered.count()).toBe(indis.count());
+			expect(ordered.length).toBe(indis.length);
 		});
 	});
 
@@ -170,13 +174,13 @@ describe("Individuals Collection Class", () => {
 			const attached = indis.unattachedFilter(false);
 			expect(attached).toBeInstanceOf(Individuals);
 			// Attached count should be <= total count
-			expect(attached.count()).toBeLessThanOrEqual(indis.count());
+			expect(attached.length).toBeLessThanOrEqual(indis.length);
 		});
 
 		it("should not filter when useUnattached is true", () => {
 			const all = indis.unattachedFilter(true);
 			expect(all).toBeInstanceOf(Individuals);
-			expect(all.count()).toBe(indis.count());
+			expect(all.length).toBe(indis.length);
 		});
 	});
 
@@ -191,17 +195,17 @@ describe("Individuals Collection Class", () => {
 			expect(last).toBeDefined();
 		});
 
-		it("should iterate with each", () => {
+		it("should iterate with forEach", () => {
 			let count = 0;
-			indis.each(() => {
+			indis.forEach(() => {
 				count++;
 			});
-			expect(count).toBe(indis.count());
+			expect(count).toBe(indis.length);
 		});
 
 		it("should map individuals", () => {
 			const names = indis.map((indi) => indi.get("NAME")?.toValue() || "");
-			expect(names.length).toBe(indis.count());
+			expect(names.length).toBe(indis.length);
 		});
 
 		it("should reduce individuals", () => {
