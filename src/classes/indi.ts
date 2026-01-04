@@ -1779,7 +1779,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			showMainPerson ? displayName : undefined
 		);
 
-		return translator.translate<T>(showMainPerson) as
+		return translator.translate<T>(!!showMainPerson) as
 			| (T extends false | undefined
 					? string
 					: Array<{
