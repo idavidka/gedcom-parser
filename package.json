@@ -50,6 +50,38 @@
 			"types": "./dist/constants/*.d.ts",
 			"import": "./dist/constants/*.js"
 		},
+		"./structures": {
+			"types": "./dist/structures/index.d.ts",
+			"import": "./dist/structures/index.js"
+		},
+		"./structures/*": {
+			"types": "./dist/structures/*.d.ts",
+			"import": "./dist/structures/*.js"
+		},
+		"./kinship-translator": {
+			"types": "./dist/kinship-translator/index.d.ts",
+			"import": "./dist/kinship-translator/index.js"
+		},
+		"./kinship-translator/*": {
+			"types": "./dist/kinship-translator/*.d.ts",
+			"import": "./dist/kinship-translator/*.js"
+		},
+		"./interfaces": {
+			"types": "./dist/interfaces/index.d.ts",
+			"import": "./dist/interfaces/index.js"
+		},
+		"./interfaces/*": {
+			"types": "./dist/interfaces/*.d.ts",
+			"import": "./dist/interfaces/*.js"
+		},
+		"./types": {
+			"types": "./dist/types/index.d.ts",
+			"import": "./dist/types/index.js"
+		},
+		"./types/*": {
+			"types": "./dist/types/*.d.ts",
+			"import": "./dist/types/*.js"
+		},
 		"./utils/*": {
 			"types": "./dist/utils/*.d.ts",
 			"import": "./dist/utils/*.js"

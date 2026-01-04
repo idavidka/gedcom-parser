@@ -6,42 +6,42 @@ import {
 	getMarriageAscAndChildBirth,
 } from "../constants/orders";
 import { getKinshipTranslatorClass } from "../factories/kinship-factory";
-import {
-	type MediaList,
-	type GeneratedIndiMethods,
-	type GeneratorKey,
-	type GeneratorType,
+import type {
+	MediaList,
+	GeneratedIndiMethods,
+	GeneratorKey,
+	GeneratorType,
 } from "../interfaces/indi";
 import type IIndi from "../interfaces/indi";
-import { type Kinship } from "../kinship-translator/kinship-translator.interface";
+import type { Kinship } from "../kinship-translator/kinship-translator.interface";
 import type { Language } from "../kinship-translator/types";
 import type IIndividualStructure from "../structures/individual";
 import type { AncestryMedia } from "../types/ancestry-media";
-import {
-	type IndiKey,
-	type FamKey,
-	type Filter,
-	type RequiredFilter,
-	type ObjeKey,
-	type MultiTag,
-	RelationType,
-	type IdType,
-	PartnerType,
+import { RelationType, PartnerType } from "../types/types";
+import type {
+	IndiKey,
+	FamKey,
+	Filter,
+	RequiredFilter,
+	ObjeKey,
+	MultiTag,
+	IdType,
 } from "../types/types";
 import { pathCache, relativesCache } from "../utils/cache";
 import { dateFormatter } from "../utils/date-formatter";
-import { type Place, PlaceType, getPlaces } from "../utils/get-places";
+import { PlaceType, getPlaces } from "../utils/get-places";
+import type { Place } from "../utils/get-places";
 import { implemented } from "../utils/logger";
 
 import { Common, createCommon, createProxy } from "./common";
 import type { ProxyOriginal } from "./common";
 import type { FamType } from "./fam";
 import { Families } from "./fams";
-import { type GedComType } from "./gedcom";
+import type { GedComType } from "./gedcom";
 import { Individuals } from "./indis";
 import { List } from "./list";
 import { CommonName, createCommonName } from "./name";
-import { type ObjeType } from "./obje";
+import type { ObjeType } from "./obje";
 
 export enum Existed {
 	SPOUSE = "spouse",

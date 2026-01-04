@@ -1,0 +1,25 @@
+// Export all structure types
+export { default as IAddress } from "./address";
+export { default as IAssociation } from "./association";
+export { default as IChangeDate } from "./change-date";
+export { default as ICreationDate } from "./creation-date";
+export { default as IDate } from "./date";
+export { default as IEventDetail } from "./event-detail-structure";
+export { default as IFamily } from "./family";
+export { default as IGedcomStructure } from "./gedcom";
+export { default as IIndividualEventDetail } from "./individual-event-detail-structure";
+export { default as IIndividualEvent } from "./individual-event-structure";
+export { default as IIndividual } from "./individual";
+export { default as ILdsOrdinanceDetail } from "./lds-ordinance-detail";
+export { default as ILdsSpouseSealing } from "./lds-spouse-sealing";
+export { default as IMarriageDate } from "./marriage-date";
+export { default as IMultimediaLink } from "./multimedia-link";
+export { default as INonEvent } from "./non-event";
+export { default as INote } from "./note";
+export { default as IPersonalNamePieces } from "./personal-name-pieces";
+export { default as IPersonalName } from "./personal-name";
+export { default as IPlace } from "./place";
+export { default as IRepository } from "./repository";
+export { default as ISourceCitation } from "./source-citation";
+export { default as ISourceRepositoryCitation } from "./source-repository-citation";
+export { default as ISource } from "./source";
