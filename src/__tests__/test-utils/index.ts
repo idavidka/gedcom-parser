@@ -4,3 +4,4 @@ export {
 	maybeUpdateJsonSnapshot,
 	isSnapshotUpdateEnabled,
 } from "./snapshot-helpers";
+export { createPersonIdGetter } from "./person-helpers";
