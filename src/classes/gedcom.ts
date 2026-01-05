@@ -516,6 +516,124 @@ export class GedCom extends Common implements IGedcom {
 
 		return allPlaces;
 	}
+
+	/**
+	 * Generate statistics about the GEDCOM file
+	 * @returns Object containing various statistics about the GEDCOM data
+	 */
+	stats() {
+		const individuals = this.indis();
+		const families = this.fams();
+
+		// Calculate statistics
+		const totalIndividuals = individuals?.length || 0;
+		const totalFamilies = families?.length || 0;
+
+		// Count by sex
+		let males = 0;
+		let females = 0;
+		let unknownSex = 0;
+		
+		individuals?.forEach(indi => {
+			const sex = indi.SEX?.value;
+			if (sex === 'M') males++;
+			else if (sex === 'F') females++;
+			else unknownSex++;
+		});
+
+		// Most common surnames
+		const surnames = new Map<string, number>();
+		individuals?.forEach(indi => {
+			const name = indi.NAME?.toValue();
+			if (name) {
+				const match = name.match(/\/(.+?)\//);
+				if (match) {
+					const surname = match[1];
+					surnames.set(surname, (surnames.get(surname) || 0) + 1);
+				}
+			}
+		});
+
+		const topSurnames = Array.from(surnames.entries())
+			.sort((a, b) => b[1] - a[1])
+			.slice(0, 10)
+			.map(([surname, count]) => ({ surname, count }));
+
+		// Most common birth places
+		const birthPlaces = new Map<string, number>();
+		individuals?.forEach(indi => {
+			const place = indi.BIRT?.PLAC?.value;
+			if (place) {
+				birthPlaces.set(place, (birthPlaces.get(place) || 0) + 1);
+			}
+		});
+
+		const topBirthPlaces = Array.from(birthPlaces.entries())
+			.sort((a, b) => b[1] - a[1])
+			.slice(0, 10)
+			.map(([place, count]) => ({ place, count }));
+
+		// Date range
+		const years: number[] = [];
+		individuals?.forEach(indi => {
+			const birthDate = indi.BIRT?.DATE?.toValue();
+			if (birthDate) {
+				const match = birthDate.match(/\d{4}/);
+				if (match) {
+					years.push(parseInt(match[0], 10));
+				}
+			}
+			const deathDate = indi.DEAT?.DATE?.toValue();
+			if (deathDate) {
+				const match = deathDate.match(/\d{4}/);
+				if (match) {
+					years.push(parseInt(match[0], 10));
+				}
+			}
+		});
+
+		const minYear = years.length > 0 ? Math.min(...years) : null;
+		const maxYear = years.length > 0 ? Math.max(...years) : null;
+
+		// Average lifespan
+		const lifespans: number[] = [];
+		individuals?.forEach(indi => {
+			const birthDate = indi.BIRT?.DATE?.toValue();
+			const deathDate = indi.DEAT?.DATE?.toValue();
+			if (birthDate && deathDate) {
+				const birthMatch = birthDate.match(/\d{4}/);
+				const deathMatch = deathDate.match(/\d{4}/);
+				if (birthMatch && deathMatch) {
+					const birthYear = parseInt(birthMatch[0], 10);
+					const deathYear = parseInt(deathMatch[0], 10);
+					if (deathYear > birthYear) {
+						lifespans.push(deathYear - birthYear);
+					}
+				}
+			}
+		});
+
+		const avgLifespan = lifespans.length > 0
+			? lifespans.reduce((sum, age) => sum + age, 0) / lifespans.length
+			: null;
+
+		return {
+			totalIndividuals,
+			totalFamilies,
+			byGender: {
+				males,
+				females,
+				unknown: unknownSex,
+			},
+			dateRange: {
+				earliest: minYear,
+				latest: maxYear,
+			},
+			averageLifespan: avgLifespan ? Math.round(avgLifespan * 10) / 10 : null,
+			topSurnames,
+			topBirthPlaces,
+		};
+	}
 }
 
 export type GedComType = GedCom & IGedComStructure;
