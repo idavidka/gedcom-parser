@@ -1,8 +1,8 @@
-import differenceBy from "lodash/differenceBy";
-import get from "lodash/get";
-import intersectionBy from "lodash/intersectionBy";
-import set from "lodash/set";
-import unset from "lodash/unset";
+import differenceBy from "lodash-es/differenceBy";
+import get from "lodash-es/get";
+import intersectionBy from "lodash-es/intersectionBy";
+import set from "lodash-es/set";
+import unset from "lodash-es/unset";
 
 import {
 	type OrderDefinition,

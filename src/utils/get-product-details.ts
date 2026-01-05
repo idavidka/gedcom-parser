@@ -1,4 +1,4 @@
-import PKG from "../../package.json";
+import PKG from "../../package.json" with { type: "json" };
 
 export const isDevelopment = () => {
 	return !process.env.NODE_ENV || process.env.NODE_ENV === "development";
