@@ -1,6 +1,7 @@
 import { type ConvertOptions } from "../interfaces/common";
 import type IGedcom from "../interfaces/gedcom";
 import type IGedComStructure from "../structures/gedcom";
+import type IEventDetailStructure from "../structures/event-detail-structure";
 import {
 	type IdType,
 	type IndiKey,
@@ -519,31 +520,56 @@ export class GedCom extends Common implements IGedcom {
 
 	/**
 	 * Generate statistics about the GEDCOM file
+	 * @param individuals Optional list of individuals to calculate statistics for. If not provided, all individuals from the GEDCOM will be used.
 	 * @returns Object containing various statistics about the GEDCOM data
 	 */
-	stats() {
-		const individuals = this.indis();
-		const families = this.fams();
+	stats(individuals?: Individuals) {
+		const indis = individuals ?? this.indis();
 
-		// Calculate statistics
-		const totalIndividuals = individuals?.length || 0;
+		// Build families list based on whether individuals filter is provided
+		let families: Families | undefined;
+
+		if (individuals) {
+			// If individuals filter is provided, filter families by references
+			const familyIds = new Set<FamKey>();
+			indis?.forEach((indi) => {
+				// Add spouse families
+				indi.FAMS?.toList()?.forEach((famRef) => {
+					const famId = famRef.value as FamKey | undefined;
+					if (famId) familyIds.add(famId);
+				});
+				// Add parent families
+				indi.FAMC?.toList()?.forEach((famRef) => {
+					const famId = famRef.value as FamKey | undefined;
+					if (famId) familyIds.add(famId);
+				});
+			});
+
+			families = this.fams()?.filter((fam) =>
+				fam.id ? familyIds.has(fam.id) : false
+			);
+		} else {
+			// No filter provided, use all families directly
+			families = this.fams();
+		} // Calculate statistics
+		const totalIndividuals = indis?.length || 0;
 		const totalFamilies = families?.length || 0;
 
 		// Count by sex
 		let males = 0;
 		let females = 0;
 		let unknownSex = 0;
-		
-		individuals?.forEach(indi => {
+
+		indis?.forEach((indi) => {
 			const sex = indi.SEX?.value;
-			if (sex === 'M') males++;
-			else if (sex === 'F') females++;
+			if (sex === "M") males++;
+			else if (sex === "F") females++;
 			else unknownSex++;
 		});
 
 		// Most common surnames
 		const surnames = new Map<string, number>();
-		individuals?.forEach(indi => {
+		indis?.forEach((indi) => {
 			const name = indi.NAME?.toValue();
 			if (name) {
 				const match = name.match(/\/(.+?)\//);
@@ -561,7 +587,7 @@ export class GedCom extends Common implements IGedcom {
 
 		// Most common birth places
 		const birthPlaces = new Map<string, number>();
-		individuals?.forEach(indi => {
+		indis?.forEach((indi) => {
 			const place = indi.BIRT?.PLAC?.value;
 			if (place) {
 				birthPlaces.set(place, (birthPlaces.get(place) || 0) + 1);
@@ -575,7 +601,7 @@ export class GedCom extends Common implements IGedcom {
 
 		// Date range
 		const years: number[] = [];
-		individuals?.forEach(indi => {
+		indis?.forEach((indi) => {
 			const birthDate = indi.BIRT?.DATE?.toValue();
 			if (birthDate) {
 				const match = birthDate.match(/\d{4}/);
@@ -597,7 +623,7 @@ export class GedCom extends Common implements IGedcom {
 
 		// Average lifespan
 		const lifespans: number[] = [];
-		individuals?.forEach(indi => {
+		indis?.forEach((indi) => {
 			const birthDate = indi.BIRT?.DATE?.toValue();
 			const deathDate = indi.DEAT?.DATE?.toValue();
 			if (birthDate && deathDate) {
@@ -613,9 +639,68 @@ export class GedCom extends Common implements IGedcom {
 			}
 		});
 
-		const avgLifespan = lifespans.length > 0
-			? lifespans.reduce((sum, age) => sum + age, 0) / lifespans.length
-			: null;
+		const avgLifespan =
+			lifespans.length > 0
+				? lifespans.reduce((sum, age) => sum + age, 0) /
+					lifespans.length
+				: null;
+
+		// First and last person events with type information
+		const firstPerson = indis?.getFirstEvent();
+		const firstBirth = firstPerson?.BIRT?.toList().index(0) as
+			| IEventDetailStructure
+			| undefined;
+		const firstDeath = firstPerson?.DEAT?.toList().index(0) as
+			| IEventDetailStructure
+			| undefined;
+
+		let firstPersonEvent = null;
+		const firstBirthDate = (firstBirth as IEventDetailStructure)?.DATE
+			?.rawValue;
+		const firstDeathDate = (firstDeath as IEventDetailStructure)?.DATE
+			?.rawValue;
+
+		if (firstBirthDate || firstDeathDate) {
+			const isBirth =
+				!firstBirthDate ||
+				(firstDeathDate && firstDeathDate < firstBirthDate)
+					? false
+					: true;
+
+			firstPersonEvent = {
+				type: isBirth ? "BIRT" : "DEAT",
+				event: isBirth ? firstBirth : firstDeath,
+				person: firstPerson,
+			};
+		}
+
+		const lastPerson = indis?.getLastEvent();
+		const lastBirth = lastPerson?.BIRT?.toList().index(0) as
+			| (Common & IEventDetailStructure)
+			| undefined;
+		const lastDeath = lastPerson?.DEAT?.toList().index(0) as
+			| (Common & IEventDetailStructure)
+			| undefined;
+
+		let lastPersonEvent = null;
+		const lastBirthDate = (lastBirth as Common & IEventDetailStructure)
+			?.DATE?.rawValue;
+		const lastDeathDate = (lastDeath as Common & IEventDetailStructure)
+			?.DATE?.rawValue;
+
+		if (lastBirthDate || lastDeathDate) {
+			const isBirth =
+				!lastDeathDate ||
+				(lastBirthDate && lastDeathDate < lastBirthDate)
+					? true
+					: false;
+
+			lastPersonEvent = {
+				type: isBirth ? "BIRT" : "DEAT",
+				event: isBirth ? lastBirth : lastDeath,
+				person: lastPerson,
+			};
+		}
 
 		return {
 			totalIndividuals,
@@ -629,9 +714,13 @@ export class GedCom extends Common implements IGedcom {
 				earliest: minYear,
 				latest: maxYear,
 			},
-			averageLifespan: avgLifespan ? Math.round(avgLifespan * 10) / 10 : null,
+			averageLifespan: avgLifespan
+				? Math.round(avgLifespan * 10) / 10
+				: null,
 			topSurnames,
 			topBirthPlaces,
+			firstPersonEvent,
+			lastPersonEvent,
 		};
 	}
 }
