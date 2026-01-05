@@ -12,9 +12,9 @@ import type { List } from "./list";
 import { getDateLocale } from "../factories";
 
 const LONG_NOTES = {
-  "Abt.": "About",
-  "Bef.": "Before",
-  "Aft.": "After",
+	"Abt.": "About",
+	"Bef.": "Before",
+	"Aft.": "After",
 };
 
 const NOTE_MARKER = "####";
@@ -22,236 +22,248 @@ const NOTE_MARKER = "####";
  * Format a date based on available components (DAY, MONTH, YEAR, NOTE)
  */
 const formatDateWithComponents = (
-  date: Date,
-  hasDay: boolean,
-  hasMonth: boolean,
-  hasYear: boolean,
-  noteValue: string | undefined,
-  baseFormat = "dd MMM yyyy"
+	date: Date,
+	hasDay: boolean,
+	hasMonth: boolean,
+	hasYear: boolean,
+	noteValue: string | undefined,
+	baseFormat = "dd MMM yyyy"
 ): string => {
-  const hasNote = baseFormat.includes("NOTE");
-  let validDateFormat = baseFormat.replace("NOTE", NOTE_MARKER);
+	const hasNote = baseFormat.includes("NOTE");
+	let validDateFormat = baseFormat.replace("NOTE", NOTE_MARKER);
 
-  if (!hasDay) {
-    validDateFormat = validDateFormat.replace(/d+/g, "");
-  }
+	if (!hasDay) {
+		validDateFormat = validDateFormat.replace(/d+/g, "");
+	}
 
-  if (!hasMonth) {
-    validDateFormat = validDateFormat.replace(/[.\-\s/]*M+/g, "");
-  }
+	if (!hasMonth) {
+		validDateFormat = validDateFormat.replace(/[.\-\s/]*M+/g, "");
+	}
 
-  if (!hasYear) {
-    validDateFormat = validDateFormat.replace(/y+[.\-\s/]*/g, "");
-  }
+	if (!hasYear) {
+		validDateFormat = validDateFormat.replace(/y+[.\-\s/]*/g, "");
+	}
 
-  validDateFormat = validDateFormat
-    .replace(/([.\-\s/])\1+/g, "$1")
-    .replace(/^[.\-\s/]+|[.\-\s/]+$/g, "");
+	validDateFormat = validDateFormat
+		.replace(/([.\-\s/])\1+/g, "$1")
+		.replace(/^[.\-\s/]+|[.\-\s/]+$/g, "");
 
-  const formattedDate = format(date, validDateFormat, {
-    locale: getDateLocale(),
-  });
+	const formattedDate = format(date, validDateFormat, {
+		locale: getDateLocale(),
+	});
 
-  // Add NOTE prefix if it exists
-  return noteValue && hasNote
-    ? formattedDate.replace(NOTE_MARKER, noteValue).trim()
-    : formattedDate.replace(NOTE_MARKER, "").trim();
+	// Add NOTE prefix if it exists
+	return noteValue && hasNote
+		? formattedDate.replace(NOTE_MARKER, noteValue).trim()
+		: formattedDate.replace(NOTE_MARKER, "").trim();
 };
 
 export class CommonDate extends Common<string> {
-  private _date?: Date;
+	private _date?: Date;
 
-  DAY?: Common;
-  MONTH?: Common;
-  YEAR?: Common;
-  NOTE?: Common;
+	DAY?: Common;
+	MONTH?: Common;
+	YEAR?: Common;
+	NOTE?: Common;
 
-  constructor(
-    gedcom?: GedComType,
-    id?: IdType,
-    main?: Common,
-    parent?: Common
-  ) {
-    super(gedcom, id, main, parent);
+	constructor(
+		gedcom?: GedComType,
+		id?: IdType,
+		main?: Common,
+		parent?: Common
+	) {
+		super(gedcom, id, main, parent);
 
-    delete this.id;
-  }
+		delete this.id;
+	}
 
-  set value(value: string | undefined) {
-    if (value) {
-      const noteRegExp = /^(?<note>[a-zA-Z]+\.)/;
-      const noteMatch = value.match(noteRegExp)?.groups;
-      let validValue = value;
-      if (noteMatch?.note) {
-        this.NOTE = createCommon(this._gedcom, undefined, this.main);
-        this.NOTE.value = noteMatch?.note;
+	set value(value: string | undefined) {
+		if (value) {
+			const noteRegExp = /^(?<note>[a-zA-Z]+\.)/;
+			const noteMatch = value.match(noteRegExp)?.groups;
+			let validValue = value;
+			if (noteMatch?.note) {
+				this.NOTE =
+					this.NOTE ||
+					createCommon(this._gedcom, undefined, this.main);
+				this.NOTE.value = noteMatch?.note;
 
-        validValue = value.replace(noteRegExp, "");
-      }
+				validValue = value.replace(noteRegExp, "");
+			}
 
-      const acceptedDate = this.isValidDateFormat(validValue);
-      if (acceptedDate) {
-        this.DAY = createCommon(this._gedcom, undefined, this.main);
-        this.DAY.value = format(acceptedDate, "dd");
+			const acceptedDate = this.isValidDateFormat(validValue);
+			if (acceptedDate) {
+				this.DAY =
+					this.DAY ||
+					createCommon(this._gedcom, undefined, this.main);
+				this.DAY.value = format(acceptedDate, "dd");
 
-        this.MONTH = createCommon(this._gedcom, undefined, this.main);
-        this.MONTH.value = format(acceptedDate, "MMM");
+				this.MONTH =
+					this.MONTH ||
+					createCommon(this._gedcom, undefined, this.main);
+				this.MONTH.value = format(acceptedDate, "MMM");
 
-        this.YEAR = createCommon(this._gedcom, undefined, this.main);
-        this.YEAR.value = format(acceptedDate, "yyyy");
+				this.YEAR =
+					this.YEAR ||
+					createCommon(this._gedcom, undefined, this.main);
+				this.YEAR.value = format(acceptedDate, "yyyy");
 
-        this._date = acceptedDate;
-        this._value = value;
-      } else {
-        let fixedValue = validValue;
-        if (/\d{4} [A-Za-z]+\s*$/.test(validValue)) {
-          fixedValue = `${validValue} 1`;
-        } else if (/^\s*[A-Za-z]+ \d{4}/.test(validValue)) {
-          fixedValue = `1 ${validValue}`;
-        }
+				this._date = acceptedDate;
+				this._value = value;
+			} else {
+				let fixedValue = validValue;
+				if (/\d{4} [A-Za-z]+\s*$/.test(validValue)) {
+					fixedValue = `${validValue} 1`;
+				} else if (/^\s*[A-Za-z]+ \d{4}/.test(validValue)) {
+					fixedValue = `1 ${validValue}`;
+				}
 
-        this._date = new Date(fixedValue);
-        this._value = value;
+				this._date = new Date(fixedValue);
+				this._value = value;
 
-        if (this._date && isValid(this._date)) {
-          const yearMonthDay = /[\dA-Za-z]+ [\dA-Za-z]+ [\dA-Za-z]+/.test(
-            validValue
-          );
-          const yearMonth = /[\dA-Za-z]+ [\dA-Za-z]+/.test(validValue);
-          const year = /[\dA-Za-z]+/.test(validValue);
+				if (this._date && isValid(this._date)) {
+					const yearMonthDay =
+						/[\dA-Za-z]+ [\dA-Za-z]+ [\dA-Za-z]+/.test(validValue);
+					const yearMonth = /[\dA-Za-z]+ [\dA-Za-z]+/.test(
+						validValue
+					);
+					const year = /[\dA-Za-z]+/.test(validValue);
+					if (yearMonthDay) {
+						this.DAY =
+							this.DAY ||
+							createCommon(this._gedcom, undefined, this.main);
+						this.DAY.value = format(this._date, "dd");
+					}
 
-          if (yearMonthDay) {
-            this.DAY = createCommon(this._gedcom, undefined, this.main);
-            this.DAY.value = format(this._date, "dd");
-          }
+					if (yearMonth || yearMonthDay) {
+						this.MONTH =
+							this.MONTH ||
+							createCommon(this._gedcom, undefined, this.main);
+						this.MONTH.value = format(this._date, "MMM");
+					}
 
-          if (yearMonth || yearMonthDay) {
-            this.MONTH = createCommon(this._gedcom, undefined, this.main);
-            this.MONTH.value = format(this._date, "MMM");
-          }
+					if (year || yearMonth || yearMonthDay) {
+						this.YEAR =
+							this.YEAR ||
+							createCommon(this._gedcom, undefined, this.main);
+						this.YEAR.value = format(this._date, "yyyy");
+					}
+				}
+			}
+		}
+	}
 
-          if (year || yearMonth || yearMonthDay) {
-            this.YEAR = createCommon(this._gedcom, undefined, this.main);
-            this.YEAR.value = format(this._date, "yyyy");
-          }
-        }
-      }
-    }
-  }
+	get value() {
+		const hasDay = !!this.DAY?.value;
+		const hasMonth = !!this.MONTH?.value;
+		const hasYear = !!this.YEAR?.value;
+		if (
+			!this._date ||
+			!isValid(this._date) ||
+			(!hasDay && !hasMonth && !hasYear)
+		) {
+			return this._value;
+		}
 
-  get value() {
-    // Check only object existence to avoid recursion - DO NOT access .value!
-    const hasDay = !!this.DAY;
-    const hasMonth = !!this.MONTH;
-    const hasYear = !!this.YEAR;
+		return formatDateWithComponents(
+			this._date,
+			hasDay,
+			hasMonth,
+			hasYear,
+			this.NOTE?.value
+		);
+	}
 
-    if (
-      !this._date ||
-      !isValid(this._date) ||
-      (!hasDay && !hasMonth && !hasYear)
-    ) {
-      return this._value;
-    }
+	get rawValue() {
+		return this._date;
+	}
 
-    return formatDateWithComponents(
-      this._date,
-      hasDay,
-      hasMonth,
-      hasYear,
-      (this.NOTE as ProxyOriginal<Common> | undefined)?.unwrapped?._value
-    );
-  }
+	assign<T extends Common | List = Common | List>(
+		name: MultiTag,
+		value: T,
+		unique = false
+	) {
+		if (!["DAY", "MONTH", "YEAR"].includes(name)) {
+			return super.assign(name, value, unique);
+		} else {
+			this.set(name, value);
+		}
+		return this.get(name) as T | undefined;
+	}
 
-  get rawValue() {
-    return this._date;
-  }
+	private isValidDateFormat(value: string) {
+		let validDate: Date | undefined;
+		ACCEPTED_DATE_FORMATS.find((acceptedFormat) => {
+			const date = parse(value, acceptedFormat, new Date());
 
-  assign<T extends Common | List = Common | List>(
-    name: MultiTag,
-    value: T,
-    unique = false
-  ) {
-    if (!["DAY", "MONTH", "YEAR"].includes(name)) {
-      return super.assign(name, value, unique);
-    } else {
-      this.set(name, value);
-    }
-    return this.get(name) as T | undefined;
-  }
+			if (isValid(date)) {
+				validDate = date;
+				return true;
+			}
 
-  private isValidDateFormat(value: string) {
-    let validDate: Date | undefined;
-    ACCEPTED_DATE_FORMATS.find((acceptedFormat) => {
-      const date = parse(value, acceptedFormat, new Date());
+			return false;
+		});
 
-      if (isValid(date)) {
-        validDate = date;
-        return true;
-      }
+		return validDate;
+	}
 
-      return false;
-    });
+	toNote(short = true): string | undefined {
+		const note = this.NOTE?.value?.trim() as keyof typeof LONG_NOTES;
 
-    return validDate;
-  }
+		if (!short) {
+			return LONG_NOTES[note];
+		}
 
-  toNote(short = true): string | undefined {
-    const note = this.unwrapped?.NOTE?.trim() as keyof typeof LONG_NOTES;
+		return note;
+	}
 
-    if (!short) {
-      return LONG_NOTES[note];
-    }
+	toValue(dateFormat = "dd MMM yyyy"): string | undefined {
+		const hasDay = !!this.DAY?.value;
+		const hasMonth = !!this.MONTH?.value;
+		const hasYear = !!this.YEAR?.value;
+		if (
+			!this._date ||
+			!isValid(this._date) ||
+			(!hasDay && !hasMonth && !hasYear)
+		) {
+			return this._value;
+		}
 
-    return note;
-  }
+		return formatDateWithComponents(
+			this._date,
+			hasDay,
+			hasMonth,
+			hasYear,
+			this.NOTE?.value,
+			dateFormat
+		);
+	}
 
-  toValue(dateFormat = "dd MMM yyyy"): string | undefined {
-    // Check only object existence, NOT .value to avoid recursion
-    const hasDay = !!this.unwrapped?.DAY?.value;
-    const hasMonth = !!this.unwrapped?.MONTH?.value;
-    const hasYear = !!this.unwrapped?.YEAR?.value;
+	exportValue() {
+		return this.toValue("NOTE dd MMM yyyy");
+	}
 
-    if (
-      !this._date ||
-      !isValid(this._date) ||
-      (!hasDay && !hasMonth && !hasYear)
-    ) {
-      return this._value;
-    }
-
-    // Use originalValue to avoid Proxy recursion
-    return formatDateWithComponents(
-      this._date,
-      hasDay,
-      hasMonth,
-      hasYear,
-      this.unwrapped?.NOTE?.value,
-      dateFormat
-    );
-  }
-
-  exportValue() {
-    return this.toValue("NOTE dd MMM yyyy");
-  }
-
-  inRange(range: Range, trueIfNoYear = false) {
-    return inRange(this.unwrapped?.YEAR?.value, range, trueIfNoYear);
-  }
+	inRange(range: Range, trueIfNoYear = false) {
+		return inRange(this.YEAR?.value, range, trueIfNoYear);
+	}
 }
 
 export const createCommonDate = (
-  gedcom?: GedComType,
-  id?: IdType,
-  main?: Common,
-  parent?: Common
+	gedcom?: GedComType,
+	id?: IdType,
+	main?: Common,
+	parent?: Common
 ): ProxyOriginal<CommonDate> => {
-  return createProxy(
-    new CommonDate(gedcom, id, main, parent)
-  ) as unknown as ProxyOriginal<CommonDate>;
+	return createProxy(
+		new CommonDate(gedcom, id, main, parent)
+	) as unknown as ProxyOriginal<CommonDate>;
 };
 
 export const isCommonDate = (value?: unknown): value is CommonDate => {
-  return (
-    !!value && value !== null && typeof value === "object" && "_date" in value
-  );
+	return (
+		!!value &&
+		value !== null &&
+		typeof value === "object" &&
+		"_date" in value
+	);
 };

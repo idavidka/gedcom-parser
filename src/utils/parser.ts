@@ -271,6 +271,7 @@ const GedcomTree = {
 
 				prevIndent = indent;
 			} catch (err) {
+				console.log("ASDXX", err);
 				throw new Error(`Can't parse line #${index}: ${line}`, {
 					cause: err,
 				});
