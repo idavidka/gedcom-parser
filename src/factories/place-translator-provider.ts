@@ -26,7 +26,7 @@ let placeTranslatorProvider: PlaceTranslatorFunction | undefined;
  * ```typescript
  * import { setPlaceTranslatorProvider } from '@treeviz/gedcom-parser';
  * import { placeTranslator } from './my-place-translator';
- * 
+ *
  * setPlaceTranslatorProvider(placeTranslator);
  * ```
  */

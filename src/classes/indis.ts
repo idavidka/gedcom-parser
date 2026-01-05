@@ -370,7 +370,8 @@ export class Individuals
 							newPlace = groupKeyTranslator(orderedParts);
 						} else if (translate) {
 							// Use custom place translator if provided, otherwise use built-in
-							const customPlaceTranslator = getPlaceTranslatorProvider();
+							const customPlaceTranslator =
+								getPlaceTranslatorProvider();
 							if (customPlaceTranslator) {
 								// Custom translator: pass as array
 								newPlace = customPlaceTranslator(orderedParts);

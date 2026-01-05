@@ -25,7 +25,7 @@ let placeParserProvider: PlaceParserFunction | undefined;
  * ```typescript
  * import { setPlaceParserProvider } from '@treeviz/gedcom-parser';
  * import { getPlaceParts } from './my-place-parser';
- * 
+ *
  * setPlaceParserProvider(getPlaceParts);
  * ```
  */
@@ -39,9 +39,7 @@ export const setPlaceParserProvider = (
  * Get the current place parser provider
  * @returns The current place parser function or undefined
  */
-export const getPlaceParserProvider = ():
-	| PlaceParserFunction
-	| undefined => {
+export const getPlaceParserProvider = (): PlaceParserFunction | undefined => {
 	return placeParserProvider;
 };
 
