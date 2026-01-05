@@ -1,5 +1,7 @@
 # @treeviz/gedcom-parser
 
+> Part of the [@treeviz](https://www.npmjs.com/org/treeviz) organization - A collection of tools for genealogy data processing and visualization.
+
 A lightweight, pluggable GEDCOM parser library for JavaScript/TypeScript applications. Originally part of [TreeViz](https://treeviz.com), extracted as a standalone package for reusability.
 
 ## Features
