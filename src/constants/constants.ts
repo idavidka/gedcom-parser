@@ -16,12 +16,3 @@ export const ID_SPLIT_REG = /^@[_a-zA-Z0-9]+@:/;
  */
 export const MAX_FILE_SIZE_TO_SYNC = 1024 * 1024 * 20; // 20MB
 
-/**
- * Date formatting
- * Returns enUS locale for date-fns by default
- */
-export const getDateFnsLocale = () => {
-	// Default to enUS locale
-	// Can be overridden by host application through factory pattern if needed
-	return undefined; // date-fns uses enUS by default when undefined
-};
