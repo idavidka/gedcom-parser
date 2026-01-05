@@ -6,6 +6,8 @@ import {
 	DEATH_ASC,
 	DEATH_DESC,
 } from "../constants/orders";
+import { getPlaceParserProvider } from "../factories/place-parser-provider";
+import { getPlaceTranslatorProvider } from "../factories/place-translator-provider";
 import { type IIndividuals } from "../interfaces/indis";
 import type IEventDetailStructure from "../structures/event-detail-structure";
 import { type Settings } from "../types/settings";
@@ -335,8 +337,12 @@ export class Individuals
 				item
 					.getPlaces()
 					.map((place) => {
-						// Use getPlaceParts to normalize the place name order (always city-to-country internally)
-						const placeParts = getPlaceParts(place.place || "");
+						// Use custom place parser if provided, otherwise use built-in
+						const customPlaceParser = getPlaceParserProvider();
+						const placeParts = customPlaceParser
+							? customPlaceParser(place.place || "")
+							: getPlaceParts(place.place || "");
+
 						const {
 							leftParts = [],
 							town,
@@ -363,8 +369,15 @@ export class Individuals
 							// Use custom group key translator function
 							newPlace = groupKeyTranslator(orderedParts);
 						} else if (translate) {
-							// Use default placeTranslator
-							newPlace = placeTranslator(orderedParts);
+							// Use custom place translator if provided, otherwise use built-in
+							const customPlaceTranslator = getPlaceTranslatorProvider();
+							if (customPlaceTranslator) {
+								// Custom translator: pass as array
+								newPlace = customPlaceTranslator(orderedParts);
+							} else {
+								// Built-in translator: expects string array
+								newPlace = placeTranslator(orderedParts);
+							}
 						} else {
 							// No translation, just join
 							newPlace = orderedParts.join(", ");

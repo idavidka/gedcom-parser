@@ -32,6 +32,20 @@ export {
 	type I18nProvider,
 } from "./factories/i18n-factory";
 
+export {
+	setPlaceParserProvider,
+	getPlaceParserProvider,
+	resetPlaceParserProvider,
+	type PlaceParserFunction,
+} from "./factories/place-parser-provider";
+
+export {
+	setPlaceTranslatorProvider,
+	getPlaceTranslatorProvider,
+	resetPlaceTranslatorProvider,
+	type PlaceTranslatorFunction,
+} from "./factories/place-translator-provider";
+
 // Cache interface for custom implementations
 export type { ICacheManager } from "./utils/cache";
 
@@ -41,25 +55,7 @@ export type { default as IKinshipTranslator } from "./kinship-translator/kinship
 export type { Language } from "./kinship-translator/types";
 
 // Settings
-// export * from "./settings";
-
-// Types (Order, Filter, Group, etc.)
 export * from "./types/types";
-
-// Place types (simple enum/interface for place filtering)
-// export * from "./utils/place-types";
-// export { getPlaces } from "./utils/get-places";
-
-// Pluggable Cache Manager (consumer must provide implementation)
-// export { setCacheFactory, getInstance } from "./utils/cache-manager";
-// export type { ICacheManager, CacheFactory } from "./utils/cache-manager";
-
-// Legacy exports for backward compatibility
-// export { setCacheFactory as setIndexedDbFactory } from "./utils/cache-manager";
-// export type {
-// 	ICacheManager as IIndexedDbManager,
-// 	CacheFactory as IndexedDbFactory,
-// } from "./utils/cache-manager";
 
 // Classes - export everything from each class
 export * from "./classes/common";

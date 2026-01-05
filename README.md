@@ -39,54 +39,185 @@ individuals.forEach(indi => {
 });
 ```
 
-## Pluggable Dependencies
+## Factory Providers
 
-The package supports two optional pluggable dependencies that can be customized:
+The package uses factory patterns to allow customization of core functionality. All factories are **optional** - the package provides sensible defaults.
 
-### 1. Cache Manager (Optional)
+### Available Factory Providers
 
-Inject your own caching implementation (IndexedDB, localStorage, Redis, etc.):
+#### 1. **i18n Provider** (Translation)
+
+Provide your translation function for date formatting and other localized content.
+
+```typescript
+import { setI18nProvider } from '@treeviz/gedcom-parser';
+import i18n from './my-i18n-setup';
+
+// Set up translation provider
+setI18nProvider((key: string, options?: Record<string, unknown>) => 
+  i18n.t(key, options)
+);
+```
+
+**Default:** Returns the key as-is (no translation)
+
+---
+
+#### 2. **Date Locale Provider**
+
+Provide date-fns locale for date formatting.
+
+```typescript
+import { setDateLocaleProvider } from '@treeviz/gedcom-parser';
+import { enUS, hu, de } from 'date-fns/locale';
+
+// Set up date locale provider
+setDateLocaleProvider((lang: string) => {
+  switch (lang) {
+    case 'hu': return hu;
+    case 'de': return de;
+    default: return enUS;
+  }
+});
+```
+
+**Default:** English (en-US) locale
+
+---
+
+#### 3. **Place Parser Provider**
+
+Provide custom place parsing logic for sophisticated place name recognition.
+
+```typescript
+import { setPlaceParserProvider } from '@treeviz/gedcom-parser';
+import type { PlaceParts } from '@treeviz/gedcom-parser';
+
+// Custom place parser with historical place recognition
+setPlaceParserProvider((place: string | (string | undefined)[]) => {
+  // Your sophisticated place parsing logic
+  // e.g., recognize counties, historical boundaries, etc.
+  return [{
+    leftParts: ['District'],
+    town: 'Budapest',
+    county: 'Pest',
+    country: 'Hungary'
+  }] as PlaceParts[];
+});
+```
+
+**Default:** Simple comma-split parser (last part = country, second-to-last = county, rest = town)
+
+---
+
+#### 4. **Place Translator Provider**
+
+Provide custom place name translation and normalization.
+
+```typescript
+import { setPlaceTranslatorProvider } from '@treeviz/gedcom-parser';
+
+// Custom place translator with country name translation
+setPlaceTranslatorProvider((
+  place?: string | string[], 
+  level?: number, 
+  toReversed?: boolean
+) => {
+  // Your translation logic
+  // e.g., "Magyarország" → "Hungary", "Románia" → "Romania"
+  return translatedPlace;
+});
+```
+
+**Default:** Returns place name as-is (no translation)
+
+---
+
+#### 5. **Cache Manager Factory**
+
+Provide your own caching implementation (IndexedDB, localStorage, Redis, etc.).
 
 ```typescript
 import { setCacheManagerFactory } from '@treeviz/gedcom-parser';
-import { getInstance } from './utils/indexed-db-manager';
+import type { CacheManagerFactory } from '@treeviz/gedcom-parser';
 
-// Inject custom cache before parsing
-setCacheManagerFactory(getInstance);
+const cacheFactory: CacheManagerFactory = <T>(
+  name: string,
+  store: string,
+  type: string,
+  encrypted: boolean
+) => {
+  // Return cache manager instance
+  return {
+    async getItem(): Promise<T | null> {
+      // Your cache get logic
+    },
+    async setItem(value: T): Promise<void> {
+      // Your cache set logic
+    },
+    async removeItem(): Promise<void> {
+      // Your cache remove logic
+    }
+  };
+};
 
-const tree = new GedcomTree(gedcomContent);
-// Now uses your cache for path calculations and relatives
+setCacheManagerFactory(cacheFactory);
 ```
 
 **Default:** In-memory cache (suitable for Node.js, testing, or small trees)
 
-### 2. Kinship Translator (Built-in, Overridable)
+---
 
-The package includes a built-in kinship translator supporting EN, HU, DE, ES, FR. You can override it:
+#### 6. **Kinship Translator Class**
+
+Override the kinship relationship translator.
 
 ```typescript
 import { setKinshipTranslatorClass, KinshipTranslator } from '@treeviz/gedcom-parser';
 
-// Option 1: Use built-in (default - no action needed)
-const person1 = tree.indi('@I1@');
-const person2 = tree.indi('@I2@');
-console.log(person1.kinship(person2, true, 'en')); // "grandmother"
-
-// Option 2: Extend or replace with custom implementation
+// Extend built-in translator
 class MyCustomTranslator extends KinshipTranslator {
-  translate(showMainPerson) {
+  translate(showMainPerson: boolean) {
     const result = super.translate(showMainPerson);
     return result ? `Custom: ${result}` : result;
   }
 }
+
 setKinshipTranslatorClass(MyCustomTranslator);
 ```
 
 **Default:** Built-in multi-language translator (EN, HU, DE, ES, FR)
 
-📖 **Detailed documentation:** See [PLUGGABLE_DEPENDENCIES.md](./PLUGGABLE_DEPENDENCIES.md) for complete examples and API reference.
+---
+
+### Complete Setup Example
+
+```typescript
+import {
+  setI18nProvider,
+  setDateLocaleProvider,
+  setPlaceParserProvider,
+  setPlaceTranslatorProvider,
+  setCacheManagerFactory,
+  GedcomTree
+} from '@treeviz/gedcom-parser';
+
+// 1. Set up all factories BEFORE parsing
+setI18nProvider((key, options) => i18n.t(key, options));
+setDateLocaleProvider(getDateFnsLocale);
+setPlaceParserProvider(getPlaceParts);
+setPlaceTranslatorProvider(placeTranslator);
+setCacheManagerFactory(cacheFactory);
+
+// 2. Now parse GEDCOM
+const tree = new GedcomTree(gedcomContent);
+
+// All functionality now uses your custom implementations
+```
 
 ---
+
+## Advanced Examples
 
 ### With Caching (IndexedDB Example)
 
@@ -144,38 +275,7 @@ setCacheFactory((name, storeName, dataType, enc) =>
 const tree = new GedcomTree(gedcomContent);
 ```
 
-### With Place Matching (Country Data Example)
-
-```typescript
-import { setCountryDataProvider } from '@treeviz/gedcom-parser';
-
-// Import your country data
-import huCountries from './data/hu-countries.json';
-import enCountries from './data/en-countries.json';
-import huCounties from './data/hungary/counties.json';
-import huTowns from './data/hungary/towns.json';
-
-setCountryDataProvider({
-  translations: {
-    hu: huCountries, // { "HU": "Magyarország", "AT": "Ausztria", ... }
-    en: enCountries, // { "HU": "Hungary", "AT": "Austria", ... }
-  },
-  countries: {
-    HU: {
-      counties: huCounties, // { "01": "Baranya", "02": "Bács-Kiskun", ... }
-      towns: {
-        '2020': {
-          _source: { en: 'Hungary 2020', hu: 'Magyarország 2020' },
-          _year: 2020,
-          data: huTowns, // { "Budapest": { county: "01" }, ... }
-        },
-      },
-    },
-  },
-});
-
-// Now place matching and translation works
-```
+---
 
 ## API Reference
 
@@ -215,29 +315,190 @@ const tree = new GedcomTree(gedcomContent, options?);
 
 ### Cache Manager
 
-#### `setCacheFactory(factory)`
+#### `setCacheManagerFactory(factory)`
 
 Set up caching for performance optimization.
 
 ```typescript
-import { setCacheFactory, type ICacheManager, type CacheFactory } from '@treeviz/gedcom-parser';
+import { setCacheManagerFactory, type CacheManagerFactory } from '@treeviz/gedcom-parser';
 
-const factory: CacheFactory = (name, storeName, dataType, enc?) => {
-  // Return your ICacheManager implementation
-  return new MyCacheManager(name, storeName, enc);
+const factory: CacheManagerFactory = <T>(name: string, store: string, type: string, encrypted: boolean) => {
+  // Return your cache manager implementation
+  return {
+    async getItem(): Promise<T | null> { /* ... */ },
+    async setItem(value: T): Promise<void> { /* ... */ },
+    async removeItem(): Promise<void> { /* ... */ }
+  };
 };
 
-setCacheFactory(factory);
+setCacheManagerFactory(factory);
 ```
 
-**ICacheManager Interface:**
+**Cache Manager Interface:**
 
 ```typescript
 interface ICacheManager<T> {
-  /** Clear all items from cache */
-  clear(): void;
+  /** Get an item from cache */
+  getItem(): Promise<T | null>;
   
-  /** Clear items matching the comparer function */
+  /** Set an item in cache */
+  setItem(value: T): Promise<void>;
+  
+  /** Remove item from cache */
+  removeItem(): Promise<void>;
+}
+```
+
+**What gets cached:**
+- Path calculations between individuals (family tree traversal)
+- Relatives queries (all relatives at N degrees)
+- Kinship translations
+
+**When to use caching:**
+- ✅ Large GEDCOM files (>10MB or >5000 individuals)
+- ✅ Repeated path calculations
+- ✅ Multiple relatives queries
+- ✅ Interactive family tree applications
+
+**When NOT to use caching:**
+- ❌ Server-side rendering (use no-op default)
+- ❌ Simple/small GEDCOM files
+- ❌ Memory-constrained environments
+- ❌ One-time parsing tasks
+
+---
+
+### Factory Providers API Reference
+
+#### `setI18nProvider(provider)`
+
+Provide translation function for localized content.
+
+```typescript
+import { setI18nProvider, type I18nProvider } from '@treeviz/gedcom-parser';
+
+const provider: I18nProvider = (key: string, options?: Record<string, unknown>) => {
+  // Return translated string
+  return myI18n.t(key, options);
+};
+
+setI18nProvider(provider);
+```
+
+---
+
+#### `setDateLocaleProvider(provider)`
+
+Provide date-fns locale for date formatting.
+
+```typescript
+import { setDateLocaleProvider, type DateLocaleProvider } from '@treeviz/gedcom-parser';
+import { enUS, hu } from 'date-fns/locale';
+
+const provider: DateLocaleProvider = (lang: string) => {
+  return lang === 'hu' ? hu : enUS;
+};
+
+setDateLocaleProvider(provider);
+```
+
+---
+
+#### `setPlaceParserProvider(provider)`
+
+Provide custom place parsing logic.
+
+```typescript
+import { setPlaceParserProvider, type PlaceParserFunction } from '@treeviz/gedcom-parser';
+
+const provider: PlaceParserFunction = (place: string | (string | undefined)[]) => {
+  // Return parsed place parts
+  return [{
+    leftParts: [],
+    town: 'Budapest',
+    county: 'Pest',
+    country: 'Hungary'
+  }];
+};
+
+setPlaceParserProvider(provider);
+```
+
+---
+
+#### `setPlaceTranslatorProvider(provider)`
+
+Provide custom place name translation.
+
+```typescript
+import { setPlaceTranslatorProvider, type PlaceTranslatorFunction } from '@treeviz/gedcom-parser';
+
+const provider: PlaceTranslatorFunction = (
+  place?: string | string[], 
+  level?: number, 
+  toReversed?: boolean
+) => {
+  // Return translated place name
+  return translatedPlace;
+};
+
+setPlaceTranslatorProvider(provider);
+```
+
+---
+
+#### `setKinshipTranslatorClass(translatorClass)`
+
+Override the kinship relationship translator.
+
+```typescript
+import { setKinshipTranslatorClass, KinshipTranslator } from '@treeviz/gedcom-parser';
+
+class MyTranslator extends KinshipTranslator {
+  translate(showMainPerson: boolean): string | undefined {
+    const result = super.translate(showMainPerson);
+    return result ? `Custom: ${result}` : result;
+  }
+}
+
+setKinshipTranslatorClass(MyTranslator);
+```
+
+---
+
+#### Reset Functions
+
+All providers have corresponding reset functions to restore defaults:
+
+```typescript
+import {
+  resetI18nProvider,
+  resetDateLocaleProvider,
+  resetPlaceParserProvider,
+  resetPlaceTranslatorProvider,
+  resetCacheManagerFactory,
+  resetKinshipTranslatorClass
+} from '@treeviz/gedcom-parser';
+
+// Reset individual providers
+resetI18nProvider();
+resetDateLocaleProvider();
+resetPlaceParserProvider();
+resetPlaceTranslatorProvider();
+resetCacheManagerFactory();
+resetKinshipTranslatorClass();
+```
+
+---
+
+### Country Data Provider (Deprecated)
+
+#### `setCountryDataProvider(provider)`
+
+⚠️ **Deprecated:** Use `setPlaceParserProvider` and `setPlaceTranslatorProvider` instead for better flexibility.
+
+```typescript
+import {
   clearBy(comparer: (key: string) => boolean): Promise<void>;
   
   /** Clear in-memory cache */
