@@ -7,7 +7,7 @@ import {
 	formatId,
 	formatName,
 	formatDate,
-	formatInfo,
+	formatWarning,
 } from '../utils/formatters.js';
 import { readGedcomFile, handleError, cleanGedcomName, formatLifespan } from '../utils/helpers.js';
 
@@ -90,7 +90,7 @@ export function registerFindCommand(program: Command): void {
 					console.log(formatJson({ count: jsonResults.length, individuals: jsonResults }));
 				} else {
 					if (results.length === 0) {
-						console.log(formatInfo('No individuals found matching the criteria'));
+						console.log(formatWarning('No individuals found matching the criteria'));
 					} else {
 						console.log(formatHeader(`Found ${results.length} individual(s)\n`));
 						results.forEach(indi => {

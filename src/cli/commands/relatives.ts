@@ -8,7 +8,7 @@ import {
 	formatJson,
 	formatId,
 	formatName,
-	formatInfo,
+	formatError,
 } from '../utils/formatters.js';
 import { readGedcomFile, handleError, cleanGedcomName, formatLifespan } from '../utils/helpers.js';
 
@@ -38,7 +38,7 @@ export function registerRelativesCommand(program: Command): void {
 
 				const individual = tree.indi(id);
 				if (!individual) {
-					console.error(formatInfo(`Individual ${id} not found`));
+					console.error(formatError(`Individual ${id} not found`));
 					process.exit(1);
 				}
 

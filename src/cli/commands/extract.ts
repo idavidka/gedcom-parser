@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import { writeFileSync } from 'fs';
 import GedcomTree from '../../utils/parser.js';
-import { formatSuccess, formatInfo } from '../utils/formatters.js';
+import { formatError, formatSuccess } from '../utils/formatters.js';
 import { readGedcomFile, handleError, cleanGedcomName } from '../utils/helpers.js';
 
 interface ExtractOptions {
@@ -78,8 +78,8 @@ export function registerExtractCommand(program: Command): void {
 				});
 
 				if (results.length === 0) {
-					console.log(formatInfo('No individuals match the criteria'));
-					process.exit(0);
+					console.log(formatError('No individuals match the criteria'));
+					process.exit(1);
 				}
 
 				// Create subset GEDCOM
