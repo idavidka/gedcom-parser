@@ -128,6 +128,8 @@ export { getRawSize } from "./utils/get-raw-size";
 export * from "./utils/date-formatter";
 export * from "./utils/name-formatter";
 export * from "./utils/place-parser";
+export * from "./utils/get-places";
+export * from "./utils/place-translator";
 // Range utilities are already exported from types/types
 export {
 	inRange,
