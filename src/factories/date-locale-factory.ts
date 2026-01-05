@@ -24,7 +24,7 @@ let dateLocaleProvider: DateLocaleProvider = () => undefined;
  * ```
  */
 export const setDateLocaleProvider = (provider: DateLocaleProvider) => {
-	dateLocaleProvider = provider;
+  dateLocaleProvider = provider;
 };
 
 /**
@@ -32,19 +32,8 @@ export const setDateLocaleProvider = (provider: DateLocaleProvider) => {
  * Used internally by the Date class for formatting dates.
  */
 export const getDateLocale = (): Locale | undefined => {
-	const result = dateLocaleProvider();
-	console.log(
-		"DEBUG getDateLocale:",
-		"type=",
-		typeof result,
-		"value=",
-		result,
-		"isNull=",
-		result === null,
-		"isUndefined=",
-		result === undefined
-	);
-	return result;
+  const result = dateLocaleProvider();
+  return result;
 };
 
 /**
@@ -52,5 +41,5 @@ export const getDateLocale = (): Locale | undefined => {
  * Useful for testing or when switching between projects.
  */
 export const resetDateLocaleProvider = () => {
-	dateLocaleProvider = () => undefined;
+  dateLocaleProvider = () => undefined;
 };
