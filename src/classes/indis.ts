@@ -69,33 +69,63 @@ export class Individuals
 	}
 
 	getFirstEvent() {
-		const firstDeath = this.getFirstBirth();
-		const firstBirth = this.getFirstDeath();
+		const firstBirthPerson = this.getFirstBirth();
+		const firstDeathPerson = this.getFirstDeath();
 
-		if (
-			firstBirth?.DATE?.rawValue === undefined ||
-			(firstDeath?.DATE?.rawValue !== undefined &&
-				firstDeath.DATE.rawValue < firstBirth.DATE.rawValue)
-		) {
-			return firstDeath;
+		const firstBirth = firstBirthPerson?.BIRT?.toList().index(0) as
+			| IEventDetailStructure
+			| undefined;
+		const firstDeath = firstDeathPerson?.DEAT?.toList().index(0) as
+			| IEventDetailStructure
+			| undefined;
+
+		if (!firstBirth?.DATE?.rawValue && !firstDeath?.DATE?.rawValue) {
+			return undefined;
 		}
 
-		return firstBirth;
+		if (!firstBirth?.DATE?.rawValue) {
+			return firstDeathPerson;
+		}
+
+		if (!firstDeath?.DATE?.rawValue) {
+			return firstBirthPerson;
+		}
+
+		if (firstDeath.DATE.rawValue < firstBirth.DATE.rawValue) {
+			return firstDeathPerson;
+		}
+
+		return firstBirthPerson;
 	}
 
 	getLastEvent() {
-		const lastDeath = this.getLastDeath();
-		const lastBirth = this.getLastBirth();
+		const lastDeathPerson = this.getLastDeath();
+		const lastBirthPerson = this.getLastBirth();
 
-		if (
-			lastDeath?.DATE?.rawValue === undefined ||
-			(lastBirth?.DATE?.rawValue !== undefined &&
-				lastDeath.DATE.rawValue < lastBirth.DATE.rawValue)
-		) {
-			return lastBirth;
+		const lastBirth = lastBirthPerson?.BIRT?.toList().index(0) as
+			| IEventDetailStructure
+			| undefined;
+		const lastDeath = lastDeathPerson?.DEAT?.toList().index(0) as
+			| IEventDetailStructure
+			| undefined;
+
+		if (!lastBirth?.DATE?.rawValue && !lastDeath?.DATE?.rawValue) {
+			return undefined;
 		}
 
-		return lastDeath;
+		if (!lastDeath?.DATE?.rawValue) {
+			return lastBirthPerson;
+		}
+
+		if (!lastBirth?.DATE?.rawValue) {
+			return lastDeathPerson;
+		}
+
+		if (lastDeath.DATE.rawValue < lastBirth.DATE.rawValue) {
+			return lastBirthPerson;
+		}
+
+		return lastDeathPerson;
 	}
 
 	getFirstBirth() {
