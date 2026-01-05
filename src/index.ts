@@ -18,6 +18,20 @@ export {
 	type KinshipTranslatorConstructor,
 } from "./factories/kinship-factory";
 
+export {
+	setDateLocaleProvider,
+	getDateLocale,
+	resetDateLocaleProvider,
+	type DateLocaleProvider,
+} from "./factories/date-locale-factory";
+
+export {
+	setI18nProvider,
+	getI18n,
+	resetI18nProvider,
+	type I18nProvider,
+} from "./factories/i18n-factory";
+
 // Cache interface for custom implementations
 export type { ICacheManager } from "./utils/cache";
 

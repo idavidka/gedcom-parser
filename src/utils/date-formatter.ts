@@ -1,18 +1,3 @@
-// TODO have ability to pass i18n from main project
-// Temporary mock i18n for standalone usage
-const i18n = {
-	t: (key: string, options?: Record<string, unknown>) => {
-		if (key === "dateFormat") return "yyyy.MM.dd.";
-		// Simple template replacement for patterns like "{{date}}"
-		if (options) {
-			return key.replace(/\{\{(\w+)\}\}/g, (_, param) =>
-				String(options[param] ?? `{{${param}}}`)
-			);
-		}
-		return key;
-	},
-};
-
 import { createCommonDate } from "../classes/date";
 import type { CommonDate } from "../classes/date";
 import { type FamType } from "../classes/fam";
@@ -20,6 +5,7 @@ import { type IndiType } from "../classes/indi";
 import type IDateStructure from "../structures/date";
 import type IEventDetailStructure from "../structures/event-detail-structure";
 import type { IndiKey } from "../types/types";
+import { i18n } from "../factories/i18n-factory";
 import { getAllProp } from "./get-all-prop";
 
 export const ACCEPTED_DATE_FORMATS = [
