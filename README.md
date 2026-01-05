@@ -5,6 +5,7 @@ A lightweight, pluggable GEDCOM parser library for JavaScript/TypeScript applica
 ## Features
 
 - 🚀 **Parse GEDCOM files** - Full GEDCOM 5.5.1 support
+- 🖥️ **Command-Line Interface** - CLI tools for common GEDCOM operations
 - 🔌 **Pluggable Architecture** - Zero dependencies on browser-specific APIs
 - 💾 **Optional Caching** - Provide your own cache implementation (IndexedDB, localStorage, Redis, etc.)
 - 🌍 **Optional Place Matching** - Provide your own country/place data
@@ -37,6 +38,179 @@ const individuals = tree.indis();
 individuals.forEach(indi => {
   console.log(indi.name()); // "John Doe"
 });
+```
+
+## Command-Line Interface (CLI)
+
+The package includes a powerful CLI for working with GEDCOM files directly from the terminal.
+
+### Installation
+
+```bash
+# Install globally
+npm install -g @treeviz/gedcom-parser
+
+# Or use npx
+npx @treeviz/gedcom-parser --help
+```
+
+### Available Commands
+
+#### `info` - Display file information
+
+```bash
+gedcom-parser info <file> [options]
+
+# Show basic statistics
+gedcom-parser info family.ged
+
+# Show detailed information
+gedcom-parser info family.ged --verbose
+
+# Output as JSON
+gedcom-parser info family.ged --json
+```
+
+#### `find` - Search for individuals
+
+```bash
+gedcom-parser find <file> [query] [options]
+
+# Find by name
+gedcom-parser find family.ged "John Smith"
+
+# Find by ID
+gedcom-parser find family.ged --id @I123@
+
+# Find with filters
+gedcom-parser find family.ged --birth-year 1850 --death-year 1920
+
+# Output as JSON
+gedcom-parser find family.ged "Smith" --json
+```
+
+#### `show` - Display individual details
+
+```bash
+gedcom-parser show <file> <id> [options]
+
+# Show individual details
+gedcom-parser show family.ged @I123@
+
+# Output as JSON
+gedcom-parser show family.ged @I123@ --json
+
+# Output as Markdown
+gedcom-parser show family.ged @I123@ --format markdown
+```
+
+#### `validate` - Validate GEDCOM file
+
+```bash
+gedcom-parser validate <file> [options]
+
+# Validate file
+gedcom-parser validate family.ged
+
+# Strict validation
+gedcom-parser validate family.ged --strict
+
+# Output as JSON
+gedcom-parser validate family.ged --json
+```
+
+#### `relatives` - Extract family tree
+
+```bash
+gedcom-parser relatives <file> <id> [options]
+
+# Get ancestors
+gedcom-parser relatives family.ged @I123@ --ancestors
+
+# Get descendants
+gedcom-parser relatives family.ged @I123@ --descendants
+
+# Get full tree (ancestors and descendants)
+gedcom-parser relatives family.ged @I123@ --tree
+
+# Limit depth
+gedcom-parser relatives family.ged @I123@ --ancestors --depth 3
+
+# Save to file
+gedcom-parser relatives family.ged @I123@ --tree --output subset.ged
+```
+
+#### `extract` - Create filtered subset
+
+```bash
+gedcom-parser extract <file> --output <output> [options]
+
+# Extract by surname
+gedcom-parser extract family.ged --surname Smith --output smiths.ged
+
+# Extract by birth year range
+gedcom-parser extract family.ged --birth-after 1900 --birth-before 2000 --output 20th-century.ged
+
+# Combine filters
+gedcom-parser extract family.ged --surname "Johnson" --birth-after 1850 --output johnsons.ged
+```
+
+#### `stats` - Generate statistics
+
+```bash
+gedcom-parser stats <file> [options]
+
+# Show statistics
+gedcom-parser stats family.ged
+
+# Output as JSON
+gedcom-parser stats family.ged --json
+```
+
+#### `merge` - Combine GEDCOM files
+
+```bash
+gedcom-parser merge <files...> --output <output> [options]
+
+# Merge multiple files
+gedcom-parser merge file1.ged file2.ged file3.ged --output merged.ged
+
+# Merge with deduplication
+gedcom-parser merge file1.ged file2.ged --output merged.ged --dedupe
+```
+
+#### `convert` - Convert to other formats
+
+```bash
+gedcom-parser convert <file> --format <format> [options]
+
+# Convert to JSON
+gedcom-parser convert family.ged --format json --output data.json
+
+# Convert to CSV
+gedcom-parser convert family.ged --format csv --output individuals.csv
+
+# Convert to Markdown
+gedcom-parser convert family.ged --format markdown --output tree.md
+```
+
+### CLI Examples
+
+```bash
+# Find all individuals with surname "Smith" born after 1900
+gedcom-parser find family.ged --surname Smith --birth-after 1900
+
+# Show detailed information about an individual
+gedcom-parser show family.ged @I123@
+
+# Extract all descendants of an individual
+gedcom-parser relatives family.ged @I123@ --descendants --output descendants.ged
+
+# Generate statistics in JSON format
+gedcom-parser stats family.ged --json > stats.json
+
+# Validate and check for errors
+gedcom-parser validate family.ged
 ```
 
 ## Factory Providers

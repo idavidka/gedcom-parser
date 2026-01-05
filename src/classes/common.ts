@@ -1,7 +1,7 @@
-import get from "lodash/get";
-import set from "lodash/set";
-import uniqBy from "lodash/uniqBy";
-import unset from "lodash/unset";
+import get from "lodash-es/get";
+import set from "lodash-es/set";
+import uniqBy from "lodash-es/uniqBy";
+import unset from "lodash-es/unset";
 
 import { ID_GETTER_REG, ID_REG } from "../constants/constants";
 import {

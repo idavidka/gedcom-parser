@@ -1,6 +1,7 @@
 import { type ConvertOptions } from "../interfaces/common";
 import type IGedcom from "../interfaces/gedcom";
 import type IGedComStructure from "../structures/gedcom";
+import type IEventDetailStructure from "../structures/event-detail-structure";
 import {
 	type IdType,
 	type IndiKey,
@@ -515,6 +516,212 @@ export class GedCom extends Common implements IGedcom {
 		});
 
 		return allPlaces;
+	}
+
+	/**
+	 * Generate statistics about the GEDCOM file
+	 * @param individuals Optional list of individuals to calculate statistics for. If not provided, all individuals from the GEDCOM will be used.
+	 * @returns Object containing various statistics about the GEDCOM data
+	 */
+	stats(individuals?: Individuals) {
+		const indis = individuals ?? this.indis();
+
+		// Build families list based on whether individuals filter is provided
+		let families: Families | undefined;
+
+		if (individuals) {
+			// If individuals filter is provided, filter families by references
+			const familyIds = new Set<FamKey>();
+			indis?.forEach((indi) => {
+				// Add spouse families
+				indi.FAMS?.toList()?.forEach((famRef) => {
+					const famId = famRef.value as FamKey | undefined;
+					if (famId) familyIds.add(famId);
+				});
+				// Add parent families
+				indi.FAMC?.toList()?.forEach((famRef) => {
+					const famId = famRef.value as FamKey | undefined;
+					if (famId) familyIds.add(famId);
+				});
+			});
+
+			families = this.fams()?.filter((fam) =>
+				fam.id ? familyIds.has(fam.id) : false
+			);
+		} else {
+			// No filter provided, use all families directly
+			families = this.fams();
+		} // Calculate statistics
+		const totalIndividuals = indis?.length || 0;
+		const totalFamilies = families?.length || 0;
+
+		// Count by sex
+		let males = 0;
+		let females = 0;
+		let unknownSex = 0;
+
+		indis?.forEach((indi) => {
+			const sex = indi.SEX?.value;
+			if (sex === "M") males++;
+			else if (sex === "F") females++;
+			else unknownSex++;
+		});
+
+		// Most common surnames
+		const surnames = new Map<string, number>();
+		indis?.forEach((indi) => {
+			const name = indi.NAME?.toValue();
+			if (name) {
+				const match = name.match(/\/(.+?)\//);
+				if (match) {
+					const surname = match[1];
+					surnames.set(surname, (surnames.get(surname) || 0) + 1);
+				}
+			}
+		});
+
+		const topSurnames = Array.from(surnames.entries())
+			.sort((a, b) => b[1] - a[1])
+			.slice(0, 10)
+			.map(([surname, count]) => ({ surname, count }));
+
+		// Most common birth places
+		const birthPlaces = new Map<string, number>();
+		indis?.forEach((indi) => {
+			const place = indi.BIRT?.PLAC?.value;
+			if (place) {
+				birthPlaces.set(place, (birthPlaces.get(place) || 0) + 1);
+			}
+		});
+
+		const topBirthPlaces = Array.from(birthPlaces.entries())
+			.sort((a, b) => b[1] - a[1])
+			.slice(0, 10)
+			.map(([place, count]) => ({ place, count }));
+
+		// Date range
+		const years: number[] = [];
+		indis?.forEach((indi) => {
+			const birthDate = indi.BIRT?.DATE?.toValue();
+			if (birthDate) {
+				const match = birthDate.match(/\d{4}/);
+				if (match) {
+					years.push(parseInt(match[0], 10));
+				}
+			}
+			const deathDate = indi.DEAT?.DATE?.toValue();
+			if (deathDate) {
+				const match = deathDate.match(/\d{4}/);
+				if (match) {
+					years.push(parseInt(match[0], 10));
+				}
+			}
+		});
+
+		const minYear = years.length > 0 ? Math.min(...years) : null;
+		const maxYear = years.length > 0 ? Math.max(...years) : null;
+
+		// Average lifespan
+		const lifespans: number[] = [];
+		indis?.forEach((indi) => {
+			const birthDate = indi.BIRT?.DATE?.toValue();
+			const deathDate = indi.DEAT?.DATE?.toValue();
+			if (birthDate && deathDate) {
+				const birthMatch = birthDate.match(/\d{4}/);
+				const deathMatch = deathDate.match(/\d{4}/);
+				if (birthMatch && deathMatch) {
+					const birthYear = parseInt(birthMatch[0], 10);
+					const deathYear = parseInt(deathMatch[0], 10);
+					if (deathYear > birthYear) {
+						lifespans.push(deathYear - birthYear);
+					}
+				}
+			}
+		});
+
+		const avgLifespan =
+			lifespans.length > 0
+				? lifespans.reduce((sum, age) => sum + age, 0) /
+					lifespans.length
+				: null;
+
+		// First and last person events with type information
+		const firstPerson = indis?.getFirstEvent();
+		const firstBirth = firstPerson?.BIRT?.toList().index(0) as
+			| IEventDetailStructure
+			| undefined;
+		const firstDeath = firstPerson?.DEAT?.toList().index(0) as
+			| IEventDetailStructure
+			| undefined;
+
+		let firstPersonEvent = null;
+		const firstBirthDate = (firstBirth as IEventDetailStructure)?.DATE
+			?.rawValue;
+		const firstDeathDate = (firstDeath as IEventDetailStructure)?.DATE
+			?.rawValue;
+
+		if (firstBirthDate || firstDeathDate) {
+			const isBirth =
+				!firstBirthDate ||
+				(firstDeathDate && firstDeathDate < firstBirthDate)
+					? false
+					: true;
+
+			firstPersonEvent = {
+				type: isBirth ? "BIRT" : "DEAT",
+				event: isBirth ? firstBirth : firstDeath,
+				person: firstPerson,
+			};
+		}
+
+		const lastPerson = indis?.getLastEvent();
+		const lastBirth = lastPerson?.BIRT?.toList().index(0) as
+			| (Common & IEventDetailStructure)
+			| undefined;
+		const lastDeath = lastPerson?.DEAT?.toList().index(0) as
+			| (Common & IEventDetailStructure)
+			| undefined;
+
+		let lastPersonEvent = null;
+		const lastBirthDate = (lastBirth as Common & IEventDetailStructure)
+			?.DATE?.rawValue;
+		const lastDeathDate = (lastDeath as Common & IEventDetailStructure)
+			?.DATE?.rawValue;
+
+		if (lastBirthDate || lastDeathDate) {
+			const isBirth =
+				!lastDeathDate ||
+				(lastBirthDate && lastDeathDate < lastBirthDate)
+					? true
+					: false;
+
+			lastPersonEvent = {
+				type: isBirth ? "BIRT" : "DEAT",
+				event: isBirth ? lastBirth : lastDeath,
+				person: lastPerson,
+			};
+		}
+
+		return {
+			totalIndividuals,
+			totalFamilies,
+			byGender: {
+				males,
+				females,
+				unknown: unknownSex,
+			},
+			dateRange: {
+				earliest: minYear,
+				latest: maxYear,
+			},
+			averageLifespan: avgLifespan
+				? Math.round(avgLifespan * 10) / 10
+				: null,
+			topSurnames,
+			topBirthPlaces,
+			firstPersonEvent,
+			lastPersonEvent,
+		};
 	}
 }
 
