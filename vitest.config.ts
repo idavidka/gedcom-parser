@@ -1,4 +1,10 @@
+// @ts-nocheck
 import { defineConfig } from "vitest/config";
+import { resolve } from "path";
+import { existsSync } from "fs";
+
+// Check if we're running in standalone mode or as part of monorepo
+const isStandalone = !existsSync(resolve(process.cwd(), "../nx.json"));
 
 export default defineConfig({
   test: {
@@ -11,5 +17,12 @@ export default defineConfig({
       "**/cypress/**",
       "**/.{idea,git,cache,output,temp}/**",
     ],
+  },
+  resolve: {
+    alias: isStandalone
+      ? {}
+      : {
+          // Add any aliases needed when running in monorepo mode
+        },
   },
 });
