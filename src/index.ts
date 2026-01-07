@@ -3,8 +3,56 @@ export * from "./utils/parser";
 export { default } from "./utils/parser";
 export { default as GedcomTree } from "./utils/parser";
 
-// Factories - Pluggable dependencies
-export * from "./factories";
+// Unified initialization (recommended)
+export {
+	initGedcomParser,
+	isGedcomParserInitialized,
+	getGedcomParserFactories,
+	type GedcomParserFactories,
+} from "./init";
+
+// Factories - Pluggable dependencies (individual setters)
+export {
+	setCacheManagerFactory,
+	getCacheManagerFactory,
+	resetCacheManagerFactory,
+	type CacheManagerFactory,
+} from "./factories/cache-factory";
+
+export {
+	setKinshipTranslatorClass,
+	getKinshipTranslatorClass,
+	resetKinshipTranslatorClass,
+	type KinshipTranslatorConstructor,
+} from "./factories/kinship-factory";
+
+export {
+	setDateLocaleProvider,
+	getDateLocale,
+	resetDateLocaleProvider,
+	type DateLocaleProvider,
+} from "./factories/date-locale-factory";
+
+export {
+	setI18nProvider,
+	getI18n,
+	resetI18nProvider,
+	type I18nProvider,
+} from "./factories/i18n-factory";
+
+export {
+	setPlaceParserProvider,
+	getPlaceParserProvider,
+	resetPlaceParserProvider,
+	type PlaceParserFunction,
+} from "./factories/place-parser-provider";
+
+export {
+	setPlaceTranslatorProvider,
+	getPlaceTranslatorProvider,
+	resetPlaceTranslatorProvider,
+	type PlaceTranslatorFunction,
+} from "./factories/place-translator-provider";
 
 // Cache interface for custom implementations
 export type { ICacheManager } from "./utils/cache";
@@ -26,6 +74,9 @@ export * from "./interfaces";
 
 // Type structures
 export * from "./structures";
+
+// Factories - Pluggable dependencies
+export * from "./factories";
 
 // Utils - commonly used utilities
 // Export type Range with alias to avoid conflict with enum Range from types
