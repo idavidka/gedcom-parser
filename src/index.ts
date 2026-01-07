@@ -3,7 +3,15 @@ export * from "./utils/parser";
 export { default } from "./utils/parser";
 export { default as GedcomTree } from "./utils/parser";
 
-// Factories - Pluggable dependencies
+// Unified initialization (recommended)
+export {
+	initGedcomParser,
+	isGedcomParserInitialized,
+	getGedcomParserFactories,
+	type GedcomParserFactories,
+} from "./init";
+
+// Factories - Pluggable dependencies (individual setters)
 export {
 	setCacheManagerFactory,
 	getCacheManagerFactory,
