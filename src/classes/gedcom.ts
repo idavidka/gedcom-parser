@@ -356,11 +356,13 @@ export class GedCom extends Common implements IGedcom {
 		
 		// Update GEDC.VERS to match requested version
 		if (version) {
-			const gedc = newHead.get("GEDC") || createCommon();
-			newHead.set("GEDC", gedc);
-			const vers = gedc.get("VERS") || createCommon();
-			gedc.set("VERS", vers);
-			vers.value = version === 7 ? "7.0" : "5.5.1";
+			if (!newHead.GEDC) {
+				newHead.GEDC = createCommon();
+			}
+			if (!newHead.GEDC.VERS) {
+				newHead.GEDC.VERS = createCommon();
+			}
+			newHead.GEDC.VERS.value = version === 7 ? "7.0" : "5.5.1";
 		}
 
 		return newHead;
