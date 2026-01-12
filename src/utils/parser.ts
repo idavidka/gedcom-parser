@@ -21,6 +21,7 @@ import type { ListTag } from "../types/types";
 import { create } from "./common-creator";
 import { isDevelopment } from "./get-product-details";
 import { getRawSize } from "./get-raw-size";
+import { detectGedcomVersion } from "./version-detector";
 
 const isDev = isDevelopment();
 
@@ -72,6 +73,25 @@ const isDev = isDevelopment();
 
 const GedcomTree = {
 	parse: function (content: string, options?: { settings?: Settings }) {
+		// Detect GEDCOM version
+		const version = detectGedcomVersion(content);
+		
+		// Route to appropriate parser
+		if (version === 7) {
+			return this.parseV7(content, options);
+		}
+		
+		// Default to GEDCOM 5.x parser
+		return this.parseHierarchy(content, options);
+	},
+	parseV7: function (
+		content: string,
+		options?: { settings?: Settings }
+	) {
+		// For now, GEDCOM 7 uses the same parser structure as GEDCOM 5
+		// The main differences in GEDCOM 7 are structural and semantic,
+		// but the line-based parsing approach remains the same.
+		// Both produce the same GedcomType output.
 		return this.parseHierarchy(content, options);
 	},
 	parseHierarchy: function (
