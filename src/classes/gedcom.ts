@@ -334,7 +334,7 @@ export class GedCom extends Common implements IGedcom {
 		return lists;
 	}
 
-	private getDownloadHeader() {
+	private getDownloadHeader(version?: 5 | 7) {
 		const newHead = createCommon() as Required<IGedComStructure>["HEAD"];
 
 		Object.assign(newHead!, this.get("HEAD") ?? {});
@@ -353,6 +353,15 @@ export class GedCom extends Common implements IGedcom {
 		newSour.VERS!.value = getVersion();
 
 		newHead!.set("SOUR", newSour);
+		
+		// Update GEDC.VERS to match requested version
+		if (version) {
+			const gedc = newHead.get("GEDC") || createCommon();
+			newHead.set("GEDC", gedc);
+			const vers = gedc.get("VERS") || createCommon();
+			gedc.set("VERS", vers);
+			vers.value = version === 7 ? "7.0" : "5.5.1";
+		}
 
 		return newHead;
 	}
@@ -367,7 +376,7 @@ export class GedCom extends Common implements IGedcom {
 		const newContent = this.getIndiRelatedLists(indis);
 
 		Object.assign(newGedcom, this, newContent, {
-			HEAD: this.getDownloadHeader(),
+			HEAD: this.getDownloadHeader(5), // Default to GEDCOM 5
 		});
 
 		return newGedcom;
@@ -390,7 +399,7 @@ export class GedCom extends Common implements IGedcom {
 		const newContent = this.getIndiRelatedLists(options.indis);
 
 		Object.assign(newGedcom, this, newContent, {
-			HEAD: this.getDownloadHeader(),
+			HEAD: this.getDownloadHeader(options.version || 5),
 		});
 
 		delete options.indis;
@@ -414,7 +423,7 @@ export class GedCom extends Common implements IGedcom {
 
 		if (!options?.original) {
 			Object.assign(newGedcom, {
-				HEAD: this.getDownloadHeader(),
+				HEAD: this.getDownloadHeader(options?.version || 5),
 			});
 		}
 
