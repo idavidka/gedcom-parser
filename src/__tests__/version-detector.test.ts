@@ -50,5 +50,27 @@ describe("GEDCOM Version Detection", () => {
 			const version = detectGedcomVersion(content);
 			expect(version).toBe(7);
 		});
+
+		it("should handle multiple tags under GEDC", () => {
+			const content = `0 HEAD
+1 GEDC
+2 FORM LINEAGE-LINKED
+2 VERS 7.0
+0 TRLR`;
+			const version = detectGedcomVersion(content);
+			expect(version).toBe(7);
+		});
+
+		it("should handle VERS not being first under GEDC", () => {
+			const content = `0 HEAD
+1 GEDC
+2 FORM LINEAGE-LINKED
+2 LANG EN
+2 VERS 5.5.1
+2 PLAC UTF-8
+0 TRLR`;
+			const version = detectGedcomVersion(content);
+			expect(version).toBe(5);
+		});
 	});
 });

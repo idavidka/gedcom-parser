@@ -9,14 +9,21 @@
  */
 export function detectGedcomVersion(content: string): 5 | 7 | undefined {
 	// Look for the version line in the GEDC structure
-	// Format: "2 VERS <version>" under "1 GEDC" under "0 HEAD"
-	const versionMatch = content.match(/1\s+GEDC[^\n]*\n[^\n]*2\s+VERS\s+(\S+)/i);
+	// More robust approach: match GEDC block and then find VERS within it
+	const gedcMatch = content.match(/1\s+GEDC[^\n]*\n((?:2\s+[^\n]*\n)*)/i);
 	
-	if (!versionMatch || !versionMatch[1]) {
+	if (!gedcMatch || !gedcMatch[1]) {
 		return undefined;
 	}
 	
-	const versionString = versionMatch[1];
+	// Within the GEDC block, find the VERS tag
+	const versMatch = gedcMatch[1].match(/2\s+VERS\s+(\S+)/i);
+	
+	if (!versMatch || !versMatch[1]) {
+		return undefined;
+	}
+	
+	const versionString = versMatch[1];
 	
 	// Check if it's GEDCOM 7.x
 	if (versionString.startsWith('7')) {
