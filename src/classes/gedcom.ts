@@ -802,3 +802,255 @@ export const validateGedcomContent = (
 
 	return { valid: true };
 };
+
+/**
+ * Merge two GEDCOM objects into a single result using a configurable matching strategy
+ * @param targetGedcom - The base GEDCOM (kept as the primary source)
+ * @param sourceGedcom - The GEDCOM to be merged into the target
+ * @param strategy - Matching strategy: "id" (default) or any MultiTag (e.g., "NAME", "BIRT.DATE")
+ * @returns The merged GedComType with all individuals and families combined
+ */
+export const mergeGedcoms = (
+	targetGedcom: GedComType,
+	sourceGedcom: GedComType,
+	strategy: MultiTag | "id" = "id"
+): GedComType => {
+	// Deep clone the target GEDCOM to avoid modifying the original
+	const targetGedcomString = targetGedcom.toGedcom(undefined, undefined, { original: true });
+	const mergedGedcom = createGedCom();
+	
+	// Parse target back to get a fresh copy
+	Object.assign(mergedGedcom, targetGedcom);
+	
+	// Track ID mapping: source ID -> new ID or matched target ID
+	const idMap = new Map<IdType, IdType>();
+	
+	// Track matching: sourceIndiId -> targetIndiId (for individuals that match by strategy)
+	const matchMap = new Map<IndiKey, IndiKey>();
+	
+	// Get source individuals and families
+	const sourceIndis = sourceGedcom.indis();
+	const sourceFams = sourceGedcom.fams();
+	const targetIndis = mergedGedcom.indis();
+	const targetFams = mergedGedcom.fams();
+	
+	// Step 1: Identify matches and create ID mappings for individuals
+	sourceIndis?.forEach((sourceIndi) => {
+		if (!sourceIndi.id) return;
+		
+		let matchedTargetIndi: IndiType | undefined;
+		
+		if (strategy === "id") {
+			// Match by ID directly - check if target has this exact ID
+			matchedTargetIndi = targetIndis?.item(sourceIndi.id);
+		} else {
+			// Match by specified MultiTag value
+			const sourceValueRaw = sourceIndi.get(strategy);
+			const sourceValue = sourceValueRaw?.toString?.() || String((sourceValueRaw as Common | undefined)?.toValue?.() || "");
+			
+			if (sourceValue) {
+				// Find target individual with same value
+				matchedTargetIndi = targetIndis?.find((targetIndi) => {
+					const targetValueRaw = targetIndi.get(strategy);
+					const targetValue = targetValueRaw?.toString?.() || String((targetValueRaw as Common | undefined)?.toValue?.() || "");
+					return targetValue && targetValue === sourceValue;
+				});
+			}
+		}
+		
+		if (matchedTargetIndi && matchedTargetIndi.id) {
+			// Found a match - map source ID to existing target ID
+			matchMap.set(sourceIndi.id, matchedTargetIndi.id);
+			idMap.set(sourceIndi.id, matchedTargetIndi.id);
+		} else {
+			// No match - need to create a new unique ID
+			const baseId = sourceIndi.id;
+			let newId: IndiKey = baseId;
+			let counter = 1;
+			
+			// Generate unique ID that doesn't conflict with target
+			while (targetIndis?.item(newId) || idMap.has(newId as IdType)) {
+				// Extract number from ID like @I123@ and increment
+				const numMatch = baseId.match(/\d+/);
+				const prefix = baseId.match(/^@[A-Z]+/)?.[0] || "@I";
+				const baseNum = numMatch ? parseInt(numMatch[0]) : 1;
+				newId = `${prefix}${baseNum + counter * 1000}@` as IndiKey;
+				counter++;
+			}
+			
+			idMap.set(sourceIndi.id, newId as IdType);
+		}
+	});
+	
+	// Step 2: Map family IDs
+	sourceFams?.forEach((sourceFam) => {
+		if (!sourceFam.id) return;
+		
+		const baseId = sourceFam.id;
+		let newId: FamKey = baseId;
+		let counter = 1;
+		
+		// Generate unique family ID
+		while (targetFams?.item(newId) || idMap.has(newId as IdType)) {
+			const numMatch = baseId.match(/\d+/);
+			const prefix = baseId.match(/^@[A-Z]+/)?.[0] || "@F";
+			const baseNum = numMatch ? parseInt(numMatch[0]) : 1;
+			newId = `${prefix}${baseNum + counter * 1000}@` as FamKey;
+			counter++;
+		}
+		
+		idMap.set(sourceFam.id, newId as IdType);
+	});
+	
+	// Step 3: Process source individuals and add/merge them
+	sourceIndis?.forEach((sourceIndi) => {
+		if (!sourceIndi.id) return;
+		
+		const mappedId = idMap.get(sourceIndi.id) as IndiKey | undefined;
+		if (!mappedId) return;
+		
+		const matchedTargetId = matchMap.get(sourceIndi.id);
+		
+		if (matchedTargetId) {
+			// This individual matches an existing one - merge data
+			const targetIndi = mergedGedcom.indis()?.item(matchedTargetId);
+			if (targetIndi) {
+				// Merge the source data into target individual (without override)
+				targetIndi.merge(sourceIndi, false);
+				
+				// Add FAMS references with remapped IDs
+				const sourceFAMS = sourceIndi.FAMS?.toList();
+				sourceFAMS?.forEach((famRef) => {
+					const oldFamId = famRef.value as FamKey | undefined;
+					if (oldFamId) {
+						const newFamId = idMap.get(oldFamId) as FamKey | undefined;
+						if (newFamId) {
+							const newFamRef = createCommon(mergedGedcom, undefined, targetIndi);
+							newFamRef.value = newFamId;
+							targetIndi.assign("FAMS", newFamRef, true);
+						}
+					}
+				});
+				
+				// Add FAMC references with remapped IDs
+				const sourceFAMC = sourceIndi.FAMC?.toList();
+				sourceFAMC?.forEach((famRef) => {
+					const oldFamId = famRef.value as FamKey | undefined;
+					if (oldFamId) {
+						const newFamId = idMap.get(oldFamId) as FamKey | undefined;
+						if (newFamId) {
+							const newFamRef = createCommon(mergedGedcom, undefined, targetIndi);
+							newFamRef.value = newFamId;
+							targetIndi.assign("FAMC", newFamRef, true);
+						}
+					}
+				});
+			}
+		} else {
+			// This is a new individual - clone and add with new ID
+			const clonedIndi = sourceIndi.clone(false) as IndiType;
+			Object.assign(clonedIndi, { _gedcom: mergedGedcom });
+			clonedIndi.id = mappedId;
+			
+			// Update FAMS references with remapped IDs
+			const sourceFAMS = sourceIndi.FAMS?.toList();
+			if (sourceFAMS?.length) {
+				// Clear old FAMS
+				clonedIndi.set("FAMS", undefined);
+				
+				sourceFAMS.forEach((famRef) => {
+					const oldFamId = famRef.value as FamKey | undefined;
+					if (oldFamId) {
+						const newFamId = idMap.get(oldFamId) as FamKey | undefined;
+						if (newFamId) {
+							const newFamRef = createCommon(mergedGedcom, undefined, clonedIndi);
+							newFamRef.value = newFamId;
+							clonedIndi.assign("FAMS", newFamRef, true);
+						}
+					}
+				});
+			}
+			
+			// Update FAMC references with remapped IDs
+			const sourceFAMC = sourceIndi.FAMC?.toList();
+			if (sourceFAMC?.length) {
+				// Clear old FAMC
+				clonedIndi.set("FAMC", undefined);
+				
+				sourceFAMC.forEach((famRef) => {
+					const oldFamId = famRef.value as FamKey | undefined;
+					if (oldFamId) {
+						const newFamId = idMap.get(oldFamId) as FamKey | undefined;
+						if (newFamId) {
+							const newFamRef = createCommon(mergedGedcom, undefined, clonedIndi);
+							newFamRef.value = newFamId;
+							clonedIndi.assign("FAMC", newFamRef, true);
+						}
+					}
+				});
+			}
+			
+			// Add to merged gedcom
+			mergedGedcom.indis()?.item(mappedId, clonedIndi);
+		}
+	});
+	
+	// Step 4: Process source families and add them with remapped IDs
+	sourceFams?.forEach((sourceFam) => {
+		if (!sourceFam.id) return;
+		
+		const newFamId = idMap.get(sourceFam.id) as FamKey | undefined;
+		if (!newFamId) return;
+		
+		// Clone the family
+		const clonedFam = sourceFam.clone(false) as FamType;
+		Object.assign(clonedFam, { _gedcom: mergedGedcom });
+		clonedFam.id = newFamId;
+		
+		// Update HUSB reference
+		const sourceHusb = sourceFam.HUSB?.value as IndiKey | undefined;
+		if (sourceHusb) {
+			const newHusbId = idMap.get(sourceHusb) as IndiKey | undefined;
+			if (newHusbId) {
+				const newHusbRef = createCommon(mergedGedcom, undefined, clonedFam);
+				newHusbRef.value = newHusbId;
+				clonedFam.set("HUSB", newHusbRef);
+			}
+		}
+		
+		// Update WIFE reference
+		const sourceWife = sourceFam.WIFE?.value as IndiKey | undefined;
+		if (sourceWife) {
+			const newWifeId = idMap.get(sourceWife) as IndiKey | undefined;
+			if (newWifeId) {
+				const newWifeRef = createCommon(mergedGedcom, undefined, clonedFam);
+				newWifeRef.value = newWifeId;
+				clonedFam.set("WIFE", newWifeRef);
+			}
+		}
+		
+		// Update CHIL references
+		const sourceChildren = sourceFam.CHIL?.toList();
+		if (sourceChildren?.length) {
+			// Clear old CHIL
+			clonedFam.set("CHIL", undefined);
+			
+			sourceChildren.forEach((childRef) => {
+				const oldChildId = childRef.value as IndiKey | undefined;
+				if (oldChildId) {
+					const newChildId = idMap.get(oldChildId) as IndiKey | undefined;
+					if (newChildId) {
+						const newChildRef = createCommon(mergedGedcom, undefined, clonedFam);
+						newChildRef.value = newChildId;
+						clonedFam.assign("CHIL", newChildRef, true);
+					}
+				}
+			});
+		}
+		
+		// Add to merged gedcom
+		mergedGedcom.fams()?.item(newFamId, clonedFam);
+	});
+	
+	return mergedGedcom;
+};

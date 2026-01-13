@@ -1,0 +1,29 @@
+0 HEAD
+1 SOUR Test Target
+1 GEDC
+2 VERS 5.5.1
+1 CHAR UTF-8
+0 @I1@ INDI
+1 NAME Alice /Johnson/
+2 GIVN Alice
+2 SURN Johnson
+1 SEX F
+1 BIRT
+2 DATE 1 Jan 1960
+2 PLAC Chicago
+1 FAMS @F1@
+0 @I2@ INDI
+1 NAME John /Smith/
+2 GIVN John
+2 SURN Smith
+1 SEX M
+1 BIRT
+2 DATE 1 Jan 1950
+2 PLAC New York
+1 FAMS @F1@
+0 @F1@ FAM
+1 HUSB @I2@
+1 WIFE @I1@
+1 MARR
+2 DATE 1 Jun 1985
+0 TRLR
