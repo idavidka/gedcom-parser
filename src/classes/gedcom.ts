@@ -803,12 +803,36 @@ export const validateGedcomContent = (
 	return { valid: true };
 };
 
+// Constants for merge operation
+const MERGE_ID_INCREMENT_MULTIPLIER = 1000;
+
+/**
+ * Helper function to convert a Common or List value to a string for comparison
+ */
+const valueToString = (value: Common | List | undefined): string => {
+	if (!value) return "";
+	return value.toString?.() || String((value as Common | undefined)?.toValue?.() || "");
+};
+
 /**
  * Merge two GEDCOM objects into a single result using a configurable matching strategy
  * @param targetGedcom - The base GEDCOM (kept as the primary source)
  * @param sourceGedcom - The GEDCOM to be merged into the target
- * @param strategy - Matching strategy: "id" (default) or any MultiTag (e.g., "NAME", "BIRT.DATE")
- * @returns The merged GedComType with all individuals and families combined
+ * @param strategy - Matching strategy: "id" (default) to match by individual ID, or any MultiTag (e.g., "NAME", "BIRT.DATE") to match by that field's value
+ * @returns A Promise resolving to the merged GedComType with all individuals and families combined
+ * 
+ * @example
+ * // Merge by ID (individuals with same ID are considered the same person)
+ * const merged = await mergeGedcoms(target, source, "id");
+ * 
+ * @example
+ * // Merge by NAME (individuals with same name are considered the same person)
+ * const merged = await mergeGedcoms(target, source, "NAME");
+ * 
+ * @remarks
+ * - Source individuals are always assigned new unique IDs to avoid conflicts
+ * - When individuals match by strategy, they are merged (data and relationships combined)
+ * - All family relationships (FAMS/FAMC) are preserved with updated ID references
  */
 export const mergeGedcoms = async (
 	targetGedcom: GedComType,
@@ -846,13 +870,13 @@ export const mergeGedcoms = async (
 		} else {
 			// Match by specified MultiTag value
 			const sourceValueRaw = sourceIndi.get(strategy);
-			const sourceValue = sourceValueRaw?.toString?.() || String((sourceValueRaw as Common | undefined)?.toValue?.() || "");
+			const sourceValue = valueToString(sourceValueRaw);
 			
 			if (sourceValue) {
 				// Find target individual with same value
 				matchedTargetIndi = targetIndis?.find((targetIndi) => {
 					const targetValueRaw = targetIndi.get(strategy);
-					const targetValue = targetValueRaw?.toString?.() || String((targetValueRaw as Common | undefined)?.toValue?.() || "");
+					const targetValue = valueToString(targetValueRaw);
 					return targetValue && targetValue === sourceValue;
 				});
 			}
@@ -875,7 +899,7 @@ export const mergeGedcoms = async (
 				const numMatch = baseId.match(/\d+/);
 				const prefix = baseId.match(/^@[A-Z]+/)?.[0] || "@I";
 				const baseNum = numMatch ? parseInt(numMatch[0]) : 1;
-				newId = `${prefix}${baseNum + counter * 1000}@` as IndiKey;
+				newId = `${prefix}${baseNum + counter * MERGE_ID_INCREMENT_MULTIPLIER}@` as IndiKey;
 				counter++;
 			}
 			
@@ -896,7 +920,7 @@ export const mergeGedcoms = async (
 			const numMatch = baseId.match(/\d+/);
 			const prefix = baseId.match(/^@[A-Z]+/)?.[0] || "@F";
 			const baseNum = numMatch ? parseInt(numMatch[0]) : 1;
-			newId = `${prefix}${baseNum + counter * 1000}@` as FamKey;
+			newId = `${prefix}${baseNum + counter * MERGE_ID_INCREMENT_MULTIPLIER}@` as FamKey;
 			counter++;
 		}
 		
@@ -920,24 +944,28 @@ export const mergeGedcoms = async (
 	const remappedSourceFams = remappedSource.fams();
 	
 	// Step 5: Add non-matched individuals and families to merged GEDCOM
+	// Create reverse map for efficient lookup
+	const reverseMatchMap = new Map<IdType, IndiKey>();
+	matchMap.forEach((targetId, sourceId) => {
+		const mappedId = idMap.get(sourceId);
+		if (mappedId) {
+			reverseMatchMap.set(mappedId, targetId);
+		}
+	});
+	
 	remappedSourceIndis?.forEach((sourceIndi) => {
 		if (!sourceIndi.id) return;
 		
-		// Check if this individual was matched (original ID before remapping)
-		let wasMatched = false;
-		matchMap.forEach((targetId, sourceId) => {
-			if (idMap.get(sourceId) === sourceIndi.id) {
-				wasMatched = true;
-				// Merge this individual's data into the matched target individual
-				const targetIndi = mergedGedcom.indis()?.item(targetId);
-				if (targetIndi) {
-					// Merge without overriding existing data
-					targetIndi.merge(sourceIndi, false);
-				}
+		// Check if this individual was matched
+		const matchedTargetId = reverseMatchMap.get(sourceIndi.id);
+		if (matchedTargetId) {
+			// Merge this individual's data into the matched target individual
+			const targetIndi = mergedGedcom.indis()?.item(matchedTargetId);
+			if (targetIndi) {
+				// Merge without overriding existing data
+				targetIndi.merge(sourceIndi, false);
 			}
-		});
-		
-		if (!wasMatched) {
+		} else {
 			// This is a new individual - add it to merged GEDCOM
 			mergedGedcom.indis()?.item(sourceIndi.id, sourceIndi);
 		}

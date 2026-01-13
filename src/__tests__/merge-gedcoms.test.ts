@@ -172,7 +172,8 @@ describe("mergeGedcoms Function", () => {
 			const { gedcom: sourceGedcom } = GedcomTree.parse(mergeSource);
 			const { gedcom: targetGedcom } = GedcomTree.parse(mergeTarget);
 
-			// Use a strategy that won't match anyone (e.g., a non-existent tag)
+			// Use a strategy that won't match anyone - OCCU (occupation) doesn't exist in test files
+			// Type assertion is needed because OCCU is a valid GEDCOM tag but not in our test data
 			const merged = await mergeGedcoms(targetGedcom, sourceGedcom, "OCCU" as MultiTag);
 
 			// All individuals should be present (no matches, so all added)

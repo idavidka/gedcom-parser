@@ -12,6 +12,17 @@ interface MergeOptions {
 	strategy?: string;
 }
 
+/**
+ * Helper to get and validate the merge strategy
+ */
+function getMergeStrategy(options: MergeOptions): MultiTag | 'id' {
+	if (options.dedupe) {
+		console.warn('Warning: --dedupe option is deprecated. Use --strategy NAME instead.');
+		return 'NAME';
+	}
+	return (options.strategy || 'id') as MultiTag | 'id';
+}
+
 export function registerMergeCommand(program: Command): void {
 	program
 		.command('merge <files...>')
@@ -38,7 +49,7 @@ export function registerMergeCommand(program: Command): void {
 					const { gedcom: targetGedcom } = GedcomTree.parse(targetContent);
 					const { gedcom: sourceGedcom } = GedcomTree.parse(sourceContent);
 
-					const strategy = (options.strategy || 'id') as MultiTag | 'id';
+					const strategy = getMergeStrategy(options);
 					const merged = await mergeGedcoms(targetGedcom, sourceGedcom, strategy);
 
 					const mergedContent = merged.toGedcom();
@@ -58,11 +69,11 @@ export function registerMergeCommand(program: Command): void {
 				let targetContent = readGedcomFile(files[0]);
 				let { gedcom: targetGedcom } = GedcomTree.parse(targetContent);
 
+				const strategy = getMergeStrategy(options);
 				for (let i = 1; i < files.length; i++) {
 					const sourceContent = readGedcomFile(files[i]);
 					const { gedcom: sourceGedcom } = GedcomTree.parse(sourceContent);
 
-					const strategy = (options.strategy || 'id') as MultiTag | 'id';
 					targetGedcom = await mergeGedcoms(targetGedcom, sourceGedcom, strategy);
 					
 					console.log(`  Merged file ${i + 1}/${files.length}: ${files[i]}`);
