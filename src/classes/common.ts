@@ -506,10 +506,14 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 	 * Note: Per GEDCOM 5.5.1 spec, only these escape sequences are used:
 	 * - %0A (newline), %0D (carriage return), %09 (tab), %25 (percent)
 	 * Other sequences like %20 (space) or %2F (slash) are not part of the standard
+	 * 
+	 * Safety: Processing %25 first prevents double-decoding. For example:
+	 * - Input: "%250A" → After %25: "%0A" → After %0A: "%0A" (unchanged, correct)
+	 * - Input: "%0A"   → After %25: "%0A" → After %0A: "\n" (newline, correct)
 	 */
 	private decodeGedcom7Value(value: string): string {
-		// Replace common GEDCOM 5.5.1 escape sequences
-		// Process %25 first to avoid double-decoding
+		// Replace GEDCOM 5.5.1 escape sequences in the correct order
+		// %25 must be processed first to avoid double-decoding
 		return value
 			.replace(/%25/g, '%')   // Percent sign (must be first)
 			.replace(/%0A/g, '\n')  // Newline
