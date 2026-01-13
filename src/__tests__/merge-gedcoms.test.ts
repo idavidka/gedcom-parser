@@ -9,11 +9,11 @@ const mergeSourceNameMatch = textFileLoader("src/__tests__/mocks/merge-source-na
 
 describe("mergeGedcoms Function", () => {
 	describe("Basic Merge with ID Strategy", () => {
-		it("should merge two GEDCOMs without ID conflicts", async () => {
+		it("should.*", () => {
 			const { gedcom: sourceGedcom } = GedcomTree.parse(mergeSource);
 			const { gedcom: targetGedcom } = GedcomTree.parse(mergeTarget);
 
-			const merged = await mergeGedcoms(targetGedcom, sourceGedcom, "id");
+			const merged = mergeGedcoms(targetGedcom, sourceGedcom, "id");
 
 			// Check that all individuals are present (no ID conflicts, so all should be added)
 			const mergedIndis = merged.indis();
@@ -29,11 +29,11 @@ describe("mergeGedcoms Function", () => {
 			expect(merged.indi("@I12@")?.NAME?.toString()).toBe("Bob /Smith/");
 		});
 
-		it("should remap source IDs when needed", async () => {
+		it("should.*", () => {
 			const { gedcom: sourceGedcom } = GedcomTree.parse(mergeSource);
 			const { gedcom: targetGedcom } = GedcomTree.parse(mergeTarget);
 
-			const merged = await mergeGedcoms(targetGedcom, sourceGedcom, "id");
+			const merged = mergeGedcoms(targetGedcom, sourceGedcom, "id");
 
 			// Source has @I10@, @I11@, @I12@ which don't conflict with target @I1@, @I2@
 			// So all 5 individuals should be present
@@ -59,11 +59,11 @@ describe("mergeGedcoms Function", () => {
 			expect(aliceCount).toBe(1); // Only from target (@I1@)
 		});
 
-		it("should preserve family relationships with remapped IDs", async () => {
+		it("should.*", () => {
 			const { gedcom: sourceGedcom } = GedcomTree.parse(mergeSource);
 			const { gedcom: targetGedcom } = GedcomTree.parse(mergeTarget);
 
-			const merged = await mergeGedcoms(targetGedcom, sourceGedcom, "id");
+			const merged = mergeGedcoms(targetGedcom, sourceGedcom, "id");
 
 			// Check that families exist
 			const mergedFams = merged.fams();
@@ -95,11 +95,11 @@ describe("mergeGedcoms Function", () => {
 			});
 		});
 
-		it("should preserve FAMS and FAMC references with remapped IDs", async () => {
+		it("should.*", () => {
 			const { gedcom: sourceGedcom } = GedcomTree.parse(mergeSource);
 			const { gedcom: targetGedcom } = GedcomTree.parse(mergeTarget);
 
-			const merged = await mergeGedcoms(targetGedcom, sourceGedcom, "id");
+			const merged = mergeGedcoms(targetGedcom, sourceGedcom, "id");
 
 			// Check individuals' family references
 			merged.indis()?.forEach((indi) => {
@@ -125,12 +125,12 @@ describe("mergeGedcoms Function", () => {
 	});
 
 	describe("Merge with NAME Strategy", () => {
-		it("should merge individuals with matching names", async () => {
+		it("should.*", () => {
 			const { gedcom: sourceGedcom } = GedcomTree.parse(mergeSource);
 			const { gedcom: targetGedcom } = GedcomTree.parse(mergeTarget);
 
 			// Both have "John /Smith/" at different IDs - should be merged
-			const merged = await mergeGedcoms(targetGedcom, sourceGedcom, "NAME");
+			const merged = mergeGedcoms(targetGedcom, sourceGedcom, "NAME");
 
 			const mergedIndis = merged.indis();
 			
@@ -143,11 +143,11 @@ describe("mergeGedcoms Function", () => {
 			expect(merged.indi("@I12@")).toBeTruthy(); // Bob
 		});
 
-		it("should merge family relationships from matched individuals", async () => {
+		it("should.*", () => {
 			const { gedcom: sourceGedcom } = GedcomTree.parse(mergeSource);
 			const { gedcom: targetGedcom } = GedcomTree.parse(mergeTarget);
 
-			const merged = await mergeGedcoms(targetGedcom, sourceGedcom, "NAME");
+			const merged = mergeGedcoms(targetGedcom, sourceGedcom, "NAME");
 
 			// Verify merge happened by checking count
 			expect(merged.indis()?.length).toBe(4); // 5 total minus 1 merged
@@ -158,35 +158,37 @@ describe("mergeGedcoms Function", () => {
 	});
 
 	describe("Edge Cases", () => {
-		it("should handle empty source GEDCOM", async () => {
+		it("should.*", () => {
 			const { gedcom: targetGedcom } = GedcomTree.parse(mergeTarget);
 			const { gedcom: emptyGedcom } = GedcomTree.parse("0 HEAD\n1 GEDC\n2 VERS 5.5.1\n0 TRLR");
 
-			const merged = await mergeGedcoms(targetGedcom, emptyGedcom, "id");
+			const merged = mergeGedcoms(targetGedcom, emptyGedcom, "id");
 
 			// Should be same as target
 			expect(merged.indis()?.length).toBe(targetGedcom.indis()?.length);
 		});
 
-		it("should handle source GEDCOM with no matching individuals", async () => {
+		it("should.*", () => {
 			const { gedcom: sourceGedcom } = GedcomTree.parse(mergeSource);
 			const { gedcom: targetGedcom } = GedcomTree.parse(mergeTarget);
+
+			// Capture counts before merge
+			const targetCount = targetGedcom.indis()?.length || 0;
+			const sourceCount = sourceGedcom.indis()?.length || 0;
 
 			// Use a strategy that won't match anyone - OCCU (occupation) doesn't exist in test files
 			// Type assertion is needed because OCCU is a valid GEDCOM tag but not in our test data
-			const merged = await mergeGedcoms(targetGedcom, sourceGedcom, "OCCU" as MultiTag);
+			const merged = mergeGedcoms(targetGedcom, sourceGedcom, "OCCU" as MultiTag);
 
 			// All individuals should be present (no matches, so all added)
-			const targetCount = targetGedcom.indis()?.length || 0;
-			const sourceCount = sourceGedcom.indis()?.length || 0;
 			expect(merged.indis()?.length).toBe(targetCount + sourceCount);
 		});
 
-		it("should generate unique IDs even with many conflicts", async () => {
+		it("should.*", () => {
 			const { gedcom: sourceGedcom } = GedcomTree.parse(mergeSource);
 			const { gedcom: targetGedcom } = GedcomTree.parse(mergeTarget);
 
-			const merged = await mergeGedcoms(targetGedcom, sourceGedcom, "id");
+			const merged = mergeGedcoms(targetGedcom, sourceGedcom, "id");
 
 			// Check all IDs are unique
 			const allIds = new Set<string>();
@@ -207,11 +209,11 @@ describe("mergeGedcoms Function", () => {
 	});
 
 	describe("GEDCOM Export", () => {
-		it("should export merged GEDCOM as valid string", async () => {
+		it("should.*", () => {
 			const { gedcom: sourceGedcom } = GedcomTree.parse(mergeSource);
 			const { gedcom: targetGedcom } = GedcomTree.parse(mergeTarget);
 
-			const merged = await mergeGedcoms(targetGedcom, sourceGedcom, "id");
+			const merged = mergeGedcoms(targetGedcom, sourceGedcom, "id");
 
 			const gedcomString = merged.toGedcom();
 			expect(gedcomString).toBeTruthy();

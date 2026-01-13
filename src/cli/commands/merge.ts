@@ -34,7 +34,7 @@ export function registerMergeCommand(program: Command): void {
 			'Matching strategy: "id" (match by ID) or a tag like "NAME" (match by name). Default: "id"',
 			'id'
 		)
-		.action(async (files: string[], options: MergeOptions) => {
+		.action((files: string[], options: MergeOptions) => {
 			try {
 				if (files.length < 2) {
 					console.error('At least 2 files are required for merging');
@@ -50,7 +50,7 @@ export function registerMergeCommand(program: Command): void {
 					const { gedcom: sourceGedcom } = GedcomTree.parse(sourceContent);
 
 					const strategy = getMergeStrategy(options);
-					const merged = await mergeGedcoms(targetGedcom, sourceGedcom, strategy);
+					const merged = mergeGedcoms(targetGedcom, sourceGedcom, strategy);
 
 					const mergedContent = merged.toGedcom();
 					writeFileSync(options.output, mergedContent, 'utf-8');
@@ -74,7 +74,7 @@ export function registerMergeCommand(program: Command): void {
 					const sourceContent = readGedcomFile(files[i]);
 					const { gedcom: sourceGedcom } = GedcomTree.parse(sourceContent);
 
-					targetGedcom = await mergeGedcoms(targetGedcom, sourceGedcom, strategy);
+					targetGedcom = mergeGedcoms(targetGedcom, sourceGedcom, strategy);
 					
 					console.log(`  Merged file ${i + 1}/${files.length}: ${files[i]}`);
 				}

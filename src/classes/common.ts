@@ -100,6 +100,14 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		return this._value;
 	}
 
+	/**
+	 * Set the gedcom reference for this object
+	 * @param gedcom - The GedComType to set as the gedcom reference
+	 */
+	setGedcom(gedcom: GedComType): void {
+		this._gedcom = gedcom;
+	}
+
 	// avoid to override
 	get originalValue() {
 		return this._value;
