@@ -1,0 +1,29 @@
+0 HEAD
+1 SOUR Test Source With Matching Names
+1 GEDC
+2 VERS 5.5.1
+1 CHAR UTF-8
+0 @I50@ INDI
+1 NAME John /Smith/
+2 GIVN John
+2 SURN Smith
+1 SEX M
+1 BIRT
+2 DATE 1 Jan 1950
+2 PLAC London
+1 FAMS @F50@
+0 @I51@ INDI
+1 NAME Mary /Jones/
+2 GIVN Mary
+2 SURN Jones
+1 SEX F
+1 BIRT
+2 DATE 5 May 1952
+2 PLAC Paris
+1 FAMS @F50@
+0 @F50@ FAM
+1 HUSB @I50@
+1 WIFE @I51@
+1 MARR
+2 DATE 1 Jun 1970
+0 TRLR
