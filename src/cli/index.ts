@@ -1,30 +1,30 @@
 #!/usr/bin/env node
 
-import { Command } from 'commander';
-import { readFileSync } from 'fs';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
-import { registerInfoCommand } from './commands/info.js';
-import { registerFindCommand } from './commands/find.js';
-import { registerShowCommand } from './commands/show.js';
-import { registerValidateCommand } from './commands/validate.js';
-import { registerRelativesCommand } from './commands/relatives.js';
-import { registerExtractCommand } from './commands/extract.js';
-import { registerStatsCommand } from './commands/stats.js';
-import { registerMergeCommand } from './commands/merge.js';
-import { registerConvertCommand } from './commands/convert.js';
+import { Command } from "commander";
+import { readFileSync } from "fs";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
+import { registerInfoCommand } from "./commands/info";
+import { registerFindCommand } from "./commands/find";
+import { registerShowCommand } from "./commands/show";
+import { registerValidateCommand } from "./commands/validate";
+import { registerRelativesCommand } from "./commands/relatives";
+import { registerExtractCommand } from "./commands/extract";
+import { registerStatsCommand } from "./commands/stats";
+import { registerMergeCommand } from "./commands/merge";
+import { registerConvertCommand } from "./commands/convert";
 
 // Get package version
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const packageJsonPath = join(__dirname, '../../package.json');
-const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+const packageJsonPath = join(__dirname, "../../package.json");
+const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
 
 const program = new Command();
 
 program
-	.name('gedcom-parser')
-	.description('CLI tool for parsing and manipulating GEDCOM files')
+	.name("gedcom-parser")
+	.description("CLI tool for parsing and manipulating GEDCOM files")
 	.version(packageJson.version);
 
 // Register all commands

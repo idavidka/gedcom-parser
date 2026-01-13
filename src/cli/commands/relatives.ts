@@ -1,6 +1,6 @@
-import { Command } from 'commander';
-import { writeFileSync } from 'fs';
-import GedcomTree from '../../utils/parser.js';
+import { Command } from "commander";
+import { writeFileSync } from "fs";
+import GedcomTree from "../../utils/parser";
 import {
 	formatHeader,
 	formatSuccess,
@@ -9,8 +9,13 @@ import {
 	formatId,
 	formatName,
 	formatError,
-} from '../utils/formatters.js';
-import { readGedcomFile, handleError, cleanGedcomName, formatLifespan } from '../utils/helpers.js';
+} from "../utils/formatters";
+import {
+	readGedcomFile,
+	handleError,
+	cleanGedcomName,
+	formatLifespan,
+} from "../utils/helpers";
 
 interface RelativesOptions {
 	ancestors?: boolean;
@@ -23,27 +28,27 @@ interface RelativesOptions {
 
 export function registerRelativesCommand(program: Command): void {
 	program
-		.command('relatives <file> <id>')
-		.description('Get ancestors and/or descendants of an individual')
-		.option('-a, --ancestors', 'Include ancestors')
-		.option('-d, --descendants', 'Include descendants')
-		.option('-t, --tree', 'Include both ancestors and descendants')
-		.option('--depth <n>', 'Limit depth (generations)', '999')
-		.option('-o, --output <file>', 'Save to new GEDCOM file')
-		.option('-j, --json', 'Output in JSON format')
+		.command("relatives <file> <id>")
+		.description("Get ancestors and/or descendants of an individual")
+		.option("-a, --ancestors", "Include ancestors")
+		.option("-d, --descendants", "Include descendants")
+		.option("-t, --tree", "Include both ancestors and descendants")
+		.option("--depth <n>", "Limit depth (generations)", "999")
+		.option("-o, --output <file>", "Save to new GEDCOM file")
+		.option("-j, --json", "Output in JSON format")
 		.action((file: string, id: string, options: RelativesOptions) => {
 			try {
 				const content = readGedcomFile(file);
 				const { gedcom: tree } = GedcomTree.parse(content);
 
-				const individual = tree.indi(id);
+				const individual = tree.indi(id as any);
 				if (!individual) {
 					console.error(formatError(`Individual ${id} not found`));
 					process.exit(1);
 				}
 
-				const maxDepth = parseInt(options.depth || '999', 10);
-				const relatives = new Set<string>();
+				const maxDepth = parseInt(options.depth || "999", 10);
+				const relatives = new Set<any>();
 				relatives.add(id);
 
 				// Include both if --tree is specified
@@ -52,12 +57,17 @@ export function registerRelativesCommand(program: Command): void {
 
 				// Get ancestors
 				if (includeAncestors) {
-					const getAncestors = (indi: typeof individual, depth: number) => {
+					const getAncestors = (
+						indi: typeof individual,
+						depth: number
+					) => {
 						if (depth > maxDepth) return;
 						const parents = indi.getParents();
-						parents?.forEach(parent => {
-							relatives.add(parent.id);
-							getAncestors(parent, depth + 1);
+						parents?.forEach((parent) => {
+							if (parent.id) {
+								relatives.add(parent.id);
+								getAncestors(parent, depth + 1);
+							}
 						});
 					};
 					getAncestors(individual, 1);
@@ -65,12 +75,17 @@ export function registerRelativesCommand(program: Command): void {
 
 				// Get descendants
 				if (includeDescendants) {
-					const getDescendants = (indi: typeof individual, depth: number) => {
+					const getDescendants = (
+						indi: typeof individual,
+						depth: number
+					) => {
 						if (depth > maxDepth) return;
 						const children = indi.getChildren();
-						children?.forEach(child => {
-							relatives.add(child.id);
-							getDescendants(child, depth + 1);
+						children?.forEach((child) => {
+							if (child.id) {
+								relatives.add(child.id);
+								getDescendants(child, depth + 1);
+							}
 						});
 					};
 					getDescendants(individual, 1);
@@ -78,59 +93,86 @@ export function registerRelativesCommand(program: Command): void {
 
 				// Get all individuals
 				const allRelatives = Array.from(relatives)
-					.map(relId => tree.indi(relId))
-					.filter(indi => indi !== null);
+					.map((relId) => tree.indi(relId as any))
+					.filter(
+						(indi): indi is NonNullable<typeof indi> =>
+							indi !== null && indi !== undefined
+					);
 
 				if (options.output) {
 					// Create a new GEDCOM with only these individuals
 					const newContent = createSubsetGedcom(tree, allRelatives);
-					writeFileSync(options.output, newContent, 'utf-8');
-					console.log(formatSuccess(`Saved ${allRelatives.length} individuals to ${options.output}`));
+					writeFileSync(options.output, newContent, "utf-8");
+					console.log(
+						formatSuccess(
+							`Saved ${allRelatives.length} individuals to ${options.output}`
+						)
+					);
 				} else if (options.json) {
-					const jsonData = allRelatives.map(indi => ({
-						id: indi.id,
-						name: cleanGedcomName(indi.NAME?.toValue()),
-						birthDate: indi.BIRT?.DATE?.toValue() || null,
-						deathDate: indi.DEAT?.DATE?.toValue() || null,
+					const jsonData = allRelatives.map((indi) => ({
+						id: indi!.id,
+						name: cleanGedcomName(indi!.NAME?.toValue()),
+						birthDate: indi!.BIRT?.DATE?.toValue() || null,
+						deathDate: indi!.DEAT?.DATE?.toValue() || null,
 					}));
-					console.log(formatJson({ count: jsonData.length, individuals: jsonData }));
+					console.log(
+						formatJson({
+							count: jsonData.length,
+							individuals: jsonData,
+						})
+					);
 				} else {
-					console.log(formatHeader(`Found ${allRelatives.length} relative(s)\n`));
-					allRelatives.forEach(indi => {
-						const name = cleanGedcomName(indi.NAME?.toValue());
-						const lifespan = formatLifespan(
-							indi.BIRT?.DATE?.toValue(),
-							indi.DEAT?.DATE?.toValue()
-						);
-						console.log(formatListItem(`${formatId(indi.id)} ${formatName(name)} ${lifespan}`));
+					console.log(
+						formatHeader(
+							`Found ${allRelatives.length} relative(s)\n`
+						)
+					);
+					allRelatives.forEach((indi) => {
+						if (indi) {
+							const name = cleanGedcomName(indi.NAME?.toValue());
+							const lifespan = formatLifespan(
+								indi.BIRT?.DATE?.toValue(),
+								indi.DEAT?.DATE?.toValue()
+							);
+							console.log(
+								formatListItem(
+									`${formatId(indi.id as any)} ${formatName(name)} ${lifespan}`
+								)
+							);
+						}
 					});
 				}
 			} catch (error) {
-				handleError(error, 'Failed to extract relatives');
+				handleError(error, "Failed to extract relatives");
 			}
 		});
 }
 
-function createSubsetGedcom(tree: ReturnType<typeof GedcomTree.parse>['gedcom'], individuals: any[]): string {
+function createSubsetGedcom(
+	tree: ReturnType<typeof GedcomTree.parse>["gedcom"],
+	individuals: any[]
+): string {
 	const lines: string[] = [];
-	
+
 	// Add header
-	lines.push('0 HEAD');
-	lines.push('1 SOUR gedcom-parser CLI');
-	lines.push('1 GEDC');
-	lines.push('2 VERS 5.5.1');
-	lines.push('1 CHAR UTF-8');
-	
+	lines.push("0 HEAD");
+	lines.push("1 SOUR gedcom-parser CLI");
+	lines.push("1 GEDC");
+	lines.push("2 VERS 5.5.1");
+	lines.push("1 CHAR UTF-8");
+
 	// Add individuals
-	individuals.forEach(indi => {
-		const raw = indi.raw();
+	individuals.forEach((indi) => {
+		const raw = indi?.raw();
 		if (raw) {
-			lines.push(...raw.split('\n').filter(line => line.trim()));
+			lines.push(
+				...raw.split("\n").filter((line: string) => line.trim())
+			);
 		}
 	});
-	
+
 	// Add trailer
-	lines.push('0 TRLR');
-	
-	return lines.join('\n');
+	lines.push("0 TRLR");
+
+	return lines.join("\n");
 }

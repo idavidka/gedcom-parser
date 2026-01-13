@@ -1,5 +1,5 @@
-import { Command } from 'commander';
-import GedcomTree from '../../utils/parser.js';
+import { Command } from "commander";
+import GedcomTree from "../../utils/parser";
 import {
 	formatHeader,
 	formatSuccess,
@@ -8,8 +8,8 @@ import {
 	formatListItem,
 	formatJson,
 	formatCount,
-} from '../utils/formatters.js';
-import { readGedcomFile, handleError } from '../utils/helpers.js';
+} from "../utils/formatters";
+import { readGedcomFile, handleError } from "../utils/helpers";
 
 interface ValidateOptions {
 	json?: boolean;
@@ -26,11 +26,11 @@ interface ValidationResult {
 
 export function registerValidateCommand(program: Command): void {
 	program
-		.command('validate <file>')
-		.description('Validate a GEDCOM file')
-		.option('-j, --json', 'Output in JSON format')
-		.option('-s, --strict', 'Enable strict validation')
-		.option('--fix', 'Attempt to fix common issues (not implemented)')
+		.command("validate <file>")
+		.description("Validate a GEDCOM file")
+		.option("-j, --json", "Output in JSON format")
+		.option("-s, --strict", "Enable strict validation")
+		.option("--fix", "Attempt to fix common issues (not implemented)")
 		.action((file: string, options: ValidateOptions) => {
 			try {
 				const content = readGedcomFile(file);
@@ -41,24 +41,40 @@ export function registerValidateCommand(program: Command): void {
 
 				// Get GEDCOM version
 				const header = tree.HEAD;
-				const version = header?.GEDC?.VERS?.value || 'Unknown';
+				const version = header?.GEDC?.VERS?.value || "Unknown";
 
 				// Basic validation checks
 				const individuals = tree.indis();
 				const families = tree.fams();
 
+				if (!individuals) {
+					console.error(
+						formatError("No individuals found in GEDCOM file")
+					);
+					process.exit(1);
+				}
+
+				if (!families) {
+					console.error(
+						formatError("No families found in GEDCOM file")
+					);
+					process.exit(1);
+				}
+
 				// Check for individuals without names
 				let missingNames = 0;
-				individuals.forEach(indi => {
+				individuals.forEach((indi) => {
 					if (!indi.NAME?.toValue()) {
 						missingNames++;
-						warnings.push(`Individual ${indi.id} is missing a name`);
+						warnings.push(
+							`Individual ${indi.id} is missing a name`
+						);
 					}
 				});
 
 				// Check for individuals without birth dates
 				let missingBirthDates = 0;
-				individuals.forEach(indi => {
+				individuals.forEach((indi) => {
 					if (!indi.BIRT?.DATE?.toValue()) {
 						missingBirthDates++;
 					}
@@ -66,7 +82,7 @@ export function registerValidateCommand(program: Command): void {
 
 				// Check for individuals without death dates (but marked as deceased)
 				let missingDeathDates = 0;
-				individuals.forEach(indi => {
+				individuals.forEach((indi) => {
 					if (indi.DEAT && !indi.DEAT.DATE?.toValue()) {
 						missingDeathDates++;
 					}
@@ -82,38 +98,44 @@ export function registerValidateCommand(program: Command): void {
 					}
 					seenIds.add(item.id);
 				};
-				
+
 				individuals.forEach(checkDuplicates);
 				families.forEach(checkDuplicates);
 
 				// Check for missing family members
-				families.forEach(fam => {
+				families.forEach((fam) => {
 					const husb = fam.HUSB?.value;
 					const wife = fam.WIFE?.value;
-					
+
 					if (!husb && !wife) {
-						warnings.push(`Family ${fam.id} has no husband or wife`);
+						warnings.push(
+							`Family ${fam.id} has no husband or wife`
+						);
 					}
-					
-					if (husb && !tree.indi(husb)) {
-						errors.push(`Family ${fam.id} references non-existent husband ${husb}`);
+
+					if (husb && !tree.indi(husb as any)) {
+						errors.push(
+							`Family ${fam.id} references non-existent husband ${husb}`
+						);
 					}
-					
-					if (wife && !tree.indi(wife)) {
-						errors.push(`Family ${fam.id} references non-existent wife ${wife}`);
+
+					if (wife && !tree.indi(wife as any)) {
+						errors.push(
+							`Family ${fam.id} references non-existent wife ${wife}`
+						);
 					}
 				});
 
 				// Check for invalid date formats (basic check)
-				individuals.forEach(indi => {
+				individuals.forEach((indi) => {
 					const birthDate = indi.BIRT?.DATE?.toValue();
 					const deathDate = indi.DEAT?.DATE?.toValue();
-					
-					if (birthDate && birthDate.includes('INVALID')) {
+
+					if (birthDate && birthDate.includes("INVALID")) {
 						errors.push(`Invalid birth date format for ${indi.id}`);
 					}
-					
-					if (deathDate && deathDate.includes('INVALID')) {
+
+					if (deathDate && deathDate.includes("INVALID")) {
 						errors.push(`Invalid death date format for ${indi.id}`);
 					}
 				});
@@ -129,55 +151,95 @@ export function registerValidateCommand(program: Command): void {
 					console.log(formatJson(result));
 				} else {
 					if (result.valid) {
-						console.log(formatSuccess(`Valid GEDCOM ${version} file`));
+						console.log(
+							formatSuccess(`Valid GEDCOM ${version} file`)
+						);
 					} else {
-						console.log(formatError(`Invalid GEDCOM file - ${errors.length} error(s) found`));
+						console.log(
+							formatError(
+								`Invalid GEDCOM file - ${errors.length} error(s) found`
+							)
+						);
 					}
 
 					console.log();
-					console.log(formatHeader('Validation Summary'));
-					console.log(`${formatError('Errors:')} ${formatCount(errors.length)}`);
-					console.log(`${formatWarning('Warnings:')} ${formatCount(warnings.length)}`);
+					console.log(formatHeader("Validation Summary"));
+					console.log(
+						`${formatError("Errors:")} ${formatCount(errors.length)}`
+					);
+					console.log(
+						`${formatWarning("Warnings:")} ${formatCount(warnings.length)}`
+					);
 
 					if (errors.length > 0) {
 						console.log();
-						console.log(formatHeader('Errors'));
-						errors.slice(0, 10).forEach(error => {
+						console.log(formatHeader("Errors"));
+						errors.slice(0, 10).forEach((error) => {
 							console.log(formatListItem(formatError(error)));
 						});
 						if (errors.length > 10) {
-							console.log(formatListItem(`... and ${errors.length - 10} more errors`));
+							console.log(
+								formatListItem(
+									`... and ${errors.length - 10} more errors`
+								)
+							);
 						}
 					}
 
 					if (warnings.length > 0) {
 						console.log();
-						console.log(formatHeader('Warnings'));
-						
+						console.log(formatHeader("Warnings"));
+
 						// Summarize warnings
 						if (missingBirthDates > 0) {
-							console.log(formatListItem(formatWarning(`Missing birth dates: ${missingBirthDates} individuals`)));
+							console.log(
+								formatListItem(
+									formatWarning(
+										`Missing birth dates: ${missingBirthDates} individuals`
+									)
+								)
+							);
 						}
 						if (missingDeathDates > 0) {
-							console.log(formatListItem(formatWarning(`Missing death dates: ${missingDeathDates} individuals`)));
+							console.log(
+								formatListItem(
+									formatWarning(
+										`Missing death dates: ${missingDeathDates} individuals`
+									)
+								)
+							);
 						}
 						if (duplicateIds.length > 0) {
-							console.log(formatListItem(formatWarning(`Duplicate IDs: ${duplicateIds.length}`)));
+							console.log(
+								formatListItem(
+									formatWarning(
+										`Duplicate IDs: ${duplicateIds.length}`
+									)
+								)
+							);
 						}
-						
+
 						// Show first few specific warnings
-						const otherWarnings = warnings.filter(w => !w.includes('birth') && !w.includes('death'));
-						otherWarnings.slice(0, 5).forEach(warning => {
+						const otherWarnings = warnings.filter(
+							(w) => !w.includes("birth") && !w.includes("death")
+						);
+						otherWarnings.slice(0, 5).forEach((warning) => {
 							console.log(formatListItem(formatWarning(warning)));
 						});
 						if (otherWarnings.length > 5) {
-							console.log(formatListItem(`... and ${otherWarnings.length - 5} more warnings`));
+							console.log(
+								formatListItem(
+									`... and ${otherWarnings.length - 5} more warnings`
+								)
+							);
 						}
 					}
 
 					if (options.fix) {
 						console.log();
-						console.log(formatWarning('Fix option is not yet implemented'));
+						console.log(
+							formatWarning("Fix option is not yet implemented")
+						);
 					}
 				}
 
@@ -186,7 +248,7 @@ export function registerValidateCommand(program: Command): void {
 					process.exit(1);
 				}
 			} catch (error) {
-				handleError(error, 'Failed to validate GEDCOM file');
+				handleError(error, "Failed to validate GEDCOM file");
 			}
 		});
 }

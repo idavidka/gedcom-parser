@@ -4,31 +4,17 @@
 		"declarationMap": true,
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
-		"lib": [
-			"ES2020",
-			"ES2021",
-			"ES2023"
-		],
+		"lib": ["ES2020", "ES2021", "ES2023"],
 		"module": "ESNext",
 		"moduleResolution": "node",
 		"outDir": "./dist",
 		"resolveJsonModule": true,
 		"rootDir": "./src",
 		"skipLibCheck": true,
-		"strict": false,
+		"strict": true,
 		"target": "ES2020",
-		"types": [
-			"node",
-			"vitest/globals"
-		]
+		"types": ["node", "vitest/globals"]
 	},
-	"exclude": [
-		"node_modules",
-		"dist",
-		"**/*.test.ts",
-		"**/__tests__/**"
-	],
-	"include": [
-		"src/**/*"
-	]
+	"exclude": ["node_modules", "dist", "**/*.test.ts", "**/__tests__/**"],
+	"include": ["src/**/*"]
 }
