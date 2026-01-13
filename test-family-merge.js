@@ -1,0 +1,119 @@
+import GedcomTree from './dist/utils/parser.js';
+import { mergeGedcoms } from './dist/classes/gedcom.js';
+
+// Create test GEDCOM 1 with Lukács Ozsvár
+const gedcom1String = `0 HEAD
+1 SOUR Test
+1 GEDC
+2 VERS 5.5.1
+1 CHAR UTF-8
+0 @I11@ INDI
+1 FAMC @F16@
+1 FAMS @F6@
+1 _FS_ID GPG3-8CH
+1 NAME Lukács /Ozsvár/
+2 GIVN Lukács
+2 SURN Ozsvár
+1 SEX M
+1 BIRT
+2 DATE 03 Sep 1899
+1 DEAT
+2 DATE 22 Dec 1960
+0 @I12@ INDI
+1 NAME Wife /One/
+1 SEX F
+0 @I13@ INDI
+1 NAME Child /One/
+1 FAMC @F6@
+0 @F6@ FAM
+1 HUSB @I11@
+1 WIFE @I12@
+1 CHIL @I13@
+0 @F16@ FAM
+1 CHIL @I11@
+0 TRLR`;
+
+// Create test GEDCOM 2 with same person (different ID) but overlapping family
+const gedcom2String = `0 HEAD
+1 SOUR Test
+1 GEDC
+2 VERS 5.5.1
+1 CHAR UTF-8
+0 @I1@ INDI
+1 FAMC @F9@
+1 FAMS @F1@
+1 _FS_ID GPG3-8CH
+1 NAME Lukács /Ozsvár/
+2 GIVN Lukács
+2 SURN Ozsvár
+1 SEX M
+1 BIRT
+2 DATE 03 Sep 1899
+1 DEAT
+2 DATE 22 Dec 1960
+0 @I2@ INDI
+1 NAME Wife /One/
+1 SEX F
+0 @I3@ INDI
+1 NAME Child /Two/
+1 FAMC @F1@
+0 @F1@ FAM
+1 HUSB @I1@
+1 WIFE @I2@
+1 CHIL @I3@
+0 @F9@ FAM
+1 CHIL @I1@
+0 TRLR`;
+
+const { gedcom: gedcom1 } = GedcomTree.parse(gedcom1String);
+const { gedcom: gedcom2 } = GedcomTree.parse(gedcom2String);
+
+console.log("=== BEFORE MERGE ===");
+console.log("\nGEDCOM 1:");
+console.log("Individual @I11@:", gedcom1.indi("@I11@")?.NAME?.toString());
+console.log("  FAMS:", gedcom1.indi("@I11@")?.FAMS?.toList()?.map(f => f.value));
+console.log("  FAMC:", gedcom1.indi("@I11@")?.FAMC?.toList()?.map(f => f.value));
+console.log("Families:", gedcom1.fams()?.length);
+
+console.log("\nGEDCOM 2:");
+console.log("Individual @I1@:", gedcom2.indi("@I1@")?.NAME?.toString());
+console.log("  FAMS:", gedcom2.indi("@I1@")?.FAMS?.toList()?.map(f => f.value));
+console.log("  FAMC:", gedcom2.indi("@I1@")?.FAMC?.toList()?.map(f => f.value));
+console.log("Families:", gedcom2.fams()?.length);
+
+// Merge using _FS_ID as matching strategy
+const merged = mergeGedcoms(gedcom1, gedcom2, "_FS_ID");
+
+console.log("\n=== AFTER MERGE ===");
+console.log("\nMerged Individual @I11@ (should have Lukács):");
+console.log("  NAME:", merged.indi("@I11@")?.NAME?.toString());
+console.log("  FAMS:", merged.indi("@I11@")?.FAMS?.toList()?.map(f => f.value));
+console.log("  FAMC:", merged.indi("@I11@")?.FAMC?.toList()?.map(f => f.value));
+
+console.log("\nTotal families in merged:", merged.fams()?.length);
+console.log("Total individuals in merged:", merged.indis()?.length);
+
+// Check if families were properly matched
+const famsRefs = merged.indi("@I11@")?.FAMS?.toList();
+const famcRefs = merged.indi("@I11@")?.FAMC?.toList();
+
+console.log("\n=== ANALYSIS ===");
+console.log("FAMS count:", famsRefs?.length, "(should be 1 if families were merged)");
+console.log("FAMC count:", famcRefs?.length, "(should be 1 if families were merged)");
+
+if (famsRefs?.length === 1 && famcRefs?.length === 1) {
+  console.log("\n✅ SUCCESS: Families were properly merged!");
+} else {
+  console.log("\n❌ ISSUE: Families were NOT merged, they were duplicated");
+  console.log("Expected FAMS: 1, Got:", famsRefs?.length);
+  console.log("Expected FAMC: 1, Got:", famcRefs?.length);
+}
+
+// Show family details
+console.log("\n=== FAMILY DETAILS ===");
+merged.fams()?.forEach(fam => {
+  console.log(`Family ${fam.id}:`);
+  console.log("  HUSB:", fam.HUSB?.value);
+  console.log("  WIFE:", fam.WIFE?.value);
+  console.log("  CHIL:", fam.CHIL?.toList()?.map(c => c.value));
+});

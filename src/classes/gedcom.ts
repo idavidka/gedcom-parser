@@ -903,24 +903,77 @@ export const mergeGedcoms = (
 		}
 	});
 	
-	// Step 2: Map family IDs
+	// Step 2: Map family IDs and match families with same members
+	const famMatchMap = new Map<FamKey, FamKey>(); // source family ID -> target family ID
+	
 	sourceFams?.forEach((sourceFam) => {
 		if (!sourceFam.id) return;
 		
-		const baseId = sourceFam.id;
-		let newId: FamKey = baseId;
-		let counter = 1;
+		// Get the member IDs for this source family
+		const sourceHusbId = sourceFam.HUSB?.value as IndiKey | undefined;
+		const sourceWifeId = sourceFam.WIFE?.value as IndiKey | undefined;
+		const sourceChildIds = sourceFam.CHIL?.toList()?.map(c => c.value as IndiKey).filter(Boolean) || [];
 		
-		// Generate unique family ID
-		while (targetFams?.item(newId) || idMap.has(newId as IdType)) {
-			const numMatch = baseId.match(/\d+/);
-			const prefix = baseId.match(/^@[A-Z]+/)?.[0] || "@F";
-			const baseNum = numMatch ? parseInt(numMatch[0]) : 1;
-			newId = `${prefix}${baseNum + counter * MERGE_ID_INCREMENT_MULTIPLIER}@` as FamKey;
-			counter++;
+		// Map to their final IDs (after individual matching by strategy)
+		const finalHusbId = sourceHusbId ? idMap.get(sourceHusbId) as IndiKey | undefined : undefined;
+		const finalWifeId = sourceWifeId ? idMap.get(sourceWifeId) as IndiKey | undefined : undefined;
+		const finalChildIds = sourceChildIds.map(id => idMap.get(id) as IndiKey | undefined).filter(Boolean);
+		
+		// Try to find a matching family in target that has the same members (after remapping)
+		let matchedTargetFam: FamType | undefined;
+		
+		targetFams?.forEach((targetFam) => {
+			if (matchedTargetFam) return; // Already found a match
+			
+			const targetHusbId = targetFam.HUSB?.value as IndiKey | undefined;
+			const targetWifeId = targetFam.WIFE?.value as IndiKey | undefined;
+			const targetChildIds = targetFam.CHIL?.toList()?.map(c => c.value as IndiKey).filter(Boolean) || [];
+			
+			// Check if husband matches (either both undefined or same final ID)
+			const husbMatch = (!finalHusbId && !targetHusbId) || (finalHusbId === targetHusbId);
+			// Check if wife matches (either both undefined or same final ID)
+			const wifeMatch = (!finalWifeId && !targetWifeId) || (finalWifeId === targetWifeId);
+			
+			// For a family to match, both husband and wife must match
+			// (if one is undefined in both, that's also a match)
+			if (husbMatch && wifeMatch) {
+				// Also check children overlap
+				const childOverlap = finalChildIds.filter(id => targetChildIds.includes(id)).length;
+				const totalUniqueChildren = new Set([...finalChildIds, ...targetChildIds]).size;
+				
+				// Match if:
+				// 1. Both have no children, OR
+				// 2. At least 50% of children overlap
+				if (totalUniqueChildren === 0 || (childOverlap / totalUniqueChildren) >= 0.5) {
+					// Additionally require at least one spouse to be present (not both empty)
+					if (finalHusbId || finalWifeId || targetHusbId || targetWifeId) {
+						matchedTargetFam = targetFam;
+					}
+				}
+			}
+		});
+		
+		if (matchedTargetFam && matchedTargetFam.id) {
+			// Found a matching family - use the target family ID
+			famMatchMap.set(sourceFam.id, matchedTargetFam.id);
+			idMap.set(sourceFam.id, matchedTargetFam.id);
+		} else {
+			// No match - generate a new unique family ID
+			const baseId = sourceFam.id;
+			let newId: FamKey = baseId;
+			let counter = 1;
+			
+			// Generate unique family ID
+			while (targetFams?.item(newId) || idMap.has(newId as IdType)) {
+				const numMatch = baseId.match(/\d+/);
+				const prefix = baseId.match(/^@[A-Z]+/)?.[0] || "@F";
+				const baseNum = numMatch ? parseInt(numMatch[0]) : 1;
+				newId = `${prefix}${baseNum + counter * MERGE_ID_INCREMENT_MULTIPLIER}@` as FamKey;
+				counter++;
+			}
+			
+			idMap.set(sourceFam.id, newId as IdType);
 		}
-		
-		idMap.set(sourceFam.id, newId as IdType);
 	});
 	
 	// Step 3: Clone and remap individuals from source
@@ -1053,9 +1106,24 @@ export const mergeGedcoms = (
 		}
 	});
 	
-	// Step 8: Add all families to merged GEDCOM
-	clonedFams.forEach((clonedFam) => {
-		if (clonedFam.id) {
+	// Step 8: Add or merge families into target GEDCOM
+	clonedFams.forEach((clonedFam, originalFamId) => {
+		if (!clonedFam.id) return;
+		
+		const matchedTargetFamId = famMatchMap.get(originalFamId);
+		
+		if (matchedTargetFamId) {
+			// This family matches an existing one - merge children and data
+			const targetFam = mergedGedcom.fams()?.item(matchedTargetFamId);
+			if (targetFam) {
+				// Merge family data without overriding
+				targetFam.merge(clonedFam, false);
+				
+				// Note: Children from clonedFam are already added via merge above
+				// The CHIL references in clonedFam point to the correct remapped IDs
+			}
+		} else {
+			// This is a new family - add it to merged GEDCOM
 			mergedGedcom.fams()?.item(clonedFam.id, clonedFam);
 		}
 	});
