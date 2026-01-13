@@ -505,11 +505,12 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 	 */
 	private decodeGedcom7Value(value: string): string {
 		// Replace common GEDCOM 5.5.1 escape sequences
+		// Process %25 first to avoid double-decoding
 		return value
+			.replace(/%25/g, '%')   // Percent sign (must be first)
 			.replace(/%0A/g, '\n')  // Newline
-			.replace(/%0D/g, '\r')  // Carriage return  
-			.replace(/%09/g, '\t')  // Tab
-			.replace(/%25/g, '%');  // Percent sign
+			.replace(/%0D/g, '\r')  // Carriage return
+			.replace(/%09/g, '\t'); // Tab
 	}
 
 	isGenoPro() {
