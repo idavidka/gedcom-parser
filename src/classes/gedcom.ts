@@ -434,7 +434,9 @@ export class GedCom extends Common implements IGedcom {
 
 		const newGedcom = createGedCom();
 
-		// First, copy all data from the original gedcom
+		// Important: Copy all data FIRST, then overwrite HEAD
+		// This order ensures the custom HEAD (with version-specific changes)
+		// is not overwritten by the original HEAD from `this`
 		Object.assign(newGedcom, this);
 
 		// Then, if not original mode, overwrite HEAD with custom header

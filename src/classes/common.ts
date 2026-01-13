@@ -502,6 +502,10 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 	 * Decode GEDCOM escape sequences for GEDCOM 7
 	 * GEDCOM 5.5.1 uses escape sequences like %0A for newlines
 	 * GEDCOM 7 uses literal characters instead
+	 * 
+	 * Note: Per GEDCOM 5.5.1 spec, only these escape sequences are used:
+	 * - %0A (newline), %0D (carriage return), %09 (tab), %25 (percent)
+	 * Other sequences like %20 (space) or %2F (slash) are not part of the standard
 	 */
 	private decodeGedcom7Value(value: string): string {
 		// Replace common GEDCOM 5.5.1 escape sequences
