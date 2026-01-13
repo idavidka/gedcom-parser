@@ -810,19 +810,19 @@ export const validateGedcomContent = (
  * @param strategy - Matching strategy: "id" (default) or any MultiTag (e.g., "NAME", "BIRT.DATE")
  * @returns The merged GedComType with all individuals and families combined
  */
-export const mergeGedcoms = (
+export const mergeGedcoms = async (
 	targetGedcom: GedComType,
 	sourceGedcom: GedComType,
 	strategy: MultiTag | "id" = "id"
-): GedComType => {
-	// Deep clone the target GEDCOM to avoid modifying the original
-	const targetGedcomString = targetGedcom.toGedcom(undefined, undefined, { original: true });
-	const mergedGedcom = createGedCom();
+): Promise<GedComType> => {
+	// Dynamic import to avoid circular dependency
+	const { default: GedcomTree } = await import("../utils/parser.js");
 	
-	// Parse target back to get a fresh copy
-	Object.assign(mergedGedcom, targetGedcom);
+	// Serialize target to string to get a clean copy
+	const targetString = targetGedcom.toGedcom(undefined, undefined, { original: true });
+	const { gedcom: mergedGedcom } = GedcomTree.parse(targetString);
 	
-	// Track ID mapping: source ID -> new ID or matched target ID
+	// Track ID mapping: source ID -> new ID in merged GEDCOM
 	const idMap = new Map<IdType, IdType>();
 	
 	// Track matching: sourceIndiId -> targetIndiId (for individuals that match by strategy)
@@ -860,6 +860,7 @@ export const mergeGedcoms = (
 		
 		if (matchedTargetIndi && matchedTargetIndi.id) {
 			// Found a match - map source ID to existing target ID
+			// Note: This means source individual will merge into target individual
 			matchMap.set(sourceIndi.id, matchedTargetIndi.id);
 			idMap.set(sourceIndi.id, matchedTargetIndi.id);
 		} else {
@@ -902,154 +903,50 @@ export const mergeGedcoms = (
 		idMap.set(sourceFam.id, newId as IdType);
 	});
 	
-	// Step 3: Process source individuals and add/merge them
-	sourceIndis?.forEach((sourceIndi) => {
+	// Step 3: Build GEDCOM string from source with remapped IDs
+	const sourceString = sourceGedcom.toGedcom(undefined, undefined, { original: true });
+	let remappedSourceString = sourceString;
+	
+	// Replace all IDs in source GEDCOM string
+	idMap.forEach((newId, oldId) => {
+		// Replace ID in INDI/FAM declarations and all references
+		const oldIdPattern = oldId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		remappedSourceString = remappedSourceString.replace(new RegExp(oldIdPattern, 'g'), newId);
+	});
+	
+	// Step 4: Parse remapped source
+	const { gedcom: remappedSource } = GedcomTree.parse(remappedSourceString);
+	const remappedSourceIndis = remappedSource.indis();
+	const remappedSourceFams = remappedSource.fams();
+	
+	// Step 5: Add non-matched individuals and families to merged GEDCOM
+	remappedSourceIndis?.forEach((sourceIndi) => {
 		if (!sourceIndi.id) return;
 		
-		const mappedId = idMap.get(sourceIndi.id) as IndiKey | undefined;
-		if (!mappedId) return;
+		// Check if this individual was matched (original ID before remapping)
+		let wasMatched = false;
+		matchMap.forEach((targetId, sourceId) => {
+			if (idMap.get(sourceId) === sourceIndi.id) {
+				wasMatched = true;
+				// Merge this individual's data into the matched target individual
+				const targetIndi = mergedGedcom.indis()?.item(targetId);
+				if (targetIndi) {
+					// Merge without overriding existing data
+					targetIndi.merge(sourceIndi, false);
+				}
+			}
+		});
 		
-		const matchedTargetId = matchMap.get(sourceIndi.id);
-		
-		if (matchedTargetId) {
-			// This individual matches an existing one - merge data
-			const targetIndi = mergedGedcom.indis()?.item(matchedTargetId);
-			if (targetIndi) {
-				// Merge the source data into target individual (without override)
-				targetIndi.merge(sourceIndi, false);
-				
-				// Add FAMS references with remapped IDs
-				const sourceFAMS = sourceIndi.FAMS?.toList();
-				sourceFAMS?.forEach((famRef) => {
-					const oldFamId = famRef.value as FamKey | undefined;
-					if (oldFamId) {
-						const newFamId = idMap.get(oldFamId) as FamKey | undefined;
-						if (newFamId) {
-							const newFamRef = createCommon(mergedGedcom, undefined, targetIndi);
-							newFamRef.value = newFamId;
-							targetIndi.assign("FAMS", newFamRef, true);
-						}
-					}
-				});
-				
-				// Add FAMC references with remapped IDs
-				const sourceFAMC = sourceIndi.FAMC?.toList();
-				sourceFAMC?.forEach((famRef) => {
-					const oldFamId = famRef.value as FamKey | undefined;
-					if (oldFamId) {
-						const newFamId = idMap.get(oldFamId) as FamKey | undefined;
-						if (newFamId) {
-							const newFamRef = createCommon(mergedGedcom, undefined, targetIndi);
-							newFamRef.value = newFamId;
-							targetIndi.assign("FAMC", newFamRef, true);
-						}
-					}
-				});
-			}
-		} else {
-			// This is a new individual - clone and add with new ID
-			const clonedIndi = sourceIndi.clone(false) as IndiType;
-			Object.assign(clonedIndi, { _gedcom: mergedGedcom });
-			clonedIndi.id = mappedId;
-			
-			// Update FAMS references with remapped IDs
-			const sourceFAMS = sourceIndi.FAMS?.toList();
-			if (sourceFAMS?.length) {
-				// Clear old FAMS
-				clonedIndi.set("FAMS", undefined);
-				
-				sourceFAMS.forEach((famRef) => {
-					const oldFamId = famRef.value as FamKey | undefined;
-					if (oldFamId) {
-						const newFamId = idMap.get(oldFamId) as FamKey | undefined;
-						if (newFamId) {
-							const newFamRef = createCommon(mergedGedcom, undefined, clonedIndi);
-							newFamRef.value = newFamId;
-							clonedIndi.assign("FAMS", newFamRef, true);
-						}
-					}
-				});
-			}
-			
-			// Update FAMC references with remapped IDs
-			const sourceFAMC = sourceIndi.FAMC?.toList();
-			if (sourceFAMC?.length) {
-				// Clear old FAMC
-				clonedIndi.set("FAMC", undefined);
-				
-				sourceFAMC.forEach((famRef) => {
-					const oldFamId = famRef.value as FamKey | undefined;
-					if (oldFamId) {
-						const newFamId = idMap.get(oldFamId) as FamKey | undefined;
-						if (newFamId) {
-							const newFamRef = createCommon(mergedGedcom, undefined, clonedIndi);
-							newFamRef.value = newFamId;
-							clonedIndi.assign("FAMC", newFamRef, true);
-						}
-					}
-				});
-			}
-			
-			// Add to merged gedcom
-			mergedGedcom.indis()?.item(mappedId, clonedIndi);
+		if (!wasMatched) {
+			// This is a new individual - add it to merged GEDCOM
+			mergedGedcom.indis()?.item(sourceIndi.id, sourceIndi);
 		}
 	});
 	
-	// Step 4: Process source families and add them with remapped IDs
-	sourceFams?.forEach((sourceFam) => {
+	// Step 6: Add all families from remapped source
+	remappedSourceFams?.forEach((sourceFam) => {
 		if (!sourceFam.id) return;
-		
-		const newFamId = idMap.get(sourceFam.id) as FamKey | undefined;
-		if (!newFamId) return;
-		
-		// Clone the family
-		const clonedFam = sourceFam.clone(false) as FamType;
-		Object.assign(clonedFam, { _gedcom: mergedGedcom });
-		clonedFam.id = newFamId;
-		
-		// Update HUSB reference
-		const sourceHusb = sourceFam.HUSB?.value as IndiKey | undefined;
-		if (sourceHusb) {
-			const newHusbId = idMap.get(sourceHusb) as IndiKey | undefined;
-			if (newHusbId) {
-				const newHusbRef = createCommon(mergedGedcom, undefined, clonedFam);
-				newHusbRef.value = newHusbId;
-				clonedFam.set("HUSB", newHusbRef);
-			}
-		}
-		
-		// Update WIFE reference
-		const sourceWife = sourceFam.WIFE?.value as IndiKey | undefined;
-		if (sourceWife) {
-			const newWifeId = idMap.get(sourceWife) as IndiKey | undefined;
-			if (newWifeId) {
-				const newWifeRef = createCommon(mergedGedcom, undefined, clonedFam);
-				newWifeRef.value = newWifeId;
-				clonedFam.set("WIFE", newWifeRef);
-			}
-		}
-		
-		// Update CHIL references
-		const sourceChildren = sourceFam.CHIL?.toList();
-		if (sourceChildren?.length) {
-			// Clear old CHIL
-			clonedFam.set("CHIL", undefined);
-			
-			sourceChildren.forEach((childRef) => {
-				const oldChildId = childRef.value as IndiKey | undefined;
-				if (oldChildId) {
-					const newChildId = idMap.get(oldChildId) as IndiKey | undefined;
-					if (newChildId) {
-						const newChildRef = createCommon(mergedGedcom, undefined, clonedFam);
-						newChildRef.value = newChildId;
-						clonedFam.assign("CHIL", newChildRef, true);
-					}
-				}
-			});
-		}
-		
-		// Add to merged gedcom
-		mergedGedcom.fams()?.item(newFamId, clonedFam);
+		mergedGedcom.fams()?.item(sourceFam.id, sourceFam);
 	});
 	
 	return mergedGedcom;
