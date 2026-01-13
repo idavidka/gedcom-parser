@@ -379,7 +379,7 @@ export class GedCom extends Common implements IGedcom {
 		return newHead;
 	}
 
-	toFiltered(indis: IndiKey[]) {
+	toFiltered(indis: IndiKey[], version?: 5 | 7) {
 		if (!indis.length) {
 			return this;
 		}
@@ -389,7 +389,7 @@ export class GedCom extends Common implements IGedcom {
 		const newContent = this.getIndiRelatedLists(indis);
 
 		Object.assign(newGedcom, this, newContent, {
-			HEAD: this.getDownloadHeader(5), // Default to GEDCOM 5
+			HEAD: this.getDownloadHeader(version || 5),
 		});
 
 		return newGedcom;
