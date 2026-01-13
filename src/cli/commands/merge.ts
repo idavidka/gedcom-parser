@@ -1,12 +1,15 @@
 import { Command } from 'commander';
 import { writeFileSync } from 'fs';
 import GedcomTree from '../../utils/parser.js';
+import { mergeGedcoms } from '../../classes/gedcom.js';
 import { formatSuccess } from '../utils/formatters.js';
 import { readGedcomFile, handleError } from '../utils/helpers.js';
+import type { MultiTag } from '../../types/types.js';
 
 interface MergeOptions {
 	output: string;
 	dedupe?: boolean;
+	strategy?: string;
 }
 
 export function registerMergeCommand(program: Command): void {
@@ -14,107 +17,63 @@ export function registerMergeCommand(program: Command): void {
 		.command('merge <files...>')
 		.description('Merge multiple GEDCOM files')
 		.requiredOption('-o, --output <file>', 'Output file path (required)')
-		.option('--dedupe', 'Attempt to detect and merge duplicates (basic implementation)')
-		.action((files: string[], options: MergeOptions) => {
+		.option('--dedupe', 'Attempt to detect and merge duplicates (deprecated, use --strategy NAME)')
+		.option(
+			'--strategy <strategy>',
+			'Matching strategy: "id" (match by ID) or a tag like "NAME" (match by name). Default: "id"',
+			'id'
+		)
+		.action(async (files: string[], options: MergeOptions) => {
 			try {
 				if (files.length < 2) {
 					console.error('At least 2 files are required for merging');
 					process.exit(1);
 				}
 
-				const allIndividuals: any[] = [];
-				const allFamilies: any[] = [];
-				const seenIds = new Set<string>();
-				let idCounter = 1;
+				// For 2 files, use the new mergeGedcoms function
+				if (files.length === 2) {
+					const targetContent = readGedcomFile(files[0]);
+					const sourceContent = readGedcomFile(files[1]);
 
-				// Parse all files
-				files.forEach(file => {
-					const content = readGedcomFile(file);
-					const { gedcom: tree } = GedcomTree.parse(content);
+					const { gedcom: targetGedcom } = GedcomTree.parse(targetContent);
+					const { gedcom: sourceGedcom } = GedcomTree.parse(sourceContent);
 
-					const individuals = tree.indis();
-					const families = tree.fams();
+					const strategy = (options.strategy || 'id') as MultiTag | 'id';
+					const merged = await mergeGedcoms(targetGedcom, sourceGedcom, strategy);
 
-					// Add individuals with unique IDs
-					individuals.forEach(indi => {
-						let id = indi.id;
-						
-						// If dedupe is enabled, check for duplicates (basic check by name and birth date)
-						if (options.dedupe) {
-							const name = indi.NAME?.toValue();
-							const birthDate = indi.BIRT?.DATE?.toValue();
-							
-							const duplicate = allIndividuals.find(existing => {
-								return existing.NAME?.toValue() === name &&
-									existing.BIRT?.DATE?.toValue() === birthDate;
-							});
-							
-							if (duplicate) {
-								// Skip duplicate
-								return;
-							}
-						}
-						
-						// Ensure unique ID
-						while (seenIds.has(id)) {
-							id = `@I${idCounter++}@`;
-						}
-						seenIds.add(id);
-						
-						// Store with original object (we'll need to update ID in output)
-						allIndividuals.push({ ...indi, newId: id });
-					});
+					const mergedContent = merged.toGedcom();
+					writeFileSync(options.output, mergedContent, 'utf-8');
 
-					// Add families with unique IDs
-					families.forEach(fam => {
-						let id = fam.id;
-						while (seenIds.has(id)) {
-							id = `@F${idCounter++}@`;
-						}
-						seenIds.add(id);
-						allFamilies.push({ ...fam, newId: id });
-					});
-				});
+					console.log(
+						formatSuccess(
+							`Merged 2 files using strategy "${strategy}" (${merged.indis()?.length} individuals, ${merged.fams()?.length} families) into ${options.output}`
+						)
+					);
+					return;
+				}
 
-				// Create merged GEDCOM
-				const lines: string[] = [];
-				lines.push('0 HEAD');
-				lines.push('1 SOUR gedcom-parser CLI');
-				lines.push('1 GEDC');
-				lines.push('2 VERS 5.5.1');
-				lines.push('1 CHAR UTF-8');
+				// For more than 2 files, use iterative merging
+				console.log(`Merging ${files.length} files iteratively...`);
+				
+				let targetContent = readGedcomFile(files[0]);
+				let { gedcom: targetGedcom } = GedcomTree.parse(targetContent);
 
-				// Add all individuals
-				allIndividuals.forEach(indi => {
-					const raw = indi.raw?.() || '';
-					if (raw) {
-						// Replace old ID with new ID if needed
-						const updatedRaw = raw.replace(
-							new RegExp(`^0 ${indi.id} INDI`, 'm'),
-							`0 ${indi.newId} INDI`
-						);
-						lines.push(...updatedRaw.split('\n').filter(line => line.trim()));
-					}
-				});
+				for (let i = 1; i < files.length; i++) {
+					const sourceContent = readGedcomFile(files[i]);
+					const { gedcom: sourceGedcom } = GedcomTree.parse(sourceContent);
 
-				// Add all families
-				allFamilies.forEach(fam => {
-					const raw = fam.raw?.() || '';
-					if (raw) {
-						const updatedRaw = raw.replace(
-							new RegExp(`^0 ${fam.id} FAM`, 'm'),
-							`0 ${fam.newId} FAM`
-						);
-						lines.push(...updatedRaw.split('\n').filter(line => line.trim()));
-					}
-				});
+					const strategy = (options.strategy || 'id') as MultiTag | 'id';
+					targetGedcom = await mergeGedcoms(targetGedcom, sourceGedcom, strategy);
+					
+					console.log(`  Merged file ${i + 1}/${files.length}: ${files[i]}`);
+				}
 
-				lines.push('0 TRLR');
+				const mergedContent = targetGedcom.toGedcom();
+				writeFileSync(options.output, mergedContent, 'utf-8');
 
-				writeFileSync(options.output, lines.join('\n'), 'utf-8');
 				console.log(
 					formatSuccess(
-						`Merged ${files.length} files (${allIndividuals.length} individuals, ${allFamilies.length} families) into ${options.output}`
+						`Merged ${files.length} files (${targetGedcom.indis()?.length} individuals, ${targetGedcom.fams()?.length} families) into ${options.output}`
 					)
 				);
 			} catch (error) {
