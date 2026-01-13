@@ -474,7 +474,13 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 			const prop = this.get(validKey);
 			if (typeof prop?.toGedcomLines === "function") {
 				if (prop instanceof Common) {
-					const value = prop.exportValue() as string | undefined;
+					let value = prop.exportValue() as string | undefined;
+					
+					// For GEDCOM 7, decode URL-encoded sequences
+					if (options?.version === 7 && value) {
+						value = this.decodeGedcom7Value(value);
+					}
+					
 					gedcom.push(
 						`${level} ${validKey}${value ? ` ${value}` : ""}`
 					);
@@ -490,6 +496,20 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		});
 
 		return gedcom;
+	}
+	
+	/**
+	 * Decode GEDCOM escape sequences for GEDCOM 7
+	 * GEDCOM 5.5.1 uses escape sequences like %0A for newlines
+	 * GEDCOM 7 uses literal characters instead
+	 */
+	private decodeGedcom7Value(value: string): string {
+		// Replace common GEDCOM 5.5.1 escape sequences
+		return value
+			.replace(/%0A/g, '\n')  // Newline
+			.replace(/%0D/g, '\r')  // Carriage return  
+			.replace(/%09/g, '\t')  // Tab
+			.replace(/%25/g, '%');  // Percent sign
 	}
 
 	isGenoPro() {

@@ -80,6 +80,26 @@ describe("GEDCOM Version Serialization", () => {
 			expect(gedcomString).toMatch(/0 TRLR/);
 		});
 
+		it("should remove CHAR tag when converting to GEDCOM 7", () => {
+			const { gedcom } = GedcomTree.parse(mockGedcom5);
+			const gedcomString = gedcom.toGedcom(undefined, undefined, {
+				version: 7,
+			});
+			
+			// CHAR tag should not be present in GEDCOM 7
+			expect(gedcomString).not.toContain("1 CHAR");
+		});
+
+		it("should remove FORM tag from GEDC when converting to GEDCOM 7", () => {
+			const { gedcom } = GedcomTree.parse(mockGedcom5);
+			const gedcomString = gedcom.toGedcom(undefined, undefined, {
+				version: 7,
+			});
+			
+			// FORM tag should not be present in GEDC structure in GEDCOM 7
+			expect(gedcomString).not.toMatch(/2 FORM LINEAGE-LINKED/);
+		});
+
 		it("should preserve all data when converting from GEDCOM 5 to 7", () => {
 			const { gedcom } = GedcomTree.parse(mockGedcom5);
 			const gedcomString = gedcom.toGedcom(undefined, undefined, {

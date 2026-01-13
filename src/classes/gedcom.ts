@@ -363,6 +363,17 @@ export class GedCom extends Common implements IGedcom {
 				newHead.GEDC.VERS = createCommon();
 			}
 			newHead.GEDC.VERS.value = version === 7 ? "7.0" : "5.5.1";
+			
+			// GEDCOM 7 specific changes
+			if (version === 7) {
+				// Remove CHAR tag (UTF-8 is required in GEDCOM 7, CHAR tag is not used)
+				delete newHead.CHAR;
+				
+				// Remove FORM tag from GEDC structure (not used in GEDCOM 7)
+				if (newHead.GEDC) {
+					delete newHead.GEDC.FORM;
+				}
+			}
 		}
 
 		return newHead;
@@ -423,13 +434,15 @@ export class GedCom extends Common implements IGedcom {
 
 		const newGedcom = createGedCom();
 
+		// First, copy all data from the original gedcom
+		Object.assign(newGedcom, this);
+
+		// Then, if not original mode, overwrite HEAD with custom header
 		if (!options?.original) {
 			Object.assign(newGedcom, {
 				HEAD: this.getDownloadHeader(options?.version || 5),
 			});
 		}
-
-		Object.assign(newGedcom, this);
 
 		if (options?.indis?.length) {
 			const newContent = this.getIndiRelatedLists(options.indis);
