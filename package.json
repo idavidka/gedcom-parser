@@ -1,6 +1,6 @@
 {
 	"name": "@treeviz/gedcom-parser",
-	"version": "1.0.10",
+	"version": "1.0.11",
 	"description": "Lightweight, pluggable GEDCOM parser for JavaScript/TypeScript with optional caching and place matching. Zero browser dependencies.",
 	"type": "module",
 	"main": "dist/index.js",
