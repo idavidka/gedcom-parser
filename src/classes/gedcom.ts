@@ -966,21 +966,20 @@ export const mergeGedcoms = (
 				]).size;
 
 				// Match if:
-				// 1. Both have no children, OR
-				// 2. At least 50% of children overlap
-				if (
-					totalUniqueChildren === 0 ||
-					childOverlap / totalUniqueChildren >= 0.5
-				) {
-					// Additionally require at least one spouse to be present (not both empty)
-					if (
-						finalHusbId ||
-						finalWifeId ||
-						targetHusbId ||
-						targetWifeId
-					) {
-						matchedTargetFam = targetFam;
-					}
+				// 1. At least one spouse is present (to avoid matching empty families), OR
+				// 2. Both have no children but spouses match, OR
+				// 3. At least 50% of children overlap
+				const hasSpouses =
+					finalHusbId ||
+					finalWifeId ||
+					targetHusbId ||
+					targetWifeId;
+				const hasMatchingChildren =
+					totalUniqueChildren > 0 &&
+					childOverlap / totalUniqueChildren >= 0.5;
+
+				if (hasSpouses || hasMatchingChildren) {
+					matchedTargetFam = targetFam;
 				}
 			}
 		});
@@ -1047,7 +1046,7 @@ export const mergeGedcoms = (
 		if (!sourceIndi) return;
 
 		// Clear and rebuild FAMS references with remapped IDs
-		// clonedIndi.delete("FAMS");
+		clonedIndi.remove("FAMS");
 		const sourceFAMS = sourceIndi.FAMS?.toList();
 		sourceFAMS?.forEach((famRef) => {
 			const oldFamId = famRef.value as FamKey | undefined;
@@ -1066,7 +1065,7 @@ export const mergeGedcoms = (
 		});
 
 		// Clear and rebuild FAMC references with remapped IDs
-		// clonedIndi.delete("FAMC");
+		clonedIndi.remove("FAMC");
 		const sourceFAMC = sourceIndi.FAMC?.toList();
 		sourceFAMC?.forEach((famRef) => {
 			const oldFamId = famRef.value as FamKey | undefined;
@@ -1121,7 +1120,7 @@ export const mergeGedcoms = (
 		}
 
 		// Update CHIL references
-		// clonedFam.delete("CHIL");
+		clonedFam.remove("CHIL");
 		const sourceChildren = sourceFam.CHIL?.toList();
 		sourceChildren?.forEach((childRef) => {
 			const oldChildId = childRef.value as IndiKey | undefined;
