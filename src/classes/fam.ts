@@ -1,11 +1,11 @@
-import type IFamilyStructure from "../structures/family";
-import { type FamKey, type IndiKey } from "../types/types";
 import type IFam from "../interfaces/fam";
+import type IFamilyStructure from "../structures/family";
+import type { FamKey, IndiKey } from "../types/types";
 
 import { Common, createProxy } from "./common";
 import type { ProxyOriginal } from "./common";
 import { Families } from "./fams";
-import { type GedComType } from "./gedcom";
+import type { GedComType } from "./gedcom";
 import { Individuals } from "./indis";
 
 export class Fam extends Common<string, FamKey> implements IFam {

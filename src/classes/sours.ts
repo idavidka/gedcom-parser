@@ -1,7 +1,7 @@
-import { type SourKey } from "../types/types";
+import type {SourKey} from "../types/types";
 
 import { List } from "./list";
-import { type SourType } from "./sour";
+import type {SourType} from "./sour";
 
 export class Sources extends List<SourKey, SourType> {
 	copy() {

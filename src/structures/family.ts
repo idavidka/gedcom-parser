@@ -1,4 +1,4 @@
-import { type Common } from "../classes/common";
+import type {Common} from "../classes/common";
 
 import type IAssociationStructure from "./association";
 import type IChangeDateStructure from "./change-date";

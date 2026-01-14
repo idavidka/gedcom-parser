@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 
-import { Command } from 'commander';
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { registerInfoCommand } from './commands/info.js';
-import { registerFindCommand } from './commands/find.js';
-import { registerShowCommand } from './commands/show.js';
-import { registerValidateCommand } from './commands/validate.js';
-import { registerRelativesCommand } from './commands/relatives.js';
-import { registerExtractCommand } from './commands/extract.js';
-import { registerStatsCommand } from './commands/stats.js';
-import { registerMergeCommand } from './commands/merge.js';
+import { Command } from 'commander';
 import { registerConvertCommand } from './commands/convert.js';
+import { registerExtractCommand } from './commands/extract.js';
+import { registerFindCommand } from './commands/find.js';
+import { registerInfoCommand } from './commands/info.js';
+import { registerMergeCommand } from './commands/merge.js';
+import { registerRelativesCommand } from './commands/relatives.js';
+import { registerShowCommand } from './commands/show.js';
+import { registerStatsCommand } from './commands/stats.js';
+import { registerValidateCommand } from './commands/validate.js';
 
 // Get package version
 const __filename = fileURLToPath(import.meta.url);

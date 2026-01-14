@@ -1,9 +1,9 @@
 import debounce from "lodash-es/debounce";
 
-import { type Path } from "../classes/indi";
-import { type Individuals } from "../classes/indis";
+import type {Path} from "../classes/indi";
+import type {Individuals} from "../classes/indis";
 import { getCacheManagerFactory } from "../factories/cache-factory";
-import { type IndiKey } from "../types/types";
+import type {IndiKey} from "../types/types";
 
 /**
  * Cache manager interface for pluggable cache implementations.

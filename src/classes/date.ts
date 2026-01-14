@@ -1,5 +1,6 @@
 import { format, isValid, parse } from "date-fns";
 
+import { getDateLocale } from "../factories";
 import type { IdType, MultiTag } from "../types/types";
 import { ACCEPTED_DATE_FORMATS } from "../utils/date-formatter";
 import { inRange } from "../utils/range";
@@ -7,9 +8,8 @@ import type { Range } from "../utils/range";
 
 import { Common, createCommon, createProxy } from "./common";
 import type { ProxyOriginal } from "./common";
-import { type GedComType } from "./gedcom";
+import type {GedComType} from "./gedcom";
 import type { List } from "./list";
-import { getDateLocale } from "../factories";
 
 const LONG_NOTES = {
 	"Abt.": "About",

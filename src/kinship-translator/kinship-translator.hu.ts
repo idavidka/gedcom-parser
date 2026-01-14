@@ -3,7 +3,7 @@ import { hungarianOrdinalize } from "../utils/ordinalize";
 
 import KinshipTranslatorBasic from "./kinship-translator.basic";
 import { InLawsHu, casesHu, parentRelationsHu } from "./patterns.hu";
-import { type CrossCases } from "./types";
+import type {CrossCases} from "./types";
 
 export default class KinshipTranslatorHU extends KinshipTranslatorBasic {
 	private directPrefix(l?: number) {

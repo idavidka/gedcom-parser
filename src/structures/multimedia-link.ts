@@ -1,4 +1,4 @@
-import { type Common } from "../classes/common";
+import type {Common} from "../classes/common";
 
 interface IMultimediaLinkStructure extends Common {
 	RIN?: Common;

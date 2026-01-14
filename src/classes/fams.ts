@@ -1,13 +1,8 @@
-import {
-	type FamKey,
-	type Filter,
-	type Order,
-	type FilterIterator,
-	type OrderIterator,
-} from "../types/types";
-import { type IFamilies } from "../interfaces/fams";
+import type {IFamilies} from "../interfaces/fams";
+import type {FamKey, Filter, Order, FilterIterator, OrderIterator} from "../types/types";
 
-import { type FamType, Fam } from "./fam";
+import {  Fam } from "./fam";
+import type {FamType} from "./fam";
 import { Individuals } from "./indis";
 import { List } from "./list";
 

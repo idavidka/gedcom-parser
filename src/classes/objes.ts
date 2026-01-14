@@ -1,7 +1,7 @@
-import { type ObjeKey } from "../types/types";
+import type {ObjeKey} from "../types/types";
 
 import { List } from "./list";
-import { type ObjeType } from "./obje";
+import type {ObjeType} from "./obje";
 
 export class Objects extends List<ObjeKey, ObjeType> {
 	copy() {

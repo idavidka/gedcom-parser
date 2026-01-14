@@ -1,9 +1,10 @@
 import {
-	type RequiredFilter,
-	type Filter,
+	
+	
 	RelationType,
-	PartnerType,
+	PartnerType
 } from "../types/types";
+import type {RequiredFilter, Filter} from "../types/types";
 
 export const EVERY: Filter = {};
 

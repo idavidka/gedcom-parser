@@ -1,6 +1,6 @@
-import { type Common } from "../classes/common";
+import type {Common} from "../classes/common";
 import type IRepositoryStructure from "../structures/repository";
-import { type RepoKey } from "../types/types";
+import type {RepoKey} from "../types/types";
 
 interface IRepo extends Common<string, RepoKey>, IRepositoryStructure {}
 

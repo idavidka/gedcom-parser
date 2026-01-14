@@ -4,23 +4,12 @@ import intersectionBy from "lodash-es/intersectionBy";
 import set from "lodash-es/set";
 import unset from "lodash-es/unset";
 
-import {
-	type OrderDefinition,
-	type IdType,
-	type Filter,
-	type FilterIterator,
-	type MultiTag,
-	type Order,
-	type OrderIterator,
-	type Group,
-	type GroupIterator,
-	type GroupDefinition,
-} from "../types/types";
-import type { GroupMarker } from "../types/types";
-import { type ConvertOptions } from "../interfaces/common";
-import { type IList } from "../interfaces/list";
+import type {ConvertOptions} from "../interfaces/common";
+import type {IList} from "../interfaces/list";
+import type {OrderDefinition, IdType, Filter, FilterIterator, MultiTag, Order, OrderIterator, Group, GroupIterator, GroupDefinition, GroupMarker } from "../types/types";
 
-import { getValidTag, type Common } from "./common";
+import { getValidTag  } from "./common";
+import type {Common} from "./common";
 
 export class List<
 	K extends IdType = IdType,

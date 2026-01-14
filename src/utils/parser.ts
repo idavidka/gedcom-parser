@@ -15,8 +15,7 @@ import {
 	REF_LINE_REG,
 } from "../constants/constants";
 import type { Settings } from "../types/settings";
-import { type ConvertType, type IdType, type MultiTag } from "../types/types";
-import type { ListTag } from "../types/types";
+import type { ConvertType, IdType, MultiTag, ListTag } from "../types/types";
 
 import { create } from "./common-creator";
 import { isDevelopment } from "./get-product-details";
@@ -271,7 +270,6 @@ const GedcomTree = {
 
 				prevIndent = indent;
 			} catch (err) {
-				console.log("ASDXX", err);
 				throw new Error(`Can't parse line #${index}: ${line}`, {
 					cause: err,
 				});

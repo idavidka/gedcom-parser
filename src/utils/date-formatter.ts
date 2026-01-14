@@ -1,11 +1,11 @@
 import { createCommonDate } from "../classes/date";
 import type { CommonDate } from "../classes/date";
-import { type FamType } from "../classes/fam";
-import { type IndiType } from "../classes/indi";
+import type {FamType} from "../classes/fam";
+import type {IndiType} from "../classes/indi";
+import { i18n } from "../factories/i18n-factory";
 import type IDateStructure from "../structures/date";
 import type IEventDetailStructure from "../structures/event-detail-structure";
 import type { IndiKey } from "../types/types";
-import { i18n } from "../factories/i18n-factory";
 import { getAllProp } from "./get-all-prop";
 
 export const ACCEPTED_DATE_FORMATS = [

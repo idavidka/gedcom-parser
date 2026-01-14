@@ -1,6 +1,6 @@
-import { type Common } from "../classes/common";
-import { type CommonName } from "../classes/name";
-import { type CommonNote } from "../classes/note";
+import type {Common} from "../classes/common";
+import type {CommonName} from "../classes/name";
+import type {CommonNote} from "../classes/note";
 
 import type IAssociationStructure from "./association";
 import type IChangeDateStructure from "./change-date";

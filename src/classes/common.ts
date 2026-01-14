@@ -4,18 +4,12 @@ import uniqBy from "lodash-es/uniqBy";
 import unset from "lodash-es/unset";
 
 import { ID_GETTER_REG, ID_REG } from "../constants/constants";
-import {
-	type Tag,
-	type IdType,
-	type MultiTag,
-	type ObjeKey,
-} from "../types/types";
-import type { ListTag } from "../types/types";
-import { type ConvertOptions } from "../interfaces/common";
+import type {ConvertOptions} from "../interfaces/common";
 import type ICommon from "../interfaces/common";
 import type IObje from "../interfaces/obje";
+import type {Tag, IdType, MultiTag, ObjeKey, ListTag } from "../types/types";
 
-import { type GedComType } from "./gedcom";
+import type {GedComType} from "./gedcom";
 import { List } from "./list";
 
 // import GedcomTree from "../../../utils/parser";

@@ -1,4 +1,4 @@
-import { type Common } from "../classes/common";
+import type {Common} from "../classes/common";
 
 import type IEventDetailStructure from "./event-detail-structure";
 import type IIndividualEventDetailStructure from "./individual-event-detail-structure";

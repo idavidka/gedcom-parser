@@ -1,4 +1,5 @@
-import { Command } from 'commander';
+import type { Command } from 'commander';
+import GedcomTree from '../../utils/parser.js';
 import {
 	formatHeader,
 	formatLabel,
@@ -6,7 +7,6 @@ import {
 	formatJson,
 } from '../utils/formatters.js';
 import { readGedcomFile, handleError } from '../utils/helpers.js';
-import GedcomTree from '../../utils/parser.js';
 
 interface StatsOptions {
 	json?: boolean;

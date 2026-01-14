@@ -1,12 +1,7 @@
 import { isCommonDate } from "../classes/date";
-import { type IndiType } from "../classes/indi";
+import type {IndiType} from "../classes/indi";
 import type IEventDetailStructure from "../structures/event-detail-structure";
-import {
-	type OrderIterator,
-	type Order,
-	type IndiKey,
-	type NameOrder,
-} from "../types/types";
+import type {OrderIterator, Order, IndiKey, NameOrder} from "../types/types";
 import { getFamilyWith } from "../utils/get-family-with";
 
 export const DEFAULT: Order = {};

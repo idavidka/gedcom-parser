@@ -1,10 +1,10 @@
-import type ISourceStructure from "../structures/source";
-import { type SourKey } from "../types/types";
 import type ISour from "../interfaces/sour";
+import type ISourceStructure from "../structures/source";
+import type {SourKey} from "../types/types";
 
 import { Common, createProxy } from "./common";
 import type { ProxyOriginal } from "./common";
-import { type GedComType } from "./gedcom";
+import type {GedComType} from "./gedcom";
 
 export class Sour extends Common<string, SourKey> implements ISour {}
 

@@ -1,4 +1,4 @@
-import { type Path } from "../classes/indi";
+import type {Path} from "../classes/indi";
 
 import type IKinshipTranslator from "./kinship-translator.interface";
 

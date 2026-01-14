@@ -1,10 +1,10 @@
-import { Command } from 'commander';
 import { writeFileSync } from 'fs';
-import GedcomTree from '../../utils/parser.js';
+import type { Command } from 'commander';
 import { mergeGedcoms } from '../../classes/gedcom.js';
+import type { MultiTag } from '../../types/types.js';
+import GedcomTree from '../../utils/parser.js';
 import { formatSuccess } from '../utils/formatters.js';
 import { readGedcomFile, handleError } from '../utils/helpers.js';
-import type { MultiTag } from '../../types/types.js';
 
 interface MergeOptions {
 	output: string;
@@ -66,7 +66,7 @@ export function registerMergeCommand(program: Command): void {
 				// For more than 2 files, use iterative merging
 				console.log(`Merging ${files.length} files iteratively...`);
 				
-				let targetContent = readGedcomFile(files[0]);
+				const targetContent = readGedcomFile(files[0]);
 				let { gedcom: targetGedcom } = GedcomTree.parse(targetContent);
 
 				const strategy = getMergeStrategy(options);

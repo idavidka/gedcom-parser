@@ -1,5 +1,5 @@
-import { Command } from 'commander';
 import { writeFileSync } from 'fs';
+import type { Command } from 'commander';
 import GedcomTree from '../../utils/parser.js';
 import {
 	formatHeader,

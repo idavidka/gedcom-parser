@@ -1,6 +1,6 @@
-import { type FamType } from "../classes/fam";
-import { type IndiType } from "../classes/indi";
-import { type IndiKey } from "../types/types";
+import type {FamType} from "../classes/fam";
+import type {IndiType} from "../classes/indi";
+import type {IndiKey} from "../types/types";
 
 export const getFamilyWith = (
 	person1: IndiType,

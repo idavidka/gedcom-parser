@@ -1,17 +1,8 @@
-import { type Common } from "../classes/common";
-import { type List } from "../classes/list";
-import {
-	type Filter,
-	type Order,
-	type IdType,
-	type FilterIterator,
-	type MultiTag,
-	type Group,
-	type GroupIterator,
-	type OrderIterator,
-} from "../types/types";
+import type {Common} from "../classes/common";
+import type {List} from "../classes/list";
+import type {Filter, Order, IdType, FilterIterator, MultiTag, Group, GroupIterator, OrderIterator} from "../types/types";
 
-import { type ConvertOptions } from "./common";
+import type {ConvertOptions} from "./common";
 
 export interface IList<K extends IdType = IdType, T extends Common = Common> {
 	readonly length: number;

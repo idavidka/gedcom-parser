@@ -1,5 +1,5 @@
-import { type Common } from "../classes/common";
-import { type Individuals } from "../classes/indis";
+import type {Common} from "../classes/common";
+import type {Individuals} from "../classes/indis";
 
 export type ConvertType =
 	| "FAM"

@@ -1,4 +1,4 @@
-import { type Common } from "../classes/common";
+import type {Common} from "../classes/common";
 import type { Families } from "../classes/fams";
 import type { Individuals } from "../classes/indis";
 import type { List } from "../classes/list";
@@ -6,8 +6,7 @@ import type { Objects } from "../classes/objes";
 import type { Repositories } from "../classes/repos";
 import type { Sources } from "../classes/sours";
 import type { Submitters } from "../classes/subms";
-import { type NonStandard } from "../types/types";
-import type { ListTag } from "../types/types";
+import type {NonStandard, ListTag } from "../types/types";
 
 import type IAddressStructure from "./address";
 import type INoteStructure from "./note";

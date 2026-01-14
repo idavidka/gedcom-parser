@@ -1,5 +1,5 @@
-import { Command } from 'commander';
 import { writeFileSync } from 'fs';
+import type { Command } from 'commander';
 import GedcomTree from '../../utils/parser.js';
 import { formatError, formatSuccess } from '../utils/formatters.js';
 import { readGedcomFile, handleError, cleanGedcomName } from '../utils/helpers.js';
@@ -28,7 +28,7 @@ export function registerExtractCommand(program: Command): void {
 				const content = readGedcomFile(file);
 				const { gedcom: tree } = GedcomTree.parse(content);
 
-				let individuals = tree.indis();
+				const individuals = tree.indis();
 				const results: any[] = [];
 
 				// Collect individuals that match all filters

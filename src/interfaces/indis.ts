@@ -1,9 +1,9 @@
-import { type IndiType } from "../classes/indi";
-import { type Individuals } from "../classes/indis";
-import { type List } from "../classes/list";
-import { type FamKey, type IndiKey } from "../types/types";
+import type {IndiType} from "../classes/indi";
+import type {Individuals} from "../classes/indis";
+import type {List} from "../classes/list";
+import type {FamKey, IndiKey} from "../types/types";
 
-import { type IList } from "./list";
+import type {IList} from "./list";
 
 export interface IIndividuals extends IList<IndiKey, IndiType> {
 	toName: () => List;

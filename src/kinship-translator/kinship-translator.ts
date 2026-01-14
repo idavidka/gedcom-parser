@@ -1,5 +1,5 @@
-import { type Path, type IndiType } from "../classes/indi";
-import { type IndiKey } from "../types/types";
+import type {Path, IndiType} from "../classes/indi";
+import type {IndiKey} from "../types/types";
 
 import type IKinshipTranslator from "./kinship-translator.interface";
 import * as translators from "./translators";

@@ -8,30 +8,30 @@ import {
 } from "../constants/orders";
 import { getPlaceParserProvider } from "../factories/place-parser-provider";
 import { getPlaceTranslatorProvider } from "../factories/place-translator-provider";
-import { type IIndividuals } from "../interfaces/indis";
+import type {IIndividuals} from "../interfaces/indis";
 import type IEventDetailStructure from "../structures/event-detail-structure";
-import { type Settings } from "../types/settings";
+import type {Settings} from "../types/settings";
 import {
-	type IndiKey,
-	type Filter,
-	type FamKey,
-	type OrderIterator,
-	type MultiTag,
-	Range,
-	type NestedGroup,
-	type Order,
-	type FilterIterator,
-	type GroupIterator,
-	type Group,
+	
+	
+	
+	
+	
+	Range
+	
+	
+	
+	
+	
 } from "../types/types";
-import type { GroupMarker } from "../types/types";
+import type {IndiKey, Filter, FamKey, OrderIterator, MultiTag, NestedGroup, Order, FilterIterator, GroupIterator, Group, GroupMarker } from "../types/types";
 import { nameFormatter } from "../utils/name-formatter";
 import { setNestedGroup } from "../utils/nested-group";
 import { getPlaceParts } from "../utils/place-parser";
 import { placeTranslator } from "../utils/place-translator";
 
-import { type CommonDate } from "./date";
-import { type IndiType } from "./indi";
+import type {CommonDate} from "./date";
+import type {IndiType} from "./indi";
 import { List } from "./list";
 
 export class Individuals

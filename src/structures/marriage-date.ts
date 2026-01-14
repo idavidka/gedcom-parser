@@ -1,4 +1,4 @@
-import { type Common } from "../classes/common";
+import type {Common} from "../classes/common";
 
 import type IDateStructure from "./date";
 import type INoteStructure from "./note";

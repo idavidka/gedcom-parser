@@ -1,4 +1,4 @@
-import { type Common } from "../classes/common";
+import type {Common} from "../classes/common";
 
 interface IAddressStructure extends Common {
 	ADDR?: Common & {

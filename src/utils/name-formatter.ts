@@ -1,5 +1,7 @@
-import { Indi, type IndiType } from "../classes/indi";
-import { createCommonName, type CommonName } from "../classes/name";
+import { Indi  } from "../classes/indi";
+import type {IndiType} from "../classes/indi";
+import { createCommonName  } from "../classes/name";
+import type {CommonName} from "../classes/name";
 import type { Settings } from "../types/settings";
 
 export const nameFormatter = (
