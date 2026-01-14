@@ -1148,7 +1148,9 @@ export const mergeGedcoms = (
 			const targetIndi = mergedGedcom.indis()?.item(matchedTargetId);
 			if (targetIndi) {
 				// Merge without overriding existing data
-				targetIndi.merge(clonedIndi, false);
+				// If using a strategy field (not "id"), avoid merging that field since it's already the same
+				const avoidKeys: MultiTag[] = strategy !== "id" ? [strategy] : [];
+				targetIndi.merge(clonedIndi, false, avoidKeys);
 			}
 		} else {
 			// This is a new individual - add it to merged GEDCOM

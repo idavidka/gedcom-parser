@@ -323,6 +323,29 @@ describe("mergeGedcoms Function", () => {
 			expect(famcRefs?.length).toBe(1);
 		});
 
+		it("should not merge strategy field, keeping it as Common not List", () => {
+			const { gedcom: sourceGedcom } = GedcomTree.parse(mergeFsidComplexSource);
+			const { gedcom: targetGedcom } = GedcomTree.parse(mergeFsidComplexTarget);
+
+			const merged = mergeGedcoms(sourceGedcom, targetGedcom, "_FS_ID");
+
+			// When individuals are merged by _FS_ID, the _FS_ID field should NOT be merged
+			// because both individuals have the same _FS_ID (that's why they matched)
+			// This prevents _FS_ID from becoming a List
+
+			const person011 = merged.indi("@I11@");
+			expect(person011?._FS_ID).toBeTruthy();
+			
+			// _FS_ID should not be a List (it should remain as Common)
+			const fsIdValue = person011?._FS_ID;
+			expect(fsIdValue).not.toBeInstanceOf(Array);
+			
+			// Check that it's not a List by verifying toString() works correctly
+			const fsIdString = person011?._FS_ID?.toString();
+			expect(fsIdString).toBe("PERSON-011");
+			expect(fsIdString).not.toContain("[object Object]");
+		});
+
 		it("should maintain referential integrity after merge", () => {
 			const { gedcom: sourceGedcom } = GedcomTree.parse(mergeFsidComplexSource);
 			const { gedcom: targetGedcom } = GedcomTree.parse(mergeFsidComplexTarget);
