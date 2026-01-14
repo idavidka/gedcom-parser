@@ -1,9 +1,9 @@
-import type {Common} from "../classes/common";
-import type {Families} from "../classes/fams";
-import type {IndiType} from "../classes/indi";
-import type {Individuals} from "../classes/indis";
-import type {List} from "../classes/list";
-import type {IndiKey} from "../types/types";
+import type { Common } from "../classes/common";
+import type { Families } from "../classes/fams";
+import type { IndiType } from "../classes/indi";
+import type { Individuals } from "../classes/indis";
+import type { List } from "../classes/list";
+import type { IndiKey } from "../types/types";
 
 export type GeneratorKey = `${"2nd" | "3rd" | `${4 | 5 | 6 | 7 | 8 | 9}th`}`;
 export type GeneratorType =
@@ -32,6 +32,22 @@ export type MediaList = Record<
 >;
 
 interface IIndi extends Common<string, IndiKey> {
+	getBirthDate: (
+		showDays?: boolean,
+		shortNote?: boolean,
+		showNote?: boolean
+	) => string | undefined;
+
+	getDeathDate: (
+		showDays?: boolean,
+		shortNote?: boolean,
+		showNote?: boolean
+	) => string | undefined;
+
+	getBirthPlace: () => string | undefined;
+
+	getDeathPlace: () => string | undefined;
+
 	isParentOf: (indi?: IndiKey | IndiType) => IndiKey | boolean;
 
 	isChildOf: (indi?: IndiKey | IndiType) => IndiKey | boolean;

@@ -26,7 +26,7 @@ npm install @treeviz/gedcom-parser
 ### Basic Usage (No Plugins)
 
 ```typescript
-import { GedcomTree } from '@treeviz/gedcom-parser';
+import GedcomTree from '@treeviz/gedcom-parser';
 
 const gedcomContent = `0 HEAD
 1 SOUR MyApp
@@ -34,11 +34,14 @@ const gedcomContent = `0 HEAD
 1 NAME John /Doe/
 0 TRLR`;
 
-const tree = new GedcomTree(gedcomContent);
-const individuals = tree.indis();
+const { gedcom } = GedcomTree.parse(gedcomContent);
+const individuals = gedcom.indis();
 
 individuals.forEach(indi => {
-  console.log(indi.name()); // "John Doe"
+  console.log(indi.toName()); // "John Doe"
+  console.log(indi.getBirthDate()); // "*1850" (year only)
+  console.log(indi.getBirthDate(true)); // "*1850.05.15." (full date)
+  console.log(indi.getBirthPlace()); // "New York, USA" 
 });
 ```
 
@@ -385,10 +388,11 @@ setPlaceParserProvider(getPlaceParts);
 setPlaceTranslatorProvider(placeTranslator);
 setCacheManagerFactory(cacheFactory);
 
-// 2. Now parse GEDCOM
-const tree = new GedcomTree(gedcomContent);
+// Now parse GEDCOM
+const { gedcom } = GedcomTree.parse(gedcomContent);
 
 // All functionality now uses your custom implementations
+const individuals = gedcom.indis();
 ```
 
 ---
@@ -448,7 +452,7 @@ setCacheFactory((name, storeName, dataType, enc) =>
 );
 
 // Now caching is enabled for path calculations and relatives
-const tree = new GedcomTree(gedcomContent);
+const { gedcom } = GedcomTree.parse(gedcomContent);
 ```
 
 ---
@@ -459,35 +463,50 @@ const tree = new GedcomTree(gedcomContent);
 
 #### `GedcomTree`
 
-Main parser class for GEDCOM content.
+Main parser object for GEDCOM content.
 
 ```typescript
-import { GedcomTree } from '@treeviz/gedcom-parser';
+import GedcomTree from '@treeviz/gedcom-parser';
 
-const tree = new GedcomTree(gedcomContent, options?);
+const { gedcom, settings } = GedcomTree.parse(gedcomContent, options?);
 ```
 
 **Methods:**
-- `indis()` - Get all individuals (Individuals collection)
-- `fams()` - Get all families (Families collection)
-- `sours()` - Get all sources
-- `repos()` - Get all repositories
-- `objes()` - Get all media objects
-- `subms()` - Get all submitters
-- `indi(id)` - Get individual by ID
-- `fam(id)` - Get family by ID
+- `parse(content, options?)` - Parse GEDCOM string, returns `{ gedcom, settings }`
+- `parseHierarchy(content, options?)` - Same as `parse()`
 
-**Individual Methods:**
-- `name()` - Get formatted name
-- `birthDate()` - Get birth date
-- `birthPlace()` - Get birth place
-- `deathDate()` - Get death date
-- `deathPlace()` - Get death place
-- `parents()` - Get parent individuals
-- `children()` - Get children
-- `spouses()` - Get spouses
-- `siblings()` - Get siblings
-- And many more...
+**Parsed GEDCOM Object Methods:**
+- `gedcom.indis()` - Get all individuals (Individuals collection)
+- `gedcom.fams()` - Get all families (Families collection)
+- `gedcom.sours()` - Get all sources
+- `gedcom.repos()` - Get all repositories
+- `gedcom.objes()` - Get all media objects
+- `gedcom.subms()` - Get all submitters
+- `gedcom.indi(id)` - Get individual by ID
+- `gedcom.fam(id)` - Get family by ID
+
+**Individual Methods (on each `indi`):**
+- `toName()` - Get formatted name (e.g., "John Doe")
+- `toNaturalName()` - Get natural order name
+- `getBirthDate(showDays?, shortNote?, showNote?)` - Get formatted birth date (e.g., "*1850" or "*ca. 1850")
+- `getDeathDate(showDays?, shortNote?, showNote?)` - Get formatted death date (e.g., "†1920" or "†after 1920")
+- `getBirthPlace()` - Get birth place as string
+- `getDeathPlace()` - Get death place as string
+- `BIRT` - Birth event property (access with `.BIRT.DATE`, `.BIRT.PLAC`)
+- `DEAT` - Death event property (access with `.DEAT.DATE`, `.DEAT.PLAC`)
+- `getParents()` - Get parent individuals
+- `getChildren()` - Get all children
+- `getSpouses()` - Get spouses
+- `getSiblings()` - Get siblings
+- `getBrothers()`, `getSisters()` - Get siblings by gender
+- `getFathers()`, `getMothers()` - Get parents by gender
+- `getSons()`, `getDaughters()` - Get children by gender
+- `getGrandParents()`, `getGrandChildren()` - Get grandparents/grandchildren
+- `getAuncles()`, `getUncles()`, `getAunts()` - Get aunts and uncles
+- `getNiblings()`, `getNieces()`, `getNephews()` - Get nieces and nephews
+- `getCousins()` - Get cousins
+- `getParentsInLaw()`, `getChildrenInLaw()`, `getSiblingsInLaw()` - Get in-laws
+- And many more relationship methods...
 
 ### Cache Manager
 
@@ -956,25 +975,24 @@ export function initGedcomParser() {
 // Call this in your app initialization
 // src/index.tsx
 import { initGedcomParser } from './utils/gedcom-init';
+import GedcomTree from '@treeviz/gedcom-parser';
 
 initGedcomParser();
 
 // Now you can use the parser anywhere
-import { GedcomTree } from '@treeviz/gedcom-parser';
-
 function parseGedcom(content: string) {
-  const tree = new GedcomTree(content);
-  return tree.indis();
+  const { gedcom } = GedcomTree.parse(content);
+  return gedcom.indis();
 }
 ```
 
 ### Order, Filter, Group Example
 
 ```typescript
-import { GedcomTree, type Order, type Filter, type Group } from '@treeviz/gedcom-parser';
+import GedcomTree, { type Order, type Filter, type Group } from '@treeviz/gedcom-parser';
 
-const tree = new GedcomTree(gedcomContent);
-const individuals = tree.indis();
+const { gedcom } = GedcomTree.parse(gedcomContent);
+const individuals = gedcom.indis();
 
 // 1. Order by birth date (oldest first)
 const byBirthDateAsc: Order = {
@@ -1011,7 +1029,7 @@ const groupedByPlace = individuals.group(byBirthPlace);
 groupedByPlace.forEach((group, place) => {
   console.log(`Born in ${place}:`);
   group.forEach(indi => {
-    console.log(`  - ${indi.name()}`);
+    console.log(`  - ${indi.toName()}`);
   });
 });
 

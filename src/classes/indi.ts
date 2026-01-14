@@ -15,6 +15,7 @@ import type {
 import type IIndi from "../interfaces/indi";
 import type { Kinship } from "../kinship-translator/kinship-translator.interface";
 import type { Language } from "../kinship-translator/types";
+import type IEventDetailStructure from "../structures/event-detail-structure";
 import type IIndividualStructure from "../structures/individual";
 import type { AncestryMedia } from "../types/ancestry-media";
 import { RelationType, PartnerType } from "../types/types";
@@ -1211,6 +1212,44 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 			return 0;
 		});
+	}
+
+	getBirthDate(showDays = false, shortNote = true, showNote = true) {
+		const dates = dateFormatter(
+			this,
+			false,
+			showDays,
+			false,
+			shortNote,
+			showNote
+		);
+		return dates.birth || undefined;
+	}
+
+	getDeathDate(showDays = false, shortNote = true, showNote = true) {
+		const dates = dateFormatter(
+			this,
+			false,
+			showDays,
+			false,
+			shortNote,
+			showNote
+		);
+		return dates.death || undefined;
+	}
+
+	getBirthPlace() {
+		const birthEvent = this.get("BIRT")?.toList().index(0) as
+			| IEventDetailStructure
+			| undefined;
+		return birthEvent?.PLAC?.value;
+	}
+
+	getDeathPlace() {
+		const deathEvent = this.get("DEAT")?.toList().index(0) as
+			| IEventDetailStructure
+			| undefined;
+		return deathEvent?.PLAC?.value;
 	}
 
 	isDead() {

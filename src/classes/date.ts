@@ -1,6 +1,5 @@
 import type { Locale } from "date-fns";
 import { format, isValid, parse } from "date-fns";
-import { enUS } from "date-fns/locale";
 
 import { getDateLocale } from "../factories";
 import type { IdType, MultiTag } from "../types/types";
@@ -30,7 +29,7 @@ const formatDateWithComponents = (
 	hasYear: boolean,
 	noteValue: string | undefined,
 	baseFormat = "dd MMM yyyy",
-	locale?: Locale
+	locale?: Locale | null
 ): string => {
 	const hasNote = baseFormat.includes("NOTE");
 	let validDateFormat = baseFormat.replace("NOTE", NOTE_MARKER);
@@ -52,7 +51,9 @@ const formatDateWithComponents = (
 		.replace(/^[.\-\s/]+|[.\-\s/]+$/g, "");
 
 	const formattedDate = format(date, validDateFormat, {
-		locale: locale ? locale : getDateLocale(),
+		...(locale !== null
+			? { locale: locale ? locale : getDateLocale() }
+			: {}),
 	});
 
 	// Add NOTE prefix if it exists
@@ -220,7 +221,10 @@ export class CommonDate extends Common<string> {
 		return note;
 	}
 
-	toValue(dateFormat = "dd MMM yyyy", locale?: Locale): string | undefined {
+	toValue(
+		dateFormat = "dd MMM yyyy",
+		locale?: Locale | null
+	): string | undefined {
 		const hasDay = !!this.DAY?.value;
 		const hasMonth = !!this.MONTH?.value;
 		const hasYear = !!this.YEAR?.value;
@@ -244,7 +248,7 @@ export class CommonDate extends Common<string> {
 	}
 
 	exportValue() {
-		return this.toValue("NOTE dd MMM yyyy", enUS);
+		return this.toValue("NOTE dd MMM yyyy", null);
 	}
 
 	inRange(range: Range, trueIfNoYear = false) {
