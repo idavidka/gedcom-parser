@@ -967,8 +967,7 @@ export const mergeGedcoms = (
 
 				// Match if:
 				// 1. At least one spouse is present (to avoid matching empty families), OR
-				// 2. Both have no children but spouses match, OR
-				// 3. At least 50% of children overlap
+				// 2. At least 50% of children overlap
 				const hasSpouses =
 					finalHusbId ||
 					finalWifeId ||
