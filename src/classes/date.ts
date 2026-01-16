@@ -5,7 +5,7 @@ import { getDateLocale } from "../factories";
 import type { IdType, MultiTag } from "../types/types";
 import { ACCEPTED_DATE_FORMATS } from "../utils/date-formatter";
 import { inRange } from "../utils/range";
-import type { Range } from "../utils/range";
+import type { RangeTuple } from "../utils/range";
 
 import { Common, createCommon, createProxy } from "./common";
 import type { ProxyOriginal } from "./common";
@@ -251,7 +251,7 @@ export class CommonDate extends Common<string> {
 		return this.toValue("NOTE dd MMM yyyy", null);
 	}
 
-	inRange(range: Range, trueIfNoYear = false) {
+	inRange(range: RangeTuple, trueIfNoYear = false) {
 		return inRange(this.YEAR?.value, range, trueIfNoYear);
 	}
 }

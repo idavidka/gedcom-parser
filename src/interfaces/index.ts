@@ -3,7 +3,7 @@ export type { default as ICommon } from "./common";
 export type { default as IFam } from "./fam";
 export type { IFamilies } from "./fams";
 export type { default as IGedCom } from "./gedcom";
-export type { default as IIndi } from "./indi";
+export type { default as IIndi, GeneratedIndiMethods } from "./indi";
 export type { IIndividuals } from "./indis";
 export type { IList } from "./list";
 export type { default as IObje } from "./obje";
