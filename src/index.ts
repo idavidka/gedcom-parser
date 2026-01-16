@@ -89,7 +89,7 @@ export type { default as RepoInterface } from "./interfaces/repo";
 export type { default as SubmInterface } from "./interfaces/subm";
 export type { default as ObjeInterface } from "./interfaces/obje";
 export type { IIndividuals as IndisInterface } from "./interfaces/indis";
-export type { default as IndiInterface } from "./interfaces/indi";
+export type { default as IndiInterface, GeneratedIndiMethods } from "./interfaces/indi";
 export type { default as CommonInterface } from "./interfaces/common";
 export type { IList as ListInterface } from "./interfaces/list";
 export type { default as SourInterface } from "./interfaces/sour";
@@ -130,6 +130,9 @@ export * from "./utils/name-formatter";
 export * from "./utils/place-parser";
 export * from "./utils/get-places";
 export * from "./utils/place-translator";
+export * from "./utils/ordinalize";
+export * from "./utils/get-all-prop";
+export * from "./utils/nested-group";
 // Range utilities are already exported from types/types
 export {
 	inRange,
