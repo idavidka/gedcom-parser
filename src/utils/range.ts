@@ -4,7 +4,7 @@ export type PrimitiveRange =
 	| `-${number}`
 	| `${number}-`
 	| `${number}-${number}`;
-export type RangeTuple =
+export type Range =
 	| PrimitiveRange
 	| [(string | number)?, (string | number)?]
 	| [string | number, (string | number)?];
@@ -14,7 +14,7 @@ export interface SplitResult {
 	by?: boolean;
 }
 
-const toTuple = (r: RangeTuple): [number | undefined, number | undefined] => {
+const toTuple = (r: Range): [number | undefined, number | undefined] => {
 	if (Array.isArray(r)) {
 		const [s, e] = r;
 		return [
@@ -34,7 +34,7 @@ export const fromTuple = (s?: number, e?: number): PrimitiveRange => {
 	return `${s}-${e}` as PrimitiveRange;
 };
 
-const isValidRange = (range: RangeTuple) => {
+const isValidRange = (range: Range) => {
 	if (
 		!Array.isArray(range) &&
 		range !== "" &&
@@ -56,7 +56,7 @@ const isValidRange = (range: RangeTuple) => {
 
 export const inRange = (
 	year: string | number | undefined,
-	range: RangeTuple,
+	range: Range,
 	trueIfNoYear = false
 ) => {
 	if (!isValidRange(range)) {
@@ -84,7 +84,7 @@ export const inRange = (
 	return Number(start) <= Number(year) && Number(year) <= Number(end);
 };
 
-export const isIntersectedRange = (range1: RangeTuple, range2: RangeTuple) => {
+export const isIntersectedRange = (range1: Range, range2: Range) => {
 	if (!isValidRange(range1) || !isValidRange(range2)) {
 		return false;
 	}
@@ -139,7 +139,7 @@ export const isIntersectedRange = (range1: RangeTuple, range2: RangeTuple) => {
 	return false;
 };
 
-export const splitRange = (to: RangeTuple, by: RangeTuple): SplitResult[] => {
+export const splitRange = (to: Range, by: Range): SplitResult[] => {
 	const [toStart, toEnd] = toTuple(to);
 	const [byStart, byEnd] = toTuple(by);
 

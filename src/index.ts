@@ -12,7 +12,7 @@ export type { ICacheManager } from "./utils/cache";
 // Kinship translator
 export * from "./kinship-translator";
 
-// Settings and types
+// Settings and types - exports enum Range
 export * from "./types";
 
 // Constants - sorting, filtering, etc.
@@ -28,4 +28,40 @@ export * from "./interfaces";
 export * from "./structures";
 
 // Utils - commonly used utilities
-export * from "./utils";
+// Export type Range with alias to avoid conflict with enum Range from types
+export type {
+	PrimitiveRange,
+	Range as RangeType,
+	SplitResult,
+} from "./utils/range";
+
+// Export range functions explicitly to avoid type Range conflict
+export {
+	fromTuple,
+	inRange,
+	isIntersectedRange,
+	splitRange,
+	parseRangeBounds,
+	isRangeContained,
+	extractSplitPoints,
+	generateSplitRanges,
+	splitOverlappingRanges,
+	findMatchingRangeForSplitRange,
+	extractSeparationYears,
+} from "./utils/range";
+
+// Export rest of utils (functions and other exports)
+export * from "./utils/cache";
+export * from "./utils/common-creator";
+export * from "./utils/date-formatter";
+export * from "./utils/get-all-prop";
+export * from "./utils/get-family-with";
+export * from "./utils/get-places";
+export * from "./utils/get-product-details";
+export { getRawSize } from "./utils/get-raw-size";
+export * from "./utils/logger";
+export * from "./utils/name-formatter";
+export * from "./utils/nested-group";
+export * from "./utils/ordinalize";
+export * from "./utils/place-parser";
+export * from "./utils/place-translator";

@@ -1,4 +1,14 @@
 // Factories exports - barrel file for easier imports
+
+// Explicit type exports
+export type { CacheManagerFactory } from "./cache-factory";
+export type { DateLocaleProvider } from "./date-locale-factory";
+export type { I18nProvider } from "./i18n-factory";
+export type { KinshipTranslatorConstructor } from "./kinship-factory";
+export type { PlaceParserFunction } from "./place-parser-provider";
+export type { PlaceTranslatorFunction } from "./place-translator-provider";
+
+// Export all factory functions
 export * from "./cache-factory";
 export * from "./date-locale-factory";
 export * from "./i18n-factory";

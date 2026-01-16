@@ -15,4 +15,7 @@ export { default as GedcomTree } from "./parser";
 export * from "./place-parser";
 export * from "./place-translator";
 // Note: place-types is already exported by get-places
+
+// Export range - use wildcard for functions, explicit for types
+export type { PrimitiveRange, Range, SplitResult } from "./range";
 export * from "./range";

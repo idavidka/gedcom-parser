@@ -7,5 +7,8 @@ export { default as KinshipTranslatorFR } from "./kinship-translator.fr";
 export { default as KinshipTranslatorHU } from "./kinship-translator.hu";
 export type { default as KinshipTranslatorInterface } from "./kinship-translator.interface";
 export { default as KinshipTranslator } from "./kinship-translator";
-export * from "./types";
+
+// Explicit type exports
+export type { Language, Cases, CrossCase, CrossCases } from "./types";
+
 export * as translators from "./translators";

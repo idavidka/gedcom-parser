@@ -1,4 +1,36 @@
 // Classes exports - barrel file for easier imports
+
+// Explicit type/interface exports for better discoverability
+export type { ProxyOriginal } from "./common";
+export type { SourType } from "./sour";
+export type { RepoType } from "./repo";
+export type { SubmType } from "./subm";
+export type {
+	IndiType,
+	TreeMember,
+	GenealogyMember,
+	IndiTree,
+	IndiGenealogy,
+	IndiMarker,
+	MemberSide,
+	MemberMain,
+	GenerationSpouseType,
+	GenerationIndiType,
+	IndiGenealogyGenerations,
+	IndiGenealogyResult,
+	NonNullIndiGenealogyResult,
+	PathItem,
+	Path,
+	ReducedPath,
+	QueueItem,
+	Queue,
+} from "./indi";
+export type { FamType } from "./fam";
+export type { GedComType } from "./gedcom";
+export type { ObjeType } from "./obje";
+export { Existed, CustomTags } from "./indi";
+
+// Export all classes and functions (automatically includes above types)
 export * from "./common";
 export * from "./date";
 export * from "./fam";
