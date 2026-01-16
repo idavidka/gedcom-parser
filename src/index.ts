@@ -54,8 +54,12 @@ export { default as KinshipTranslator } from "./kinship-translator/kinship-trans
 export type { default as IKinshipTranslator } from "./kinship-translator/kinship-translator.interface";
 export type { Language } from "./kinship-translator/types";
 
-// Settings
+// Settings and types
 export * from "./types/types";
+export type { Settings } from "./types/settings";
+
+// Constants - sorting, filtering, etc.
+export * from "./constants";
 
 // Classes - export everything from each class
 export * from "./classes/common";
@@ -139,4 +143,6 @@ export {
 	splitOverlappingRanges,
 	findMatchingRangeForSplitRange,
 	extractSeparationYears,
+	type PrimitiveRange,
+	type Range,
 } from "./utils/range";
