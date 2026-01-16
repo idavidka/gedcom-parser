@@ -335,7 +335,7 @@ export class GedCom extends Common implements IGedcom {
 		return lists;
 	}
 
-	private getDownloadHeader() {
+	private getDownloadHeader(version?: 5 | 7) {
 		const newHead = createCommon() as Required<IGedComStructure>["HEAD"];
 
 		Object.assign(newHead!, this.get("HEAD") ?? {});
@@ -354,11 +354,33 @@ export class GedCom extends Common implements IGedcom {
 		newSour.VERS!.value = getVersion();
 
 		newHead!.set("SOUR", newSour);
+		
+		// Update GEDC.VERS to match requested version
+		if (version) {
+			if (!newHead.GEDC) {
+				newHead.GEDC = createCommon();
+			}
+			if (!newHead.GEDC.VERS) {
+				newHead.GEDC.VERS = createCommon();
+			}
+			newHead.GEDC.VERS.value = version === 7 ? "7.0" : "5.5.1";
+			
+			// GEDCOM 7 specific changes
+			if (version === 7) {
+				// Remove CHAR tag (UTF-8 is required in GEDCOM 7, CHAR tag is not used)
+				delete newHead.CHAR;
+				
+				// Remove FORM tag from GEDC structure (not used in GEDCOM 7)
+				if (newHead.GEDC) {
+					delete newHead.GEDC.FORM;
+				}
+			}
+		}
 
 		return newHead;
 	}
 
-	toFiltered(indis: IndiKey[]) {
+	toFiltered(indis: IndiKey[], version?: 5 | 7) {
 		if (!indis.length) {
 			return this;
 		}
@@ -368,7 +390,7 @@ export class GedCom extends Common implements IGedcom {
 		const newContent = this.getIndiRelatedLists(indis);
 
 		Object.assign(newGedcom, this, newContent, {
-			HEAD: this.getDownloadHeader(),
+			HEAD: this.getDownloadHeader(version || 5),
 		});
 
 		return newGedcom;
@@ -391,7 +413,7 @@ export class GedCom extends Common implements IGedcom {
 		const newContent = this.getIndiRelatedLists(options.indis);
 
 		Object.assign(newGedcom, this, newContent, {
-			HEAD: this.getDownloadHeader(),
+			HEAD: this.getDownloadHeader(options.version || 5),
 		});
 
 		delete options.indis;
@@ -413,13 +435,17 @@ export class GedCom extends Common implements IGedcom {
 
 		const newGedcom = createGedCom();
 
+		// Important: Copy all data FIRST, then overwrite HEAD
+		// This order ensures the custom HEAD (with version-specific changes)
+		// is not overwritten by the original HEAD from `this`
+		Object.assign(newGedcom, this);
+
+		// Then, if not original mode, overwrite HEAD with custom header
 		if (!options?.original) {
 			Object.assign(newGedcom, {
-				HEAD: this.getDownloadHeader(),
+				HEAD: this.getDownloadHeader(options?.version || 5),
 			});
 		}
-
-		Object.assign(newGedcom, this);
 
 		if (options?.indis?.length) {
 			const newContent = this.getIndiRelatedLists(options.indis);

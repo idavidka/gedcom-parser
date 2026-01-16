@@ -12,6 +12,7 @@ export interface ConvertOptions {
 		namespace?: string | number;
 	};
 	super?: boolean;
+	version?: 5 | 7;
 }
 
 interface ICommon<P = string, I extends IdType = IdType> {

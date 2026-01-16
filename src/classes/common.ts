@@ -476,7 +476,13 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 			const prop = this.get(validKey);
 			if (typeof prop?.toGedcomLines === "function") {
 				if (prop instanceof Common) {
-					const value = prop.exportValue() as string | undefined;
+					let value = prop.exportValue() as string | undefined;
+					
+					// For GEDCOM 7, decode URL-encoded sequences
+					if (options?.version === 7 && value) {
+						value = this.decodeGedcom7Value(value);
+					}
+					
 					gedcom.push(
 						`${level} ${validKey}${value ? ` ${value}` : ""}`
 					);
@@ -492,6 +498,29 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		});
 
 		return gedcom;
+	}
+	
+	/**
+	 * Decode GEDCOM escape sequences for GEDCOM 7
+	 * GEDCOM 5.5.1 uses escape sequences like %0A for newlines
+	 * GEDCOM 7 uses literal characters instead
+	 * 
+	 * Note: Per GEDCOM 5.5.1 spec, only these escape sequences are used:
+	 * - %0A (newline), %0D (carriage return), %09 (tab), %25 (percent)
+	 * Other sequences like %20 (space) or %2F (slash) are not part of the standard
+	 * 
+	 * Safety: Processing %25 first prevents double-decoding. For example:
+	 * - Input: "%250A" → After %25: "%0A" → After %0A: "%0A" (unchanged, correct)
+	 * - Input: "%0A"   → After %25: "%0A" → After %0A: "\n" (newline, correct)
+	 */
+	private decodeGedcom7Value(value: string): string {
+		// Replace GEDCOM 5.5.1 escape sequences in the correct order
+		// %25 must be processed first to avoid double-decoding
+		return value
+			.replace(/%25/g, '%')   // Percent sign (must be first)
+			.replace(/%0A/g, '\n')  // Newline
+			.replace(/%0D/g, '\r')  // Carriage return
+			.replace(/%09/g, '\t'); // Tab
 	}
 
 	isGenoPro() {

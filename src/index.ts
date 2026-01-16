@@ -3,6 +3,9 @@ export * from "./utils/parser";
 export { default } from "./utils/parser";
 export { default as GedcomTree } from "./utils/parser";
 
+// Version detection
+export { detectGedcomVersion } from "./utils/version-detector";
+
 // Factories - Pluggable dependencies
 export {
 	setCacheManagerFactory,
