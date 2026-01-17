@@ -1108,6 +1108,44 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		return this.get("_FS_LINK")?.toValue() as string | undefined;
 	}
 
+	getFamilySearchMatches() {
+		// Get all _FS_MATCH tags for this individual
+		const matchTags = this.get("_FS_MATCH")?.toList();
+
+		if (!matchTags?.length) {
+			return [];
+		}
+
+		return matchTags.map((matchTag) => {
+			const id = matchTag.toValue();
+
+			// Extract all sub-tags using get() method
+			const title = matchTag.get("TITL")?.toValue();
+			const type = matchTag.get("TYPE")?.toValue();
+			const ref = matchTag.get("REF")?.toValue();
+			const scoreStr = matchTag.get("SCORE")?.toValue();
+			const text = matchTag.get("TEXT")?.toValue();
+			const www = matchTag.get("WWW")?.toValue();
+
+			// Extract NOTE tags (there can be multiple)
+			const noteTags = matchTag.get("NOTE")?.toList() || [];
+			const notes = noteTags
+				.map((note) => note.toValue())
+				.filter(Boolean);
+
+			return {
+				id,
+				title,
+				type,
+				ref,
+				score: scoreStr ? parseFloat(scoreStr) : undefined,
+				text,
+				www,
+				notes,
+			};
+		});
+	}
+
 	async multimedia(
 		namespace?: string | number
 	): Promise<MediaList | undefined> {

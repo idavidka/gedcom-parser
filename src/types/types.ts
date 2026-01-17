@@ -1,5 +1,5 @@
-import type {Common} from "../classes/common";
-import type {Individuals} from "../classes/indis";
+import type { Common } from "../classes/common";
+import type { Individuals } from "../classes/indis";
 
 export type ConvertType =
 	| "FAM"
@@ -75,7 +75,12 @@ interface Tags {
 	_GUESSEDORIGINAL?: Common;
 	_FS_LINK?: Common; // FamilySearch link
 	_FS_ID?: Common; // FamilySearch ID
+	_FS_MATCH?: Common; // FamilySearch Matches
+	_FS_SOURCES?: Common; // FamilySearch Sources
 	_IS_ORPHAN_FAMILY?: Common<"Y" | "N">;
+	SCORE?: Common; // Match score
+	TEXT?: Common; // Match citation text
+	REF?: Common; // Match reference ID
 	DISPLAYTEXT?: Common;
 
 	FAM?: Common;
