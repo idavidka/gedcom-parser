@@ -1108,6 +1108,11 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		return this.get("_FS_LINK")?.toValue() as string | undefined;
 	}
 
+	hasFamilySearchMatches() {
+		// Check if this individual has any _FS_MATCH tags
+		return this.get("_FS_MATCH") !== undefined;
+	}
+
 	getFamilySearchMatches() {
 		// Get all _FS_MATCH tags for this individual
 		const matchTags = this.get("_FS_MATCH")?.toList();
@@ -1123,7 +1128,9 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			const title = matchTag.get("TITL")?.toValue();
 			const type = matchTag.get("TYPE")?.toValue();
 			const ref = matchTag.get("REF")?.toValue();
-			const scoreStr = matchTag.get("SCORE")?.toValue();
+			const scoreStr = matchTag.get("SCORE")?.toValue() as
+				| string
+				| undefined;
 			const text = matchTag.get("TEXT")?.toValue();
 			const www = matchTag.get("WWW")?.toValue();
 
@@ -1139,6 +1146,43 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				type,
 				ref,
 				score: scoreStr ? parseFloat(scoreStr) : undefined,
+				text,
+				www,
+				notes,
+			};
+		});
+	}
+
+	hasFamilySearchSources() {
+		// Check if this individual has any _FS_SOUR tags
+		return this.get("_FS_SOUR") !== undefined;
+	}
+
+	getFamilySearchSources() {
+		// Get all _FS_SOUR tags for this individual
+		const sourceTags = this.get("_FS_SOUR")?.toList();
+
+		if (!sourceTags?.length) {
+			return [];
+		}
+
+		return sourceTags.map((sourceTag) => {
+			const id = sourceTag.toValue();
+
+			// Extract all sub-tags using get() method
+			const title = sourceTag.get("TITL")?.toValue();
+			const text = sourceTag.get("TEXT")?.toValue();
+			const www = sourceTag.get("WWW")?.toValue();
+
+			// Extract NOTE tags (there can be multiple)
+			const noteTags = sourceTag.get("NOTE")?.toList() || [];
+			const notes = noteTags
+				.map((note) => note.toValue())
+				.filter(Boolean);
+
+			return {
+				id,
+				title,
 				text,
 				www,
 				notes,

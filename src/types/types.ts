@@ -76,7 +76,7 @@ interface Tags {
 	_FS_LINK?: Common; // FamilySearch link
 	_FS_ID?: Common; // FamilySearch ID
 	_FS_MATCH?: Common; // FamilySearch Matches
-	_FS_SOURCES?: Common; // FamilySearch Sources
+	_FS_SOUR?: Common; // FamilySearch Sources
 	_IS_ORPHAN_FAMILY?: Common<"Y" | "N">;
 	SCORE?: Common; // Match score
 	TEXT?: Common; // Match citation text
