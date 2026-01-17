@@ -1113,7 +1113,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		return this.get("_FS_MATCH") !== undefined;
 	}
 
-	getFamilySearchMatches() {
+	getFamilySearchMatches(): FamilySearchMatch[] {
 		// Get all _FS_MATCH tags for this individual
 		const matchTags = this.get("_FS_MATCH")?.toList();
 
@@ -1121,24 +1121,24 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			return [];
 		}
 
-		return matchTags.map((matchTag) => {
-			const id = matchTag.toValue();
+		return matchTags.map((matchTag): FamilySearchMatch => {
+			const id = matchTag.toValue() as string | undefined;
 
 			// Extract all sub-tags using get() method
-			const title = matchTag.get("TITL")?.toValue();
-			const type = matchTag.get("TYPE")?.toValue();
-			const ref = matchTag.get("REF")?.toValue();
+			const title = matchTag.get("TITL")?.toValue() as string | undefined;
+			const type = matchTag.get("TYPE")?.toValue() as string | undefined;
+			const ref = matchTag.get("REF")?.toValue() as string | undefined;
 			const scoreStr = matchTag.get("SCORE")?.toValue() as
 				| string
 				| undefined;
-			const text = matchTag.get("TEXT")?.toValue();
-			const www = matchTag.get("WWW")?.toValue();
+			const text = matchTag.get("TEXT")?.toValue() as string | undefined;
+			const www = matchTag.get("WWW")?.toValue() as string | undefined;
 
 			// Extract NOTE tags (there can be multiple)
 			const noteTags = matchTag.get("NOTE")?.toList() || [];
 			const notes = noteTags
-				.map((note) => note.toValue())
-				.filter(Boolean);
+				.map((note) => note.toValue() as string)
+				.filter(Boolean) as string[];
 
 			return {
 				id,
@@ -1158,7 +1158,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		return this.get("_FS_SOUR") !== undefined;
 	}
 
-	getFamilySearchSources() {
+	getFamilySearchSources(): FamilySearchSource[] {
 		// Get all _FS_SOUR tags for this individual
 		const sourceTags = this.get("_FS_SOUR")?.toList();
 
@@ -1166,19 +1166,19 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			return [];
 		}
 
-		return sourceTags.map((sourceTag) => {
-			const id = sourceTag.toValue();
+		return sourceTags.map((sourceTag): FamilySearchSource => {
+			const id = sourceTag.toValue() as string | undefined;
 
 			// Extract all sub-tags using get() method
-			const title = sourceTag.get("TITL")?.toValue();
-			const text = sourceTag.get("TEXT")?.toValue();
-			const www = sourceTag.get("WWW")?.toValue();
+			const title = sourceTag.get("TITL")?.toValue() as string | undefined;
+			const text = sourceTag.get("TEXT")?.toValue() as string | undefined;
+			const www = sourceTag.get("WWW")?.toValue() as string | undefined;
 
 			// Extract NOTE tags (there can be multiple)
 			const noteTags = sourceTag.get("NOTE")?.toList() || [];
 			const notes = noteTags
-				.map((note) => note.toValue())
-				.filter(Boolean);
+				.map((note) => note.toValue() as string)
+				.filter(Boolean) as string[];
 
 			return {
 				id,
@@ -2993,6 +2993,25 @@ const generateFunctions = () => {
 generateFunctions();
 
 export type IndiType = Indi & IIndividualStructure & GeneratedIndiMethods;
+
+export interface FamilySearchMatch {
+	id?: string;
+	title?: string;
+	type?: string;
+	ref?: string;
+	score?: number;
+	text?: string;
+	www?: string;
+	notes?: string[];
+}
+
+export interface FamilySearchSource {
+	id?: string;
+	title?: string;
+	text?: string;
+	www?: string;
+	notes?: string[];
+}
 
 export interface TreeMember<T = IndiType> {
 	id: FamKey | IndiKey;
