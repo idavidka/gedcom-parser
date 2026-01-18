@@ -1108,6 +1108,88 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		return this.get("_FS_LINK")?.toValue() as string | undefined;
 	}
 
+	hasFamilySearchMatches() {
+		// Check if this individual has any _FS_MATCH tags
+		return this.get("_FS_MATCH") !== undefined;
+	}
+
+	getFamilySearchMatches(): FamilySearchMatch[] {
+		// Get all _FS_MATCH tags for this individual
+		const matchTags = this.get("_FS_MATCH")?.toList();
+
+		if (!matchTags?.length) {
+			return [];
+		}
+
+		return matchTags.map((matchTag): FamilySearchMatch => {
+			const id = matchTag.toValue() as string | undefined;
+
+			// Extract all sub-tags using get() method
+			const title = matchTag.get("TITL")?.toValue() as string | undefined;
+			const type = matchTag.get("TYPE")?.toValue() as string | undefined;
+			const ref = matchTag.get("REF")?.toValue() as string | undefined;
+			const scoreStr = matchTag.get("SCORE")?.toValue() as
+				| string
+				| undefined;
+			const text = matchTag.get("TEXT")?.toValue() as string | undefined;
+			const www = matchTag.get("WWW")?.toValue() as string | undefined;
+
+			// Extract NOTE tags (there can be multiple)
+			const noteTags = matchTag.get("NOTE")?.toList() || [];
+			const notes = noteTags
+				.map((note) => note.toValue() as string)
+				.filter(Boolean) as string[];
+
+			return {
+				id,
+				title,
+				type,
+				ref,
+				score: scoreStr ? parseFloat(scoreStr) : undefined,
+				text,
+				www,
+				notes,
+			};
+		});
+	}
+
+	hasFamilySearchSources() {
+		// Check if this individual has any _FS_SOUR tags
+		return this.get("_FS_SOUR") !== undefined;
+	}
+
+	getFamilySearchSources(): FamilySearchSource[] {
+		// Get all _FS_SOUR tags for this individual
+		const sourceTags = this.get("_FS_SOUR")?.toList();
+
+		if (!sourceTags?.length) {
+			return [];
+		}
+
+		return sourceTags.map((sourceTag): FamilySearchSource => {
+			const id = sourceTag.toValue() as string | undefined;
+
+			// Extract all sub-tags using get() method
+			const title = sourceTag.get("TITL")?.toValue() as string | undefined;
+			const text = sourceTag.get("TEXT")?.toValue() as string | undefined;
+			const www = sourceTag.get("WWW")?.toValue() as string | undefined;
+
+			// Extract NOTE tags (there can be multiple)
+			const noteTags = sourceTag.get("NOTE")?.toList() || [];
+			const notes = noteTags
+				.map((note) => note.toValue() as string)
+				.filter(Boolean) as string[];
+
+			return {
+				id,
+				title,
+				text,
+				www,
+				notes,
+			};
+		});
+	}
+
 	async multimedia(
 		namespace?: string | number
 	): Promise<MediaList | undefined> {
@@ -2911,6 +2993,25 @@ const generateFunctions = () => {
 generateFunctions();
 
 export type IndiType = Indi & IIndividualStructure & GeneratedIndiMethods;
+
+export interface FamilySearchMatch {
+	id?: string;
+	title?: string;
+	type?: string;
+	ref?: string;
+	score?: number;
+	text?: string;
+	www?: string;
+	notes?: string[];
+}
+
+export interface FamilySearchSource {
+	id?: string;
+	title?: string;
+	text?: string;
+	www?: string;
+	notes?: string[];
+}
 
 export interface TreeMember<T = IndiType> {
 	id: FamKey | IndiKey;
