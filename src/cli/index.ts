@@ -4,15 +4,15 @@ import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { Command } from 'commander';
-import { registerConvertCommand } from './commands/convert.js';
-import { registerExtractCommand } from './commands/extract.js';
-import { registerFindCommand } from './commands/find.js';
-import { registerInfoCommand } from './commands/info.js';
-import { registerMergeCommand } from './commands/merge.js';
-import { registerRelativesCommand } from './commands/relatives.js';
-import { registerShowCommand } from './commands/show.js';
-import { registerStatsCommand } from './commands/stats.js';
-import { registerValidateCommand } from './commands/validate.js';
+import { registerConvertCommand } from './commands/convert';
+import { registerExtractCommand } from './commands/extract';
+import { registerFindCommand } from './commands/find';
+import { registerInfoCommand } from './commands/info';
+import { registerMergeCommand } from './commands/merge';
+import { registerRelativesCommand } from './commands/relatives';
+import { registerShowCommand } from './commands/show';
+import { registerStatsCommand } from './commands/stats';
+import { registerValidateCommand } from './commands/validate';
 
 // Get package version
 const __filename = fileURLToPath(import.meta.url);

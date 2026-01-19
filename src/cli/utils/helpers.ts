@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { formatError } from './formatters.js';
+import { formatError } from './formatters';
 
 /**
  * Read a GEDCOM file

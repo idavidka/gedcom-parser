@@ -1,8 +1,8 @@
 import { writeFileSync } from 'fs';
 import type { Command } from 'commander';
-import GedcomTree from '../../utils/parser.js';
-import { formatError, formatSuccess } from '../utils/formatters.js';
-import { readGedcomFile, handleError, cleanGedcomName } from '../utils/helpers.js';
+import GedcomTree from '../../utils/parser';
+import { formatError, formatSuccess } from '../utils/formatters';
+import { readGedcomFile, handleError, cleanGedcomName } from '../utils/helpers';
 
 interface ExtractOptions {
 	output: string;

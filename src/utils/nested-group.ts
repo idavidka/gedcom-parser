@@ -1,5 +1,4 @@
-import get from "lodash-es/get";
-import set from "lodash-es/set";
+import { get, set } from "lodash-es";
 
 import { Individuals as IndividualsClass } from "../classes/indis";
 import type { Individuals } from "../classes/indis";

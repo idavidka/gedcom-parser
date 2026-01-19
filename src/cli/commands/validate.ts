@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import GedcomTree from '../../utils/parser.js';
+import GedcomTree from '../../utils/parser';
 import {
 	formatHeader,
 	formatSuccess,
@@ -8,8 +8,8 @@ import {
 	formatListItem,
 	formatJson,
 	formatCount,
-} from '../utils/formatters.js';
-import { readGedcomFile, handleError } from '../utils/helpers.js';
+} from '../utils/formatters';
+import { readGedcomFile, handleError } from '../utils/helpers';
 
 interface ValidateOptions {
 	json?: boolean;

@@ -1,8 +1,4 @@
-import differenceBy from "lodash-es/differenceBy";
-import get from "lodash-es/get";
-import intersectionBy from "lodash-es/intersectionBy";
-import set from "lodash-es/set";
-import unset from "lodash-es/unset";
+import { differenceBy, get, intersectionBy, set, unset } from "lodash-es";
 
 import type {ConvertOptions} from "../interfaces/common";
 import type {IList} from "../interfaces/list";

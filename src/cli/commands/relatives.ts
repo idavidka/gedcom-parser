@@ -1,6 +1,6 @@
 import { writeFileSync } from 'fs';
 import type { Command } from 'commander';
-import GedcomTree from '../../utils/parser.js';
+import GedcomTree from '../../utils/parser';
 import {
 	formatHeader,
 	formatSuccess,
@@ -9,8 +9,8 @@ import {
 	formatId,
 	formatName,
 	formatError,
-} from '../utils/formatters.js';
-import { readGedcomFile, handleError, cleanGedcomName, formatLifespan } from '../utils/helpers.js';
+} from '../utils/formatters';
+import { readGedcomFile, handleError, cleanGedcomName, formatLifespan } from '../utils/helpers';
 
 interface RelativesOptions {
 	ancestors?: boolean;

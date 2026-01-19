@@ -10,7 +10,7 @@
 			"ES2023"
 		],
 		"module": "ESNext",
-		"moduleResolution": "node",
+		"moduleResolution": "bundler",
 		"outDir": "./dist",
 		"resolveJsonModule": true,
 		"rootDir": "./src",
@@ -26,7 +26,8 @@
 		"node_modules",
 		"dist",
 		"**/*.test.ts",
-		"**/__tests__/**"
+		"**/__tests__/**",
+		"tsup.config.ts"
 	],
 	"include": [
 		"src/**/*"

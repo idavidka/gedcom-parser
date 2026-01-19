@@ -1,10 +1,10 @@
 import { writeFileSync } from 'fs';
 import type { Command } from 'commander';
-import { mergeGedcoms } from '../../classes/gedcom.js';
-import type { MultiTag } from '../../types/types.js';
-import GedcomTree from '../../utils/parser.js';
-import { formatSuccess } from '../utils/formatters.js';
-import { readGedcomFile, handleError } from '../utils/helpers.js';
+import { mergeGedcoms } from '../../classes/gedcom';
+import type { MultiTag } from '../../types/types';
+import GedcomTree from '../../utils/parser';
+import { formatSuccess } from '../utils/formatters';
+import { readGedcomFile, handleError } from '../utils/helpers';
 
 interface MergeOptions {
 	output: string;

@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import GedcomTree from '../../utils/parser.js';
+import GedcomTree from '../../utils/parser';
 import {
 	formatHeader,
 	formatListItem,
@@ -8,8 +8,8 @@ import {
 	formatName,
 	formatDate,
 	formatWarning,
-} from '../utils/formatters.js';
-import { readGedcomFile, handleError, cleanGedcomName, formatLifespan } from '../utils/helpers.js';
+} from '../utils/formatters';
+import { readGedcomFile, handleError, cleanGedcomName, formatLifespan } from '../utils/helpers';
 
 interface FindOptions {
 	id?: string;
