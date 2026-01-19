@@ -1170,7 +1170,9 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			const id = sourceTag.toValue() as string | undefined;
 
 			// Extract all sub-tags using get() method
-			const title = sourceTag.get("TITL")?.toValue() as string | undefined;
+			const title = sourceTag.get("TITL")?.toValue() as
+				| string
+				| undefined;
 			const text = sourceTag.get("TEXT")?.toValue() as string | undefined;
 			const www = sourceTag.get("WWW")?.toValue() as string | undefined;
 
@@ -3003,6 +3005,16 @@ export interface FamilySearchMatch {
 	text?: string;
 	www?: string;
 	notes?: string[];
+	// Detailed person information from FamilySearch
+	status?: string; // Match status (pending, accepted, etc.)
+	gender?: string; // Gender display value
+	lifespan?: string; // Lifespan string (e.g., "1899-1960")
+	birthDate?: string; // Birth date
+	birthPlace?: string; // Birth place
+	deathDate?: string; // Death date
+	deathPlace?: string; // Death place
+	marriageDate?: string; // Marriage date
+	marriagePlace?: string; // Marriage place
 }
 
 export interface FamilySearchSource {
