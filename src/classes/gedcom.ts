@@ -659,7 +659,7 @@ export class GedCom extends Common implements IGedcom {
 
 		// First and last person events with type information
 		const firstPerson = indis?.getFirstEvent();
-		const firstBirth = firstPerson?.BIRT.index(0) as
+		const firstBirth = firstPerson?.BIRT?.index(0) as
 			| IEventDetailStructure
 			| undefined;
 		const firstDeath = firstPerson?.DEAT?.index(0) as
