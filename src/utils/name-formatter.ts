@@ -1,7 +1,7 @@
-import { Indi  } from "../classes/indi";
-import type {IndiType} from "../classes/indi";
-import { createCommonName  } from "../classes/name";
-import type {CommonName} from "../classes/name";
+import { Indi } from "../classes/indi";
+import type { IndiType } from "../classes/indi";
+import { createCommonName } from "../classes/name";
+import type { CommonName } from "../classes/name";
 import type { Settings } from "../types/settings";
 
 export const nameFormatter = (
@@ -20,7 +20,7 @@ export const nameFormatter = (
 		indiName instanceof Indi
 			? indiName?.NAME
 			: createCommonName(undefined, undefined, indi).name(indiName);
-	const name = rawName?.toList().index(0) as CommonName | undefined;
+	const name = rawName?.index(0) as CommonName | undefined;
 	let givenname = name?.GIVN?.toValueList().first()?.value || "";
 	let surname = name?.SURN?.toValueList().first()?.value || "";
 	let suffix = name?.NSFX?.toValueList().first()?.value || "";

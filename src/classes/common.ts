@@ -319,6 +319,10 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		);
 	}
 
+	index(i: number) {
+		return this.toList()?.index(i);
+	}
+
 	toValueList() {
 		return new List().concat(
 			this.value

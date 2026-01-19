@@ -571,7 +571,8 @@ export class GedCom extends Common implements IGedcom {
 		// Most common surnames
 		const surnames = new Map<string, number>();
 		indis?.forEach((indi) => {
-			const name = indi.NAME?.toValue();
+			const name = indi.NAME?.index(0)?.toValue();
+
 			if (name) {
 				const match = name.match(/\/(.+?)\//);
 				if (match) {
@@ -589,7 +590,9 @@ export class GedCom extends Common implements IGedcom {
 		// Most common birth places
 		const birthPlaces = new Map<string, number>();
 		indis?.forEach((indi) => {
-			const place = indi.BIRT?.PLAC?.value;
+			const place = (
+				indi.BIRT?.index(0) as IEventDetailStructure | undefined
+			)?.PLAC?.index(0)?.toValue();
 			if (place) {
 				birthPlaces.set(place, (birthPlaces.get(place) || 0) + 1);
 			}
@@ -603,14 +606,18 @@ export class GedCom extends Common implements IGedcom {
 		// Date range
 		const years: number[] = [];
 		indis?.forEach((indi) => {
-			const birthDate = indi.BIRT?.DATE?.toValue();
+			const birthDate = (
+				indi.BIRT?.index(0) as IEventDetailStructure | undefined
+			)?.DATE?.index(0)?.toValue();
 			if (birthDate) {
 				const match = birthDate.match(/\d{4}/);
 				if (match) {
 					years.push(parseInt(match[0], 10));
 				}
 			}
-			const deathDate = indi.DEAT?.DATE?.toValue();
+			const deathDate = (
+				indi.DEAT?.index(0) as IEventDetailStructure | undefined
+			)?.DATE?.index(0)?.toValue();
 			if (deathDate) {
 				const match = deathDate.match(/\d{4}/);
 				if (match) {
@@ -625,8 +632,12 @@ export class GedCom extends Common implements IGedcom {
 		// Average lifespan
 		const lifespans: number[] = [];
 		indis?.forEach((indi) => {
-			const birthDate = indi.BIRT?.DATE?.toValue();
-			const deathDate = indi.DEAT?.DATE?.toValue();
+			const birthDate = (
+				indi.BIRT?.index(0) as IEventDetailStructure | undefined
+			)?.DATE?.index(0)?.toValue();
+			const deathDate = (
+				indi.DEAT?.index(0) as IEventDetailStructure | undefined
+			)?.DATE?.index(0)?.toValue();
 			if (birthDate && deathDate) {
 				const birthMatch = birthDate.match(/\d{4}/);
 				const deathMatch = deathDate.match(/\d{4}/);
@@ -648,10 +659,10 @@ export class GedCom extends Common implements IGedcom {
 
 		// First and last person events with type information
 		const firstPerson = indis?.getFirstEvent();
-		const firstBirth = firstPerson?.BIRT?.toList().index(0) as
+		const firstBirth = firstPerson?.BIRT.index(0) as
 			| IEventDetailStructure
 			| undefined;
-		const firstDeath = firstPerson?.DEAT?.toList().index(0) as
+		const firstDeath = firstPerson?.DEAT?.index(0) as
 			| IEventDetailStructure
 			| undefined;
 
@@ -676,10 +687,10 @@ export class GedCom extends Common implements IGedcom {
 		}
 
 		const lastPerson = indis?.getLastEvent();
-		const lastBirth = lastPerson?.BIRT?.toList().index(0) as
+		const lastBirth = lastPerson?.BIRT?.index(0) as
 			| (Common & IEventDetailStructure)
 			| undefined;
-		const lastDeath = lastPerson?.DEAT?.toList().index(0) as
+		const lastDeath = lastPerson?.DEAT?.index(0) as
 			| (Common & IEventDetailStructure)
 			| undefined;
 
@@ -969,10 +980,7 @@ export const mergeGedcoms = (
 				// 1. At least one spouse is present (to avoid matching empty families), OR
 				// 2. At least 50% of children overlap
 				const hasSpouses =
-					finalHusbId ||
-					finalWifeId ||
-					targetHusbId ||
-					targetWifeId;
+					finalHusbId || finalWifeId || targetHusbId || targetWifeId;
 				const hasMatchingChildren =
 					totalUniqueChildren > 0 &&
 					childOverlap / totalUniqueChildren >= 0.5;
@@ -1148,7 +1156,8 @@ export const mergeGedcoms = (
 			if (targetIndi) {
 				// Merge without overriding existing data
 				// If using a strategy field (not "id"), avoid merging that field since it's already the same
-				const avoidKeys: MultiTag[] = strategy !== "id" ? [strategy] : [];
+				const avoidKeys: MultiTag[] =
+					strategy !== "id" ? [strategy] : [];
 				targetIndi.merge(clonedIndi, false, avoidKeys);
 			}
 		} else {

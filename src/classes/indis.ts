@@ -8,30 +8,30 @@ import {
 } from "../constants/orders";
 import { getPlaceParserProvider } from "../factories/place-parser-provider";
 import { getPlaceTranslatorProvider } from "../factories/place-translator-provider";
-import type {IIndividuals} from "../interfaces/indis";
+import type { IIndividuals } from "../interfaces/indis";
 import type IEventDetailStructure from "../structures/event-detail-structure";
-import type {Settings} from "../types/settings";
-import {
-	
-	
-	
-	
-	
-	Range
-	
-	
-	
-	
-	
+import type { Settings } from "../types/settings";
+import { Range } from "../types/types";
+import type {
+	IndiKey,
+	Filter,
+	FamKey,
+	OrderIterator,
+	MultiTag,
+	NestedGroup,
+	Order,
+	FilterIterator,
+	GroupIterator,
+	Group,
+	GroupMarker,
 } from "../types/types";
-import type {IndiKey, Filter, FamKey, OrderIterator, MultiTag, NestedGroup, Order, FilterIterator, GroupIterator, Group, GroupMarker } from "../types/types";
 import { nameFormatter } from "../utils/name-formatter";
 import { setNestedGroup } from "../utils/nested-group";
 import { getPlaceParts } from "../utils/place-parser";
 import { placeTranslator } from "../utils/place-translator";
 
-import type {CommonDate} from "./date";
-import type {IndiType} from "./indi";
+import type { CommonDate } from "./date";
+import type { IndiType } from "./indi";
 import { List } from "./list";
 
 export class Individuals
@@ -72,10 +72,10 @@ export class Individuals
 		const firstBirthPerson = this.getFirstBirth();
 		const firstDeathPerson = this.getFirstDeath();
 
-		const firstBirth = firstBirthPerson?.BIRT?.toList().index(0) as
+		const firstBirth = firstBirthPerson?.BIRT?.index(0) as
 			| IEventDetailStructure
 			| undefined;
-		const firstDeath = firstDeathPerson?.DEAT?.toList().index(0) as
+		const firstDeath = firstDeathPerson?.DEAT?.index(0) as
 			| IEventDetailStructure
 			| undefined;
 
@@ -102,10 +102,10 @@ export class Individuals
 		const lastDeathPerson = this.getLastDeath();
 		const lastBirthPerson = this.getLastBirth();
 
-		const lastBirth = lastBirthPerson?.BIRT?.toList().index(0) as
+		const lastBirth = lastBirthPerson?.BIRT?.index(0) as
 			| IEventDetailStructure
 			| undefined;
-		const lastDeath = lastDeathPerson?.DEAT?.toList().index(0) as
+		const lastDeath = lastDeathPerson?.DEAT?.index(0) as
 			| IEventDetailStructure
 			| undefined;
 
@@ -130,7 +130,7 @@ export class Individuals
 
 	getFirstBirth() {
 		return this.filter((item) => {
-			const birth = item.BIRT?.toList().index(0) as
+			const birth = item.BIRT?.index(0) as
 				| IEventDetailStructure
 				| undefined;
 			if (birth?.DATE?.rawValue?.getTime() === 0) {
@@ -144,7 +144,7 @@ export class Individuals
 
 	getLastBirth() {
 		return this.filter((item) => {
-			const birth = item.BIRT?.toList().index(0) as
+			const birth = item.BIRT?.index(0) as
 				| IEventDetailStructure
 				| undefined;
 			if (birth?.DATE?.rawValue?.getTime() === 0) {
@@ -158,7 +158,7 @@ export class Individuals
 
 	getFirstDeath() {
 		return this.filter((item) => {
-			const death = item.DEAT?.toList().index(0) as
+			const death = item.DEAT?.index(0) as
 				| IEventDetailStructure
 				| undefined;
 			if (death?.DATE?.rawValue?.getTime() === 0) {
@@ -173,7 +173,7 @@ export class Individuals
 
 	getLastDeath() {
 		return this.filter((item) => {
-			const death = item.DEAT?.toList().index(0) as
+			const death = item.DEAT?.index(0) as
 				| IEventDetailStructure
 				| undefined;
 			if (death?.DATE?.rawValue?.getTime() === 0) {

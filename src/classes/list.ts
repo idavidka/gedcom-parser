@@ -1,11 +1,23 @@
 import { differenceBy, get, intersectionBy, set, unset } from "lodash-es";
 
-import type {ConvertOptions} from "../interfaces/common";
-import type {IList} from "../interfaces/list";
-import type {OrderDefinition, IdType, Filter, FilterIterator, MultiTag, Order, OrderIterator, Group, GroupIterator, GroupDefinition, GroupMarker } from "../types/types";
+import type { ConvertOptions } from "../interfaces/common";
+import type { IList } from "../interfaces/list";
+import type {
+	OrderDefinition,
+	IdType,
+	Filter,
+	FilterIterator,
+	MultiTag,
+	Order,
+	OrderIterator,
+	Group,
+	GroupIterator,
+	GroupDefinition,
+	GroupMarker,
+} from "../types/types";
 
-import { getValidTag  } from "./common";
-import type {Common} from "./common";
+import { getValidTag } from "./common";
+import type { Common } from "./common";
 
 export class List<
 	K extends IdType = IdType,
@@ -449,10 +461,7 @@ export class List<
 					typeof groups === "string" ? { [groups]: {} } : groups
 				)[0] as [MultiTag, GroupDefinition];
 
-				const raw = item
-					.get<T>(key as MultiTag)
-					?.toList()
-					.index(0);
+				const raw = item.get<T>(key as MultiTag)?.index(0);
 				let value = raw?.toValue();
 
 				if (getter && typeof getter === "function") {

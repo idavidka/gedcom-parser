@@ -560,9 +560,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	}
 
 	getGenealogy(onlyStraight = false, showDescendants = false) {
-		const id = this.get("FAMC")?.toList().index(0)?.toValue() as
-			| FamKey
-			| undefined;
+		const id = this.get("FAMC")?.index(0)?.toValue() as FamKey | undefined;
 		if (!id) {
 			return;
 		}
@@ -1323,14 +1321,14 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	}
 
 	getBirthPlace() {
-		const birthEvent = this.get("BIRT")?.toList().index(0) as
+		const birthEvent = this.get("BIRT")?.index(0) as
 			| IEventDetailStructure
 			| undefined;
 		return birthEvent?.PLAC?.value;
 	}
 
 	getDeathPlace() {
-		const deathEvent = this.get("DEAT")?.toList().index(0) as
+		const deathEvent = this.get("DEAT")?.index(0) as
 			| IEventDetailStructure
 			| undefined;
 		return deathEvent?.PLAC?.value;

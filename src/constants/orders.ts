@@ -1,7 +1,7 @@
 import { isCommonDate } from "../classes/date";
-import type {IndiType} from "../classes/indi";
+import type { IndiType } from "../classes/indi";
 import type IEventDetailStructure from "../structures/event-detail-structure";
-import type {OrderIterator, Order, IndiKey, NameOrder} from "../types/types";
+import type { OrderIterator, Order, IndiKey, NameOrder } from "../types/types";
 import { getFamilyWith } from "../utils/get-family-with";
 
 export const DEFAULT: Order = {};
@@ -226,12 +226,8 @@ export const getBirthAsc: OrderIterator<IndiType, IndiKey> = (
 	itemB,
 	_keyB
 ) => {
-	const birthA = itemA?.BIRT?.toList().index(0) as
-		| IEventDetailStructure
-		| undefined;
-	const birthB = itemB?.BIRT?.toList().index(0) as
-		| IEventDetailStructure
-		| undefined;
+	const birthA = itemA?.BIRT?.index(0) as IEventDetailStructure | undefined;
+	const birthB = itemB?.BIRT?.index(0) as IEventDetailStructure | undefined;
 
 	const valueA = birthA?.DATE?.rawValue;
 	const valueB = birthB?.DATE?.rawValue;
