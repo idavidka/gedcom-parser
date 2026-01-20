@@ -1102,18 +1102,43 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	}
 
 	familySearchLink() {
-		// Get the _FS_LINK custom tag value and return it as-is
+		// Check new format first (WWW with _IS_FS Y marker)
+		const wwwTags = this.get("WWW")?.toList();
+
+		const wwwTag = wwwTags
+			?.find((wwwTag) => {
+				const fsSourceMarker = wwwTag.get("_IS_FS")?.toValue();
+				return fsSourceMarker === "Y";
+			})
+			?.toValue() as string | undefined;
+
+		if (wwwTag) {
+			return wwwTag;
+		}
+
+		// Fallback to legacy _FS_LINK tag for backward compatibility
 		return this.get("_FS_LINK")?.toValue() as string | undefined;
 	}
 
 	hasFamilySearchMatches() {
-		// Check if this individual has any _FS_MATCH tags
+		// Check new format first (MATCH with _IS_FS Y marker)
+		const matchTags = this.get("MATCH")?.toList();
+		if (matchTags && matchTags.length > 0) {
+			return true;
+		}
+
+		// Fallback to legacy _FS_MATCH tag for backward compatibility
 		return this.get("_FS_MATCH") !== undefined;
 	}
 
 	getFamilySearchMatches(): FamilySearchMatch[] {
-		// Get all _FS_MATCH tags for this individual
-		const matchTags = this.get("_FS_MATCH")?.toList();
+		// Try new format first (MATCH with _IS_FS Y marker)
+		let matchTags = this.get("MATCH")?.toList();
+
+		// Fallback to legacy _FS_MATCH tag for backward compatibility
+		if (!matchTags?.length) {
+			matchTags = this.get("_FS_MATCH")?.toList();
+		}
 
 		if (!matchTags?.length) {
 			return [];
@@ -1152,15 +1177,36 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	}
 
 	hasFamilySearchSources() {
-		// Check if this individual has any _FS_SOUR tags
+		// Check new format first (SOUR with _IS_FS Y marker)
+		const sourTags = this.get("SOUR")?.toList();
+		const sourTag = sourTags?.find((sourTag) => {
+			const fsSourceMarker = sourTag.get("_IS_FS")?.toValue();
+			return fsSourceMarker === "Y";
+		});
+
+		if (sourTag) {
+			return true;
+		}
+
+		// Fallback to legacy _FS_SOUR tag for backward compatibility
 		return this.get("_FS_SOUR") !== undefined;
 	}
 
 	getFamilySearchSources(): FamilySearchSource[] {
-		// Get all _FS_SOUR tags for this individual
-		const sourceTags = this.get("_FS_SOUR")?.toList();
+		// Try new format first (SOUR with _IS_FS Y marker)
+		let sourceTags = this.get("SOUR")
+			?.toList()
+			?.filter((sourTag) => {
+				const fsSourceMarker = sourTag.get("_IS_FS")?.toValue();
+				return fsSourceMarker === "Y";
+			});
 
-		if (!sourceTags?.length) {
+		// Fallback to legacy _FS_SOUR tag for backward compatibility
+		if (!sourceTags || !sourceTags.length) {
+			sourceTags = this.get("_FS_SOUR")?.toList();
+		}
+
+		if (!sourceTags || !sourceTags.length) {
 			return [];
 		}
 

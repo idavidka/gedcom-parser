@@ -73,11 +73,13 @@ interface Tags {
 	_MARNM?: Common;
 	_INDI?: Common; // Individual
 	_GUESSEDORIGINAL?: Common;
-	_FS_LINK?: Common; // FamilySearch link
+	_FS_LINK?: Common; // Legacy: FamilySearch link (now stored in WWW with _IS_FS Y marker)
 	_FS_ID?: Common; // FamilySearch ID
-	_FS_MATCH?: Common; // FamilySearch Matches
-	_FS_SOUR?: Common; // FamilySearch Sources
+	_FS_MATCH?: Common; // Legacy: FamilySearch Matches (now stored in MATCH with _IS_FS Y marker)
+	_FS_SOUR?: Common; // Legacy: FamilySearch Sources marker (now _IS_FS Y)
+	_IS_FS?: Common<"Y" | "N">; // Marks FamilySearch-sourced data (replaces _FS_SOUR)
 	_IS_ORPHAN_FAMILY?: Common<"Y" | "N">;
+	MATCH?: Common; // Match entries (replaces _FS_MATCH, has _IS_FS Y marker)
 	SCORE?: Common; // Match score
 	TEXT?: Common; // Match citation text
 	REF?: Common; // Match reference ID
