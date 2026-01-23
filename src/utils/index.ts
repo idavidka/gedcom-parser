@@ -8,6 +8,7 @@ export * from "./get-places";
 export * from "./get-product-details";
 export { getRawSize } from "./get-raw-size";
 export * from "./logger";
+export * from "./media-utils";
 export * from "./name-formatter";
 export * from "./nested-group";
 export * from "./ordinalize";
