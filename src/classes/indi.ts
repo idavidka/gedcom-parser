@@ -1380,6 +1380,74 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		return deathEvent?.PLAC?.value;
 	}
 
+	/**
+	 * Get all marriage places for this individual
+	 * @returns Array of marriage place strings (may include undefined for marriages without place)
+	 */
+	getMarriagePlaces(): Array<string | undefined> {
+		const marriagePlaces: Array<string | undefined> = [];
+		
+		// Get all families where this person is a spouse (FAMS)
+		const families = this.getFamilies("FAMS");
+		
+		families.forEach((family) => {
+			// Get all MARR events for this family
+			const marrEvents = (family?.MARR?.toList().values() ?? []).filter(
+				Boolean
+			);
+
+			if (marrEvents.length === 0) {
+				// No MARR event, push undefined
+				marriagePlaces.push(undefined);
+			} else {
+				// Process all MARR events
+				marrEvents.forEach((marrEvent) => {
+					const marriageEventDetail = marrEvent as
+						| IEventDetailStructure
+						| undefined;
+					const marriagePlace = marriageEventDetail?.PLAC?.value;
+					marriagePlaces.push(marriagePlace);
+				});
+			}
+		});
+
+		return marriagePlaces;
+	}
+
+	/**
+	 * Get all marriage dates for this individual
+	 * @returns Array of marriage date strings (may include undefined for marriages without date)
+	 */
+	getMarriageDates(): Array<string | undefined> {
+		const marriageDates: Array<string | undefined> = [];
+		
+		// Get all families where this person is a spouse (FAMS)
+		const families = this.getFamilies("FAMS");
+		
+		families.forEach((family) => {
+			// Get all MARR events for this family
+			const marrEvents = (family?.MARR?.toList().values() ?? []).filter(
+				Boolean
+			);
+
+			if (marrEvents.length === 0) {
+				// No MARR event, push undefined
+				marriageDates.push(undefined);
+			} else {
+				// Process all MARR events
+				marrEvents.forEach((marrEvent) => {
+					const marriageEventDetail = marrEvent as
+						| IEventDetailStructure
+						| undefined;
+					const marriageDate = marriageEventDetail?.DATE?.value;
+					marriageDates.push(marriageDate);
+				});
+			}
+		});
+
+		return marriageDates;
+	}
+
 	isDead() {
 		return (
 			this.get("DEAT.DATE")?.toValue() !== undefined ||
