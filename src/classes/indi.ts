@@ -944,7 +944,11 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 		await Promise.all(
 			objeList.map(async (objeRef) => {
-				const key = objeRef?.id as ObjeKey;
+				console.log("ASDXX", objeRef);
+				const key = (objeRef?.id | objeRef?.toValue()) as
+					| ObjeKey
+					| undefined;
+				// TODO key is somehow undefined or zero
 				const obje = objeRef?.standardizeMedia(
 					namespace,
 					true,
