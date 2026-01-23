@@ -33,6 +33,7 @@ import { dateFormatter } from "../utils/date-formatter";
 import { PlaceType, getPlaces } from "../utils/get-places";
 import type { Place } from "../utils/get-places";
 import { implemented } from "../utils/logger";
+import { getFileExtension, isImageFormat } from "../utils/media-utils";
 
 import { Common, createCommon, createProxy } from "./common";
 import type { ProxyOriginal } from "./common";
@@ -43,6 +44,7 @@ import { Individuals } from "./indis";
 import { List } from "./list";
 import { CommonName, createCommonName } from "./name";
 import type { ObjeType } from "./obje";
+import type { Objects } from "./objes";
 
 export enum Existed {
 	SPOUSE = "spouse",
@@ -936,81 +938,90 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 	async ancestryMedia(namespace?: string | number): Promise<MediaList> {
 		const list: MediaList = {};
-		const objIds = this.get("OBJE")?.toValueList().keys() ?? [];
+		const objeList = this.get("OBJE")?.toList() as Objects | undefined;
 		const www = this._gedcom?.HEAD?.SOUR?.CORP?.WWW?.value;
 		const tree = this.getAncestryTreeId();
 
-		await Promise.all(
-			objIds.map(async (objId) => {
-				const key = objId as ObjeKey;
-				const obje = this._gedcom
-					?.obje(key)
-					?.standardizeMedia(namespace, true, (ns, iId) => {
-						return ns && iId
-							? `https://mediasvc.ancestry.com/v2/image/namespaces/${ns}/media/${iId}?client=trees-mediaservice&imageQuality=hq`
-							: undefined;
-					});
-
-				const media = obje?.RIN?.value;
-				const clone = obje?.get("_CLON._OID")?.toValue() as
-					| string
-					| undefined;
-				const mser = obje?.get("_MSER._LKID")?.toValue() as
-					| string
-					| undefined;
-				let url = obje?.get("FILE")?.toValue() as string | undefined;
-				const title =
-					(obje?.get("TITL")?.toValue() as string | undefined) ?? "";
-				const type =
-					(obje?.get("FORM")?.toValue() as string | undefined) ??
-					"raw";
-
-				const imgId = clone || mser;
-
-				if (!www || !tree || !this.id) {
-					return;
-				}
-
-				if (!namespace && !url) {
-					try {
-						const mediaDetailsResponse = await fetch(
-							`https://www.ancestry.com/api/media/viewer/v2/trees/${tree}/media?id=${media}`
-						);
-						const mediaDetails =
-							(await mediaDetailsResponse.json()) as AncestryMedia;
-						if (mediaDetails.url) {
-							url = `${mediaDetails.url}&imageQuality=hq`;
+		if (objeList) {
+			await Promise.all(
+				objeList.map(async (objeRef) => {
+					const key = objeRef?.id as ObjeKey;
+					const obje = objeRef?.standardizeMedia(
+						namespace,
+						true,
+						(ns, iId) => {
+							return ns && iId
+								? `https://mediasvc.ancestry.com/v2/image/namespaces/${ns}/media/${iId}?client=trees-mediaservice&imageQuality=hq`
+								: undefined;
 						}
-					} catch (_e) {
-						//
+					);
+
+					const isPrimary = obje?.get("_PRIM")?.toValue() === "Y";
+					const media = obje?.RIN?.value;
+					const clone = obje?.get("_CLON._OID")?.toValue() as
+						| string
+						| undefined;
+					const mser = obje?.get("_MSER._LKID")?.toValue() as
+						| string
+						| undefined;
+					let url = obje?.get("FILE")?.toValue() as
+						| string
+						| undefined;
+					const title =
+						(obje?.get("TITL")?.toValue() as string | undefined) ??
+						"";
+					const type =
+						(obje?.get("FORM")?.toValue() as string | undefined) ??
+						"raw";
+
+					const imgId = clone || mser;
+
+					if (!www || !tree || !this.id) {
+						return;
 					}
 
-					url =
-						url ||
-						`https://${www}/mediaui-viewer/tree/${tree}/media/${media}`;
-				}
+					if (!namespace && !url) {
+						try {
+							const mediaDetailsResponse = await fetch(
+								`https://www.ancestry.com/api/media/viewer/v2/trees/${tree}/media?id=${media}`
+							);
+							const mediaDetails =
+								(await mediaDetailsResponse.json()) as AncestryMedia;
+							if (mediaDetails.url) {
+								url = `${mediaDetails.url}&imageQuality=hq`;
+							}
+						} catch (_e) {
+							//
+						}
 
-				if (url && imgId) {
-					const id = `${tree}-${this.id}-${imgId}`;
-					list[id] = {
-						key,
-						id,
-						tree,
-						imgId,
-						person: this.id!,
-						title: title as string,
-						url,
-						contentType: type as string,
-						downloadName: `${this.id!.replaceAll("@", "")}_${
-							this.toNaturalName()!.replaceAll(" ", "-") || ""
-						}_${(
-							(title as string) ||
-							key.replaceAll("@", "").toString()
-						).replaceAll(" ", "-")}`,
-					};
-				}
-			})
-		);
+						url =
+							url ||
+							`https://${www}/mediaui-viewer/tree/${tree}/media/${media}`;
+					}
+
+					if (url && imgId) {
+						const id = `${tree}-${this.id}-${imgId}`;
+						list[id] = {
+							key,
+							isPrimary,
+							id,
+							tree,
+							imgId,
+							person: this.id!,
+							title: title as string,
+							url,
+							contentType: type as string,
+							downloadName: `${this.id!.replaceAll("@", "")}_${
+								this.toNaturalName()!.replaceAll(" ", "-") || ""
+							}_${(
+								(title as string) ||
+								key.replaceAll("@", "").toString()
+							).replaceAll(" ", "-")}`,
+						};
+					}
+				})
+			);
+		}
 
 		return list;
 	}
@@ -1081,6 +1092,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				if (url && imgId) {
 					const id = `${tree}-${this.id}-${imgId}`;
 					list[id] = {
+						isPrimary: false,
 						key,
 						id,
 						tree,
@@ -1250,6 +1262,51 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		return undefined;
 	}
 
+	async getProfilePicture(
+		namespace?: string | number
+	): Promise<ProfilePicture | undefined> {
+		const mediaList = await this.multimedia(namespace);
+
+		if (!mediaList) {
+			return undefined;
+		}
+
+		// Convert mediaList to array and sort by isPrimary
+		const mediaArray = Object.values(mediaList);
+
+		// First, try to find a primary image
+		const primaryMedia = mediaArray.find(
+			(media) =>
+				media.isPrimary &&
+				isImageFormat(media.contentType || getFileExtension(media.url))
+		);
+
+		if (primaryMedia) {
+			return {
+				file: primaryMedia.url,
+				form: primaryMedia.contentType,
+				title: primaryMedia.title,
+				isPrimary: true,
+			};
+		}
+
+		// If no primary image found, return the first image
+		const secondaryMedia = mediaArray.find((media) =>
+			isImageFormat(media.contentType || getFileExtension(media.url))
+		);
+
+		if (secondaryMedia) {
+			return {
+				file: secondaryMedia.url,
+				form: secondaryMedia.contentType,
+				title: secondaryMedia.title,
+				isPrimary: false,
+			};
+		}
+
+		return undefined;
+	}
+
 	link(poolId?: number) {
 		if (this?.isAncestry()) {
 			return this.ancestryLink();
@@ -1386,10 +1443,10 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	 */
 	getMarriagePlaces(): Array<string | undefined> {
 		const marriagePlaces: Array<string | undefined> = [];
-		
+
 		// Get all families where this person is a spouse (FAMS)
 		const families = this.getFamilies("FAMS");
-		
+
 		families.forEach((family) => {
 			// Get all MARR events for this family
 			const marrEvents = (family?.MARR?.toList().values() ?? []).filter(
@@ -1420,10 +1477,10 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	 */
 	getMarriageDates(): Array<string | undefined> {
 		const marriageDates: Array<string | undefined> = [];
-		
+
 		// Get all families where this person is a spouse (FAMS)
 		const families = this.getFamilies("FAMS");
-		
+
 		families.forEach((family) => {
 			// Get all MARR events for this family
 			const marrEvents = (family?.MARR?.toList().values() ?? []).filter(
@@ -3135,6 +3192,13 @@ export interface FamilySearchSource {
 	text?: string;
 	www?: string;
 	notes?: string[];
+}
+
+export interface ProfilePicture {
+	file: string;
+	form?: string;
+	title?: string;
+	isPrimary: boolean;
 }
 
 export interface TreeMember<T = IndiType> {

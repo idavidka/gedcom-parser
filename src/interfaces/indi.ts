@@ -19,6 +19,7 @@ export type GeneratedIndiMethods = Record<
 export type MediaList = Record<
 	string,
 	{
+		isPrimary?: boolean;
 		key: string;
 		id: string;
 		imgId: string;
