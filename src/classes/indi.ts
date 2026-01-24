@@ -1056,60 +1056,60 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			return;
 		}
 
-		const birthObj = this.get("BIRT.OBJE")?.toList().values();
-		const deathObj = this.get("DEAT.OBJE")?.toValueList().values();
+		const objeList = this.get("OBJE")?.toList() as Objects | undefined;
+		const birthObj = this.get("BIRT.OBJE")?.toList() as Objects | undefined;
+		const deathObj = this.get("DEAT.OBJE")?.toList() as Objects | undefined;
 
-		const familiesObj = (this.get("FAMS")?.toValueList().values() ?? [])
+		(this.get("FAMS")?.toValueList().values() ?? [])
 			.concat(this.get("FAMC")?.toValueList().values() ?? [])
-			.map((fam) => {
-				return fam?.get("MARR.OBJE") as ObjeType | undefined;
+			.forEach((fam) => {
+				objeList
+					?.merge(birthObj)
+					.merge(deathObj)
+					.merge(fam?.get("MARR.OBJE"));
 			});
 
-		(birthObj ?? [])
-			.concat(deathObj ?? [])
-			.concat(familiesObj ?? [])
-			.forEach((o, index) => {
-				if (!o) {
-					return;
-				}
+		objeList?.forEach((o, index) => {
+			if (!o) {
+				return;
+			}
 
-				const obje = o as ObjeType;
-				const key = `@O${index}@`;
+			const obje = o as ObjeType;
+			const key = `@O${index}@`;
 
-				obje.standardizeMedia();
+			obje.standardizeMedia();
 
-				const url = obje?.get("FILE")?.toValue() as string | undefined;
-				const title =
-					(obje?.get("NOTE")?.toValue() as string | undefined) ?? "";
-				const type =
-					(obje?.get("FORM")?.toValue() as string | undefined) ??
-					"raw";
+			const isPrimary = obje?.get("_PRIM")?.toValue() === "Y";
+			const url = obje?.get("FILE")?.toValue() as string | undefined;
+			const title =
+				(obje?.get("NOTE")?.toValue() as string | undefined) ?? "";
+			const type =
+				(obje?.get("FORM")?.toValue() as string | undefined) ?? "raw";
 
-				const imgId = obje?.get("_PHOTO_RIN")?.toValue() as
-					| string
-					| undefined;
+			const imgId = obje?.get("_PHOTO_RIN")?.toValue() as
+				| string
+				| undefined;
 
-				if (url && imgId) {
-					const id = `${tree}-${this.id}-${imgId}`;
-					list[id] = {
-						isPrimary: false,
-						key,
-						id,
-						tree,
-						imgId,
-						person: this.id!,
-						title: title as string,
-						url,
-						contentType: type as string,
-						downloadName: `${this.id!.replaceAll("@", "")}_${
-							this.toNaturalName()!.replaceAll(" ", "-") || ""
-						}_${(
-							(title as string) ||
-							key.replaceAll("@", "").toString()
-						).replaceAll(" ", "-")}`,
-					};
-				}
-			});
+			if (url && imgId) {
+				const id = `${tree}-${this.id}-${imgId}`;
+				list[id] = {
+					isPrimary,
+					key,
+					id,
+					tree,
+					imgId,
+					person: this.id!,
+					title: title as string,
+					url,
+					contentType: type as string,
+					downloadName: `${this.id!.replaceAll("@", "")}_${
+						this.toNaturalName()!.replaceAll(" ", "-") || ""
+					}_${(
+						(title as string) || key.replaceAll("@", "").toString()
+					).replaceAll(" ", "-")}`,
+				};
+			}
+		});
 		return list;
 	}
 
