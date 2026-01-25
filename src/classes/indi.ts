@@ -1263,7 +1263,8 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	}
 
 	async getProfilePicture(
-		namespace?: string | number
+		namespace?: string | number,
+		onlyPrimary = true
 	): Promise<ProfilePicture | undefined> {
 		const mediaList = await this.multimedia(namespace);
 
@@ -1288,6 +1289,10 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				title: primaryMedia.title,
 				isPrimary: true,
 			};
+		}
+
+		if (!onlyPrimary) {
+			return undefined;
 		}
 
 		// If no primary image found, return the first image
