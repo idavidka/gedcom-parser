@@ -1,9 +1,9 @@
 import { debounce } from "lodash-es";
 
-import type {Path} from "../classes/indi";
-import type {Individuals} from "../classes/indis";
+import type { Path, ProfilePicture } from "../classes/indi";
+import type { Individuals } from "../classes/indis";
 import { getCacheManagerFactory } from "../factories/cache-factory";
-import type {IndiKey} from "../types/types";
+import type { IndiKey } from "../types/types";
 
 /**
  * Cache manager interface for pluggable cache implementations.
@@ -22,6 +22,7 @@ interface Caches {
 	relativesOnDegreeCache:
 		| Record<IndiKey, Record<number, Individuals>>
 		| undefined;
+	profilePictureCache: Record<IndiKey, ProfilePicture> | undefined;
 }
 
 type CacheStores = {
@@ -36,42 +37,70 @@ const caches: Caches = {
 	pathCache: {},
 	relativesOnDegreeCache: {},
 	relativesOnLevelCache: {},
+	profilePictureCache: {},
 };
 
-const getInstance = getCacheManagerFactory();
+// NOTE: Only profilePictureCache is actively persisted to IndexedDB
+// The other caches (pathCache, relativesOn*Cache) are kept in memory only for performance
+// IMPORTANT: cacheDbs is lazily initialized to ensure getCacheManagerFactory() returns
+// the correct factory (set by initGedcomParser) instead of the default placeholder
+let cacheDbs: CacheDbs | undefined;
 
-const cacheDbs: CacheDbs = {
-	pathCache: getInstance<Caches["pathCache"]>("ftv", "Main", "path", true),
-	relativesOnDegreeCache: getInstance<Caches["relativesOnDegreeCache"]>(
-		"ftv",
-		"Main",
-		"path",
-		true
-	),
-	relativesOnLevelCache: getInstance<Caches["relativesOnLevelCache"]>(
-		"ftv",
-		"Main",
-		"path",
-		true
-	),
+const getCacheDbs = (): CacheDbs => {
+	if (!cacheDbs) {
+		const getInstance = getCacheManagerFactory();
+		cacheDbs = {
+			pathCache: getInstance<Caches["pathCache"]>(
+				"ftv",
+				"Main",
+				"path",
+				true
+			),
+			relativesOnDegreeCache: getInstance<
+				Caches["relativesOnDegreeCache"]
+			>("ftv", "Main", "path", true),
+			relativesOnLevelCache: getInstance<Caches["relativesOnLevelCache"]>(
+				"ftv",
+				"Main",
+				"path",
+				true
+			),
+			profilePictureCache: getInstance<Caches["profilePictureCache"]>(
+				"ftv",
+				"Main",
+				"images",
+				false
+			),
+		};
+	}
+	return cacheDbs;
 };
 
-const _storeCache: CacheStores = {
+const storeCache: CacheStores = {
+	// NOTE: pathCache, relativesOnLevelCache, and relativesOnDegreeCache are intentionally
+	// kept in memory only. These debounced functions exist to satisfy the type system
+	// but are never called.
 	pathCache: debounce((value) => {
 		if (value) {
-			cacheDbs.pathCache.setItem(value);
+			getCacheDbs().pathCache.setItem(value);
 		}
 	}, 50),
 	relativesOnLevelCache: debounce((value) => {
 		if (value) {
-			cacheDbs.relativesOnLevelCache.setItem(value);
+			getCacheDbs().relativesOnLevelCache.setItem(value);
 		}
 	}, 50),
 	relativesOnDegreeCache: debounce((value) => {
 		if (value) {
-			cacheDbs.relativesOnDegreeCache.setItem(value);
+			getCacheDbs().relativesOnDegreeCache.setItem(value);
 		}
 	}, 50),
+	// profilePictureCache IS persisted to IndexedDB
+	profilePictureCache: debounce((value) => {
+		if (value) {
+			getCacheDbs().profilePictureCache.setItem(value);
+		}
+	}, 100),
 };
 
 export type CacheRelatives<O extends keyof Caches = "pathCache"> = <
@@ -84,6 +113,34 @@ export type CacheRelatives<O extends keyof Caches = "pathCache"> = <
 	subKey: number,
 	...values: [keyof NonNullable<Omit<Caches, O>[T]>[K]]
 ) => NonNullable<Omit<Caches, O>[T]>[K];
+
+// Initialize cache from IndexedDB on startup
+// NOTE: This function MUST be called from the main app after setting up the cache manager factory
+// (via setCacheManagerFactory in initGedcomParser). If not called, the gedcom-parser will use
+// in-memory cache only, which is still functional but won't persist data between sessions.
+let cacheInitialized = false;
+export const initializeCache = async () => {
+	if (cacheInitialized) {
+		return;
+	}
+
+	cacheInitialized = true;
+
+	// NOTE: Only profilePictureCache is persisted to IndexedDB
+	// pathCache, relativesOnLevelCache, and relativesOnDegreeCache are intentionally
+	// kept in memory only for performance reasons
+	try {
+		const profilePictureData =
+			await getCacheDbs().profilePictureCache.getItem();
+
+		if (profilePictureData) {
+			caches.profilePictureCache = profilePictureData;
+		}
+	} catch (_error) {
+		// Cache manager factory might not be initialized yet
+		// This is fine - cache will be populated as images are loaded
+	}
+};
 
 export const resetRelativesCache = () => {
 	caches.relativesOnDegreeCache = {};
@@ -108,6 +165,9 @@ export const relativesCache =
 
 			caches[cacheKey]![key]![subKey] = value;
 
+			// NOTE: relativesOnLevelCache and relativesOnDegreeCache are intentionally
+			// kept in memory only (not persisted to IndexedDB)
+
 			return caches[cacheKey]![key][subKey] as Exclude<T, undefined>;
 		}
 
@@ -125,8 +185,29 @@ export const pathCache = <T extends Path | undefined>(
 	if (value && caches.pathCache) {
 		caches.pathCache[key] = value;
 
+		// NOTE: pathCache is intentionally kept in memory only (not persisted to IndexedDB)
+
 		return caches.pathCache[key] as Exclude<T, undefined>;
 	}
 
 	return caches.pathCache?.[key] as T;
+};
+
+export const profilePictureCache = <T extends ProfilePicture | undefined>(
+	key: IndiKey,
+	value?: T
+) => {
+	if (!caches.profilePictureCache) {
+		caches.profilePictureCache = {};
+	}
+
+	if (value && caches.profilePictureCache) {
+		caches.profilePictureCache[key] = value;
+		storeCache.profilePictureCache(caches.profilePictureCache);
+
+		return caches.profilePictureCache[key] as Exclude<T, undefined>;
+	}
+
+	const cached = caches.profilePictureCache?.[key] as T;
+	return cached;
 };
