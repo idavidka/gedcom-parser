@@ -17,24 +17,36 @@ export interface ICacheManager<T> {
 
 /**
  * Generates a unique identifier for a GEDCOM file
- * Uses the refcount as a stable identifier for cache keys
+ * Uses tree ID and tree name to create a stable, human-readable cache key
  */
 const getGedcomId = (gedcom?: GedComType): string => {
 	if (!gedcom) {
 		return "unknown";
 	}
-	// Use a combination of HEAD.FILE (if exists) and refcount for uniqueness
-	const fileValue = gedcom.get("HEAD")?.get("FILE")?.toValue();
-	const sourValue = gedcom.get("HEAD")?.get("SOUR")?.get("NAME")?.toValue();
-	
-	const fileName =
-		(typeof fileValue === "string" ? fileValue : "") ||
-		(typeof sourValue === "string" ? sourValue : "") ||
-		"";
-	// Create a stable ID from filename or use refcount
-	return fileName || `gedcom_${gedcom.refcount}`;
-};
 
+	// Use getTreeId() and getTreeName() from Common class for consistent identification
+	const treeId = gedcom.getTreeId?.() || "";
+	const treeName = gedcom.getTreeName?.() || "";
+
+	// Sanitize tree name for use in cache key (remove special chars, spaces)
+	const sanitizedName = treeName
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "_")
+		.replace(/^_+|_+$/g, "");
+
+	// Create a unique key combining tree ID and sanitized name
+	// Format: treeId_treeName or just treeId if no name
+	if (treeId && sanitizedName) {
+		return `${treeId}_${sanitizedName}`;
+	} else if (treeId) {
+		return treeId;
+	} else if (sanitizedName) {
+		return sanitizedName;
+	}
+
+	// Fallback: use refcount
+	return `gedcom_${gedcom.refcount}`;
+};
 interface Caches {
 	// Cache keys now include GEDCOM ID prefix: `${gedcomId}:${...originalKey}`
 	pathCache: Record<`${string}:${IndiKey}|${IndiKey}`, Path> | undefined;
