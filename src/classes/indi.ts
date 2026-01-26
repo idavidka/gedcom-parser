@@ -1311,15 +1311,11 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				isPrimary: true,
 			};
 			// Cache the result
-			profilePictureCache<ProfilePicture>(
-				this._gedcom,
-				cacheKey,
-				result
-			);
+			profilePictureCache<ProfilePicture>(this._gedcom, cacheKey, result);
 			return result;
 		}
 
-		if (!onlyPrimary) {
+		if (onlyPrimary) {
 			// Cache the undefined result
 			profilePictureCache<ProfilePicture | undefined>(
 				this._gedcom,
@@ -1342,11 +1338,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				isPrimary: false,
 			};
 			// Cache the result
-			profilePictureCache<ProfilePicture>(
-				this._gedcom,
-				cacheKey,
-				result
-			);
+			profilePictureCache<ProfilePicture>(this._gedcom, cacheKey, result);
 			return result;
 		}
 
@@ -2306,7 +2298,12 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		}
 
 		if (level >= -1 && level <= 1) {
-			return relativesOnLevelCache(this._gedcom, this.id, level, persons.except(this));
+			return relativesOnLevelCache(
+				this._gedcom,
+				this.id,
+				level,
+				persons.except(this)
+			);
 		}
 
 		for (let i = 1; i < Math.abs(level); i++) {
@@ -2317,7 +2314,12 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			}
 		}
 
-		return relativesOnLevelCache(this._gedcom, this.id, level, persons.except(this));
+		return relativesOnLevelCache(
+			this._gedcom,
+			this.id,
+			level,
+			persons.except(this)
+		);
 	}
 
 	getAscendants(level = 0, filter?: Filter) {
@@ -2372,7 +2374,12 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			currentGen++;
 			generations[currentGen] = descentants;
 
-			relativesOnLevelCache(this._gedcom, this.id, -currentGen, descentants);
+			relativesOnLevelCache(
+				this._gedcom,
+				this.id,
+				-currentGen,
+				descentants
+			);
 
 			descentants && relatives.merge(descentants);
 		}
