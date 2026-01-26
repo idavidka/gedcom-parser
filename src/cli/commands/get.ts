@@ -1,6 +1,7 @@
 import type { Command } from "commander";
 import { List, Common } from "../../classes";
-import type { IndiKey, MultiTag } from "../../types/types";
+import type { GedCom } from "../../classes/gedcom";
+import type { FamKey, IndiKey, MultiTag, SourKey } from "../../types/types";
 import GedcomTree from "../../utils/parser";
 import { formatError, formatJson } from "../utils/formatters";
 import { readGedcomFile, handleError } from "../utils/helpers";
@@ -30,7 +31,7 @@ function getValueByPath(
  * @param options - Formatting options
  * @returns Formatted string
  */
-function formatOutput(
+export function formatOutput(
 	value: Common | List | undefined,
 	options: GetOptions
 ): string {
@@ -89,7 +90,7 @@ function formatOutput(
 		}
 
 		if (options.raw) {
-			return value.toGedcom();
+			return value.toValue() || "(empty)";
 		}
 
 		// Default: export value
@@ -97,6 +98,98 @@ function formatOutput(
 	}
 
 	return String(value);
+}
+
+/**
+ * Get a value from a record (reusable core logic)
+ */
+export function getValue(
+	tree: GedCom,
+	id: string,
+	path?: string,
+	json: boolean = false,
+	raw: boolean = false
+): string {
+	// Try to find the record (individual, family, etc.)
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	let record: any = null;
+	let recordType = "";
+
+	// Check if it's an individual
+	if (id.startsWith("@I")) {
+		record = tree.indi(id as IndiKey);
+		recordType = "Individual";
+	}
+	// Check if it's a family
+	else if (id.startsWith("@F")) {
+		record = tree.fam(id as FamKey);
+		recordType = "Family";
+	}
+	// Check if it's a source
+	else if (id.startsWith("@S")) {
+		record = tree.sour(id as SourKey);
+		recordType = "Source";
+	}
+	// Try as individual by default
+	else {
+		record = tree.indi(id as IndiKey);
+		recordType = "Individual";
+	}
+
+	if (!record) {
+		throw new Error(`Record ${id} not found`);
+	}
+
+	// If no path specified, return the entire record
+	if (!path) {
+		if (json) {
+			// For JSON, return a simplified version
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const simplified: any = {
+				id: record.id || id,
+				type: recordType,
+			};
+
+			// Add common fields for individuals
+			if (recordType === "Individual") {
+				if (record.NAME) {
+					simplified.name = record.toNaturalName();
+				}
+				if (record.BIRT) {
+					simplified.birth = {
+						date: record.BIRT.DATE?.toValue(),
+						place: record.BIRT.PLAC?.value,
+					};
+				}
+				if (record.DEAT) {
+					simplified.death = {
+						date: record.DEAT.DATE?.toValue(),
+						place: record.DEAT.PLAC?.value,
+					};
+				}
+				if (record.SEX) {
+					simplified.sex = record.SEX.value;
+				}
+			}
+
+			return formatJson(simplified);
+		} else {
+			let result = `${recordType}: ${id}`;
+			if (recordType === "Individual" && record.NAME) {
+				result += `\nName: ${record.NAME.toValue()}`;
+			}
+			return result;
+		}
+	}
+
+	// Get value by path
+	const value = getValueByPath(record, path);
+
+	if (value === undefined) {
+		throw new Error(`Path "${path}" not found in ${recordType} ${id}`);
+	}
+
+	return formatOutput(value, { path, json, raw });
 }
 
 export function registerGetCommand(program: Command): void {

@@ -1,4 +1,7 @@
-import chalk from 'chalk';
+import chalk from "chalk";
+
+// Re-export chalk for use in other modules
+export { chalk };
 
 /**
  * Format a success message
@@ -47,7 +50,7 @@ export function formatLabel(label: string): string {
  */
 export function formatValue(value: string | number | null | undefined): string {
 	if (value === null || value === undefined) {
-		return chalk.gray('(none)');
+		return chalk.gray("(none)");
 	}
 	return chalk.white(String(value));
 }
@@ -71,7 +74,7 @@ export function formatCount(count: number): string {
  */
 export function formatDate(date: string | null | undefined): string {
 	if (!date) {
-		return chalk.gray('(unknown)');
+		return chalk.gray("(unknown)");
 	}
 	return chalk.white(date);
 }
@@ -81,7 +84,7 @@ export function formatDate(date: string | null | undefined): string {
  */
 export function formatPlace(place: string | null | undefined): string {
 	if (!place) {
-		return chalk.gray('(unknown)');
+		return chalk.gray("(unknown)");
 	}
 	return chalk.white(place);
 }
@@ -91,10 +94,10 @@ export function formatPlace(place: string | null | undefined): string {
  */
 export function formatName(name: string | null | undefined): string {
 	if (!name) {
-		return chalk.gray('(unnamed)');
+		return chalk.gray("(unnamed)");
 	}
 	// Remove GEDCOM slashes from surname
-	const cleanName = name.replace(/\//g, '');
+	const cleanName = name.replace(/\//g, "");
 	return chalk.white(cleanName);
 }
 
@@ -102,7 +105,7 @@ export function formatName(name: string | null | undefined): string {
  * Format a list item
  */
 export function formatListItem(text: string, indent: number = 0): string {
-	const indentation = '  '.repeat(indent);
+	const indentation = "  ".repeat(indent);
 	return `${indentation}- ${text}`;
 }
 
@@ -110,18 +113,14 @@ export function formatListItem(text: string, indent: number = 0): string {
  * Format a table row
  */
 export function formatTableRow(columns: string[], widths: number[]): string {
-	return columns
-		.map((col, i) => col.padEnd(widths[i]))
-		.join('  ');
+	return columns.map((col, i) => col.padEnd(widths[i])).join("  ");
 }
 
 /**
  * Format a table separator
  */
 export function formatTableSeparator(widths: number[]): string {
-	return widths
-		.map(width => '-'.repeat(width))
-		.join('  ');
+	return widths.map((width) => "-".repeat(width)).join("  ");
 }
 
 /**
@@ -136,7 +135,7 @@ export function formatJson(data: unknown): string {
  */
 export function formatProgress(current: number, total: number): string {
 	const percentage = Math.round((current / total) * 100);
-	const bar = '█'.repeat(Math.floor(percentage / 5));
-	const empty = '░'.repeat(20 - Math.floor(percentage / 5));
+	const bar = "█".repeat(Math.floor(percentage / 5));
+	const empty = "░".repeat(20 - Math.floor(percentage / 5));
 	return chalk.cyan(`[${bar}${empty}] ${percentage}%`);
 }

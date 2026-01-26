@@ -10,7 +10,9 @@ import { registerFindCommand } from "./commands/find";
 import { registerGetCommand } from "./commands/get";
 import { registerInfoCommand } from "./commands/info";
 import { registerMergeCommand } from "./commands/merge";
+import { registerOpenCommand } from "./commands/open";
 import { registerRelativesCommand } from "./commands/relatives";
+import { registerSelectCommand } from "./commands/select";
 import { registerShowCommand } from "./commands/show";
 import { registerStatsCommand } from "./commands/stats";
 import { registerValidateCommand } from "./commands/validate";
@@ -31,6 +33,7 @@ program
 // Register all commands
 registerInfoCommand(program);
 registerFindCommand(program);
+registerSelectCommand(program);
 registerShowCommand(program);
 registerValidateCommand(program);
 registerRelativesCommand(program);
@@ -39,6 +42,7 @@ registerStatsCommand(program);
 registerMergeCommand(program);
 registerConvertCommand(program);
 registerGetCommand(program);
+registerOpenCommand(program);
 
 // Parse arguments
 program.parse(process.argv);
