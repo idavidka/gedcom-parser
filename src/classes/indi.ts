@@ -28,7 +28,7 @@ import type {
 	MultiTag,
 	IdType,
 } from "../types/types";
-import { pathCache, relativesCache } from "../utils/cache";
+import { pathCache, relativesCache, profilePictureCache } from "../utils/cache";
 import { dateFormatter } from "../utils/date-formatter";
 import { PlaceType, getPlaces } from "../utils/get-places";
 import type { Place } from "../utils/get-places";
@@ -1266,9 +1266,30 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		namespace?: string | number,
 		onlyPrimary = true
 	): Promise<ProfilePicture | undefined> {
+		// Check cache first (only if id is defined)
+		if (!this.id) {
+			return undefined;
+		}
+
+		const cacheKey = this.id;
+		const cached = profilePictureCache<ProfilePicture | undefined>(
+			this._gedcom,
+			cacheKey
+		);
+
+		if (cached !== undefined) {
+			return cached;
+		}
+
 		const mediaList = await this.multimedia(namespace);
 
 		if (!mediaList) {
+			// Cache the undefined result to avoid repeated lookups
+			profilePictureCache<ProfilePicture | undefined>(
+				this._gedcom,
+				cacheKey,
+				undefined
+			);
 			return undefined;
 		}
 
@@ -1283,15 +1304,28 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		);
 
 		if (primaryMedia) {
-			return {
+			const result: ProfilePicture = {
 				file: primaryMedia.url,
 				form: primaryMedia.contentType,
 				title: primaryMedia.title,
 				isPrimary: true,
 			};
+			// Cache the result
+			profilePictureCache<ProfilePicture>(
+				this._gedcom,
+				cacheKey,
+				result
+			);
+			return result;
 		}
 
 		if (!onlyPrimary) {
+			// Cache the undefined result
+			profilePictureCache<ProfilePicture | undefined>(
+				this._gedcom,
+				cacheKey,
+				undefined
+			);
 			return undefined;
 		}
 
@@ -1301,14 +1335,27 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		);
 
 		if (secondaryMedia) {
-			return {
+			const result: ProfilePicture = {
 				file: secondaryMedia.url,
 				form: secondaryMedia.contentType,
 				title: secondaryMedia.title,
 				isPrimary: false,
 			};
+			// Cache the result
+			profilePictureCache<ProfilePicture>(
+				this._gedcom,
+				cacheKey,
+				result
+			);
+			return result;
 		}
 
+		// Cache the undefined result
+		profilePictureCache<ProfilePicture | undefined>(
+			this._gedcom,
+			cacheKey,
+			undefined
+		);
 		return undefined;
 	}
 
@@ -1878,7 +1925,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		}
 
 		const cacheKey = `${this.id}|${usedIndi.id}` as `${IndiKey}|${IndiKey}`;
-		const cache = pathCache(cacheKey);
+		const cache = pathCache(this._gedcom, cacheKey);
 		if (cache) {
 			return cache;
 		}
@@ -1931,7 +1978,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					return undefined;
 				}
 
-				pathCache(cacheKey, path);
+				pathCache(this._gedcom, cacheKey, path);
 				return path;
 			}
 			visited.append(indi);
@@ -2197,7 +2244,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 	getRelativesOnDegree(degree = 0) {
 		this.id = this.id || `@I${Math.random()}@`;
-		const cache = relativesOnDegreeCache(this.id, degree);
+		const cache = relativesOnDegreeCache(this._gedcom, this.id, degree);
 		if (cache) {
 			return cache;
 		}
@@ -2209,6 +2256,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 		if (!Math.abs(degree)) {
 			return relativesOnDegreeCache(
+				this._gedcom,
 				this.id,
 				degree,
 				persons.except(this)
@@ -2224,12 +2272,12 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				.exclude(excludes);
 		}
 
-		return relativesOnDegreeCache(this.id, degree, persons);
+		return relativesOnDegreeCache(this._gedcom, this.id, degree, persons);
 	}
 
 	getRelativesOnLevel(level = 0, filter?: Filter) {
 		this.id = this.id || `@I${Math.random()}@`;
-		const cache = relativesOnLevelCache(this.id, level);
+		const cache = relativesOnLevelCache(this._gedcom, this.id, level);
 		if (cache) {
 			return cache;
 		}
@@ -2244,7 +2292,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		let families = this.get(config.key as MultiTag)?.toValueList();
 
 		if (!families) {
-			return relativesOnLevelCache(this.id, level, persons);
+			return relativesOnLevelCache(this._gedcom, this.id, level, persons);
 		}
 
 		if (filter) {
@@ -2258,7 +2306,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		}
 
 		if (level >= -1 && level <= 1) {
-			return relativesOnLevelCache(this.id, level, persons.except(this));
+			return relativesOnLevelCache(this._gedcom, this.id, level, persons.except(this));
 		}
 
 		for (let i = 1; i < Math.abs(level); i++) {
@@ -2269,7 +2317,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			}
 		}
 
-		return relativesOnLevelCache(this.id, level, persons.except(this));
+		return relativesOnLevelCache(this._gedcom, this.id, level, persons.except(this));
 	}
 
 	getAscendants(level = 0, filter?: Filter) {
@@ -2324,7 +2372,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			currentGen++;
 			generations[currentGen] = descentants;
 
-			relativesOnLevelCache(this.id, -currentGen, descentants);
+			relativesOnLevelCache(this._gedcom, this.id, -currentGen, descentants);
 
 			descentants && relatives.merge(descentants);
 		}
@@ -2371,7 +2419,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			currentGen++;
 			generations[currentGen] = parents;
 
-			relativesOnLevelCache(this.id, currentGen, parents);
+			relativesOnLevelCache(this._gedcom, this.id, currentGen, parents);
 
 			parents && relatives.merge(parents);
 		}

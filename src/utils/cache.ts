@@ -1,5 +1,6 @@
 import { debounce } from "lodash-es";
 
+import type { GedComType } from "../classes/gedcom";
 import type { Path, ProfilePicture } from "../classes/indi";
 import type { Individuals } from "../classes/indis";
 import { getCacheManagerFactory } from "../factories/cache-factory";
@@ -14,15 +15,38 @@ export interface ICacheManager<T> {
 	setItem: (value: T) => Promise<void>;
 }
 
+/**
+ * Generates a unique identifier for a GEDCOM file
+ * Uses the refcount as a stable identifier for cache keys
+ */
+const getGedcomId = (gedcom?: GedComType): string => {
+	if (!gedcom) {
+		return "unknown";
+	}
+	// Use a combination of HEAD.FILE (if exists) and refcount for uniqueness
+	const fileValue = gedcom.get("HEAD")?.get("FILE")?.toValue();
+	const sourValue = gedcom.get("HEAD")?.get("SOUR")?.get("NAME")?.toValue();
+	
+	const fileName =
+		(typeof fileValue === "string" ? fileValue : "") ||
+		(typeof sourValue === "string" ? sourValue : "") ||
+		"";
+	// Create a stable ID from filename or use refcount
+	return fileName || `gedcom_${gedcom.refcount}`;
+};
+
 interface Caches {
-	pathCache: Record<`${IndiKey}|${IndiKey}`, Path> | undefined;
+	// Cache keys now include GEDCOM ID prefix: `${gedcomId}:${...originalKey}`
+	pathCache: Record<`${string}:${IndiKey}|${IndiKey}`, Path> | undefined;
 	relativesOnLevelCache:
-		| Record<IndiKey, Record<number, Individuals>>
+		| Record<`${string}:${IndiKey}`, Record<number, Individuals>>
 		| undefined;
 	relativesOnDegreeCache:
-		| Record<IndiKey, Record<number, Individuals>>
+		| Record<`${string}:${IndiKey}`, Record<number, Individuals>>
 		| undefined;
-	profilePictureCache: Record<IndiKey, ProfilePicture> | undefined;
+	profilePictureCache:
+		| Record<`${string}:${IndiKey}`, ProfilePicture>
+		| undefined;
 }
 
 type CacheStores = {
@@ -150,78 +174,90 @@ export const resetRelativesCache = () => {
 export const relativesCache =
 	(cacheKey: "relativesOnLevelCache" | "relativesOnDegreeCache") =>
 	<T extends Individuals | undefined>(
+		gedcom: GedComType | undefined,
 		key: IndiKey,
 		subKey: number,
 		value?: T
 	) => {
+		const gedcomId = getGedcomId(gedcom);
+		const fullKey = `${gedcomId}:${key}` as `${string}:${IndiKey}`;
+
 		const cache = caches[cacheKey] as
-			| Record<IndiKey, Record<number, Individuals>>
+			| Record<`${string}:${IndiKey}`, Record<number, Individuals>>
 			| undefined;
 
 		if (!cache) {
 			caches[cacheKey] = {} as Record<
-				IndiKey,
+				`${string}:${IndiKey}`,
 				Record<number, Individuals>
 			>;
 		}
 
 		if (value) {
 			const typedCache = caches[cacheKey] as Record<
-				IndiKey,
+				`${string}:${IndiKey}`,
 				Record<number, Individuals>
 			>;
-			if (!typedCache[key]) {
-				typedCache[key] = {};
+			if (!typedCache[fullKey]) {
+				typedCache[fullKey] = {};
 			}
 
-			typedCache[key]![subKey] = value;
+			typedCache[fullKey]![subKey] = value;
 
 			// NOTE: relativesOnLevelCache and relativesOnDegreeCache are intentionally
 			// kept in memory only (not persisted to IndexedDB)
 
-			return typedCache[key]![subKey] as Exclude<T, undefined>;
+			return typedCache[fullKey]![subKey] as Exclude<T, undefined>;
 		}
 
 		const typedCache = caches[cacheKey] as
-			| Record<IndiKey, Record<number, Individuals>>
+			| Record<`${string}:${IndiKey}`, Record<number, Individuals>>
 			| undefined;
-		return typedCache?.[key]?.[subKey] as T;
+		return typedCache?.[fullKey]?.[subKey] as T;
 	};
 
 export const pathCache = <T extends Path | undefined>(
+	gedcom: GedComType | undefined,
 	key: `${IndiKey}|${IndiKey}`,
 	value?: T
 ) => {
+	const gedcomId = getGedcomId(gedcom);
+	const fullKey = `${gedcomId}:${key}` as `${string}:${IndiKey}|${IndiKey}`;
+
 	if (!caches.pathCache) {
 		caches.pathCache = {};
 	}
 
 	if (value && caches.pathCache) {
-		caches.pathCache[key] = value;
+		caches.pathCache[fullKey] = value;
 
 		// NOTE: pathCache is intentionally kept in memory only (not persisted to IndexedDB)
 
-		return caches.pathCache[key] as Exclude<T, undefined>;
+		return caches.pathCache[fullKey] as Exclude<T, undefined>;
 	}
 
-	return caches.pathCache?.[key] as T;
+	return caches.pathCache?.[fullKey] as T;
 };
 
 export const profilePictureCache = <T extends ProfilePicture | undefined>(
+	gedcom: GedComType | undefined,
 	key: IndiKey,
 	value?: T
 ) => {
+	const gedcomId = getGedcomId(gedcom);
+	const fullKey = `${gedcomId}:${key}` as `${string}:${IndiKey}`;
+
 	if (!caches.profilePictureCache) {
 		caches.profilePictureCache = {};
 	}
 
 	if (value && caches.profilePictureCache) {
-		caches.profilePictureCache[key] = value;
+		caches.profilePictureCache[fullKey] = value;
 		storeCache.profilePictureCache(caches.profilePictureCache);
 
-		return caches.profilePictureCache[key] as Exclude<T, undefined>;
+		return caches.profilePictureCache[fullKey] as Exclude<T, undefined>;
 	}
 
-	const cached = caches.profilePictureCache?.[key] as T;
+	const cached = caches.profilePictureCache?.[fullKey] as T;
 	return cached;
 };
