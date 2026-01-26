@@ -575,31 +575,38 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 
 	getTreeId() {
 		if (this?.isAncestry()) {
-			return this.getAncestryTreeId();
+			const id = this.getAncestryTreeId();
+			if (id !== undefined) return id;
 		}
 
 		if (this?.isMyHeritage()) {
-			return this.getMyHeritageTreeId();
+			const id = this.getMyHeritageTreeId();
+			if (id !== undefined) return id;
 		}
 
 		if (this?.isFamilySearch()) {
-			return this.getFamilySearchTreeId();
+			const id = this.getFamilySearchTreeId();
+			if (id !== undefined) return id;
 		}
 
 		if (this?.isGNO2GED()) {
-			return this.getGNO2GEDTreeId();
+			const id = this.getGNO2GEDTreeId();
+			if (id !== undefined) return id;
 		}
 
 		if (this?.isAhnenblatt()) {
-			return this.getAhnenblattTreeId();
+			const id = this.getAhnenblattTreeId();
+			if (id !== undefined) return id;
 		}
 
 		if (this?.isGeni()) {
-			return this.getGeniTreeId();
+			const id = this.getGeniTreeId();
+			if (id !== undefined) return id;
 		}
 
 		if (this?.isGenoPro()) {
-			return this.getGenoProTreeId();
+			const id = this.getGenoProTreeId();
+			if (id !== undefined) return id;
 		}
 
 		// Fallback: universal tree ID extraction
@@ -824,31 +831,38 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 
 	getTreeName() {
 		if (this?.isAncestry()) {
-			return this.getAncestryTreeName();
+			const name = this.getAncestryTreeName();
+			if (name) return name;
 		}
 
 		if (this?.isMyHeritage()) {
-			return this.getMyHeritageTreeName();
+			const name = this.getMyHeritageTreeName();
+			if (name) return name;
 		}
 
 		if (this?.isFamilySearch()) {
-			return this.getFamilySearchTreeName();
+			const name = this.getFamilySearchTreeName();
+			if (name) return name;
 		}
 
 		if (this?.isGNO2GED()) {
-			return this.getGNO2GEDTreeName();
+			const name = this.getGNO2GEDTreeName();
+			if (name) return name;
 		}
 
 		if (this?.isAhnenblatt()) {
-			return this.getAhnenblattTreeName();
+			const name = this.getAhnenblattTreeName();
+			if (name) return name;
 		}
 
 		if (this?.isGeni()) {
-			return this.getGeniTreeName();
+			const name = this.getGeniTreeName();
+			if (name) return name;
 		}
 
 		if (this?.isGenoPro()) {
-			return this.getGenoProTreeName();
+			const name = this.getGenoProTreeName();
+			if (name) return name;
 		}
 
 		// Fallback: universal tree name extraction
