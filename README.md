@@ -136,13 +136,16 @@ gedcom-parser open <file>
 gedcom-parser open family.ged
 
 # Once in REPL, you can use commands like:
-# - stats          : Show statistics
-# - find <query>   : Search for individuals
-# - select <n>     : Select an individual from search results
-# - show           : Show details of selected individual
-# - get --path <p> : Get a value from selected individual
-# - help           : Show available commands
-# - exit           : Exit REPL
+# - stats              : Show statistics
+# - find <query>       : Search for individuals
+# - select <n>         : Select an individual from search results
+# - show               : Show details of selected individual
+# - get --path <p>     : Get a value from selected individual
+# - relatives [opts]   : Get ancestors/descendants of selected individual
+# - validate [opts]    : Validate the GEDCOM file
+# - clear              : Clear screen
+# - help               : Show available commands
+# - exit               : Exit REPL
 ```
 
 #### `validate` - Validate GEDCOM file
