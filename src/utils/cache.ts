@@ -148,30 +148,44 @@ export const resetRelativesCache = () => {
 };
 
 export const relativesCache =
-	(cacheKey: keyof Omit<Caches, "pathCache">) =>
+	(cacheKey: "relativesOnLevelCache" | "relativesOnDegreeCache") =>
 	<T extends Individuals | undefined>(
 		key: IndiKey,
 		subKey: number,
 		value?: T
 	) => {
-		if (!caches[cacheKey]) {
-			caches[cacheKey] = {};
+		const cache = caches[cacheKey] as
+			| Record<IndiKey, Record<number, Individuals>>
+			| undefined;
+
+		if (!cache) {
+			caches[cacheKey] = {} as Record<
+				IndiKey,
+				Record<number, Individuals>
+			>;
 		}
 
-		if (value && caches[cacheKey]) {
-			if (!caches[cacheKey]![key]) {
-				caches[cacheKey]![key] = {};
+		if (value) {
+			const typedCache = caches[cacheKey] as Record<
+				IndiKey,
+				Record<number, Individuals>
+			>;
+			if (!typedCache[key]) {
+				typedCache[key] = {};
 			}
 
-			caches[cacheKey]![key]![subKey] = value;
+			typedCache[key]![subKey] = value;
 
 			// NOTE: relativesOnLevelCache and relativesOnDegreeCache are intentionally
 			// kept in memory only (not persisted to IndexedDB)
 
-			return caches[cacheKey]![key][subKey] as Exclude<T, undefined>;
+			return typedCache[key]![subKey] as Exclude<T, undefined>;
 		}
 
-		return caches[cacheKey]?.[key]?.[subKey] as T;
+		const typedCache = caches[cacheKey] as
+			| Record<IndiKey, Record<number, Individuals>>
+			| undefined;
+		return typedCache?.[key]?.[subKey] as T;
 	};
 
 export const pathCache = <T extends Path | undefined>(
