@@ -45,6 +45,7 @@ import { List } from "./list";
 import { CommonName, createCommonName } from "./name";
 import type { ObjeType } from "./obje";
 import type { Objects } from "./objes";
+import type { Sources } from "./sours";
 
 export enum Existed {
 	SPOUSE = "spouse",
@@ -938,7 +939,9 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 	async ancestryMedia(namespace?: string | number): Promise<MediaList> {
 		const list: MediaList = {};
-		const objeList = this.get("OBJE")?.toList() as Objects | undefined;
+		const objeList = this.get("OBJE")?.toList().copy() as
+			| Objects
+			| undefined;
 		const www = this._gedcom?.HEAD?.SOUR?.CORP?.WWW?.value;
 		const tree = this.getAncestryTreeId();
 
@@ -1056,17 +1059,21 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			return;
 		}
 
-		const objeList = this.get("OBJE")?.toList() as Objects | undefined;
-		const birthObj = this.get("BIRT.OBJE")?.toList() as Objects | undefined;
-		const deathObj = this.get("DEAT.OBJE")?.toList() as Objects | undefined;
+		const objeList = this.get("OBJE")?.toList().copy() as
+			| Objects
+			| undefined;
+		const birthObj = this.get("BIRT.OBJE")?.toList().copy() as
+			| Objects
+			| undefined;
+		const deathObj = this.get("DEAT.OBJE")?.toList().copy() as
+			| Objects
+			| undefined;
 
+		objeList?.merge(birthObj).merge(deathObj);
 		(this.get("FAMS")?.toValueList().values() ?? [])
 			.concat(this.get("FAMC")?.toValueList().values() ?? [])
 			.forEach((fam) => {
-				objeList
-					?.merge(birthObj)
-					.merge(deathObj)
-					.merge(fam?.get("MARR.OBJE"));
+				objeList.merge(fam?.get("MARR.OBJE"));
 			});
 
 		objeList?.forEach((o, index) => {
@@ -1248,6 +1255,144 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		});
 	}
 
+	geniMedia(): MediaList {
+		const list: MediaList = {};
+
+		// Get level 1 OBJE tags (directly under INDI - person's media)
+		const objeList = this.get("OBJE")?.toList().copy() as
+			| Objects
+			| undefined;
+
+		// Get level 2 OBJE tags (under SOUR - source documents)
+		const sourList = this.get("SOUR")?.toList().copy() as
+			| Sources
+			| undefined;
+
+		sourList?.forEach((sour) => {
+			const sourObje = sour?.get("OBJE")?.toList() as Objects | undefined;
+			objeList.merge(sourObje);
+		});
+
+		if (!objeList || objeList.length === 0) {
+			return undefined;
+		}
+
+		// Extract RFN for tree identification (format: "geni:6000000209823738826")
+		const rfn = this.get("RFN")?.toValue() as string | undefined;
+		const geniId = rfn?.replace(/^geni:/, "") || "unknown";
+
+		objeList.forEach((obje, index) => {
+			if (!obje) {
+				return;
+			}
+
+			const key = `@O${index}@`;
+
+			// Get media information
+			const isPrimary = obje?.get("_PRIM")?.toValue() === "Y";
+			const url = obje?.get("FILE")?.toValue() as string | undefined;
+			const title =
+				(obje?.get("TITL")?.toValue() as string | undefined) ?? "";
+			const type =
+				(obje?.get("FORM")?.toValue() as string | undefined) ?? "raw";
+
+			if (url) {
+				// Extract imgId from URL (hash parameter or filename)
+				// Example: https://media.geni.com/p13/cb/0e/10/8a/53444844bdae63e7/czec0004d_150-1_m_00227_original.jpg?hash=ca325164...
+				const urlMatch = url.match(/\/([^/]+)\?hash=/);
+				const imgId =
+					urlMatch?.[1] || `img-${index}-${Date.now().toString(36)}`;
+
+				const id = `geni-${geniId}-${imgId}`;
+				list[id] = {
+					isPrimary,
+					key,
+					id,
+					tree: geniId,
+					imgId,
+					person: this.id,
+					title: title as string,
+					url,
+					contentType: type as string,
+					downloadName: `${this.id.replaceAll("@", "")}_${
+						this.toNaturalName()?.replaceAll(" ", "-") || ""
+					}_${(
+						(title as string) || key.replaceAll("@", "").toString()
+					).replaceAll(" ", "-")}`,
+				};
+			}
+		});
+
+		return list;
+	}
+
+	universalMedia(): MediaList {
+		const list: MediaList = {};
+
+		if (!this.id) {
+			return list;
+		}
+
+		// Get only level 1 OBJE tags (directly under INDI - person's media)
+		const objeList = this.get("OBJE")?.toList().copy() as
+			| Objects
+			| undefined;
+
+		if (!objeList || objeList.length === 0) {
+			return list;
+		}
+
+		// Try to extract some kind of tree identifier
+		const rfn = this.get("RFN")?.toValue() as string | undefined;
+		const treeId = rfn || "universal";
+
+		objeList.forEach((obje, index) => {
+			if (!obje) {
+				return;
+			}
+
+			const key = `@O${index}@`;
+
+			obje.standardizeMedia();
+
+			// Get media information
+			const isPrimary = obje?.get("_PRIM")?.toValue() === "Y";
+			const url = obje?.get("FILE")?.toValue() as string | undefined;
+			const title =
+				(obje?.get("TITL")?.toValue() as string | undefined) ?? "";
+			const type =
+				(obje?.get("FORM")?.toValue() as string | undefined) ?? "raw";
+
+			if (url) {
+				// Generate a unique imgId from the URL or index
+				const imgId = `media-${index}-${
+					url.split("/").pop()?.split("?")[0]?.substring(0, 20) ||
+					Date.now().toString(36)
+				}`;
+
+				const id = `${treeId}-${this.id}-${imgId}`;
+				list[id] = {
+					isPrimary,
+					key,
+					id,
+					tree: treeId,
+					imgId,
+					person: this.id,
+					title: title as string,
+					url,
+					contentType: type as string,
+					downloadName: `${this.id.replaceAll("@", "")}_${
+						this.toNaturalName()?.replaceAll(" ", "-") || ""
+					}_${(
+						(title as string) || key.replaceAll("@", "").toString()
+					).replaceAll(" ", "-")}`,
+				};
+			}
+		});
+
+		return list;
+	}
+
 	async multimedia(
 		namespace?: string | number
 	): Promise<MediaList | undefined> {
@@ -1259,7 +1404,11 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			return this.myheritageMedia();
 		}
 
-		return undefined;
+		if (this?.isGeni()) {
+			return this.geniMedia();
+		}
+
+		return this.universalMedia();
 	}
 
 	async getProfilePicture(
