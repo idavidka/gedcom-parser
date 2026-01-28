@@ -109,6 +109,45 @@ gedcom-parser show family.ged @I123@ --json
 gedcom-parser show family.ged @I123@ --format markdown
 ```
 
+#### `get` - Get a value from a GEDCOM record
+
+```bash
+gedcom-parser get <file> <id> [options]
+
+# Get a specific value by path
+gedcom-parser get family.ged @I123@ --path "BIRT.DATE"
+
+# Get birth place
+gedcom-parser get family.ged @I123@ --path "BIRT.PLAC"
+
+# Get full record as JSON
+gedcom-parser get family.ged @I123@ --json
+
+# Get raw value only
+gedcom-parser get family.ged @I123@ --path "NAME" --raw
+```
+
+#### `open` - Interactive REPL mode
+
+```bash
+gedcom-parser open <file>
+
+# Open a GEDCOM file in interactive mode
+gedcom-parser open family.ged
+
+# Once in REPL, you can use commands like:
+# - stats              : Show statistics
+# - find <query>       : Search for individuals
+# - select <n>         : Select an individual from search results
+# - show               : Show details of selected individual
+# - get --path <p>     : Get a value from selected individual
+# - relatives [opts]   : Get ancestors/descendants of selected individual
+# - validate [opts]    : Validate the GEDCOM file
+# - clear              : Clear screen
+# - help               : Show available commands
+# - exit               : Exit REPL
+```
+
 #### `validate` - Validate GEDCOM file
 
 ```bash
@@ -208,6 +247,9 @@ gedcom-parser find family.ged --surname Smith --birth-after 1900
 # Show detailed information about an individual
 gedcom-parser show family.ged @I123@
 
+# Get specific value from a record
+gedcom-parser get family.ged @I123@ --path "BIRT.DATE"
+
 # Extract all descendants of an individual
 gedcom-parser relatives family.ged @I123@ --descendants --output descendants.ged
 
@@ -216,6 +258,9 @@ gedcom-parser stats family.ged --json > stats.json
 
 # Validate and check for errors
 gedcom-parser validate family.ged
+
+# Open interactive REPL mode
+gedcom-parser open family.ged
 ```
 
 ## Factory Providers

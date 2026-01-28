@@ -2,7 +2,7 @@ import type { IdType } from "../types/types";
 
 import { Common, createCommon, createProxy } from "./common";
 import type { ProxyOriginal } from "./common";
-import type {GedComType} from "./gedcom";
+import type { GedComType } from "./gedcom";
 import { List } from "./list";
 
 export class CommonNote extends Common<string> {

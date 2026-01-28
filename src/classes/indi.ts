@@ -28,7 +28,7 @@ import type {
 	MultiTag,
 	IdType,
 } from "../types/types";
-import { pathCache, relativesCache } from "../utils/cache";
+import { pathCache, relativesCache, profilePictureCache } from "../utils/cache";
 import { dateFormatter } from "../utils/date-formatter";
 import { PlaceType, getPlaces } from "../utils/get-places";
 import type { Place } from "../utils/get-places";
@@ -45,6 +45,7 @@ import { List } from "./list";
 import { CommonName, createCommonName } from "./name";
 import type { ObjeType } from "./obje";
 import type { Objects } from "./objes";
+import type { Sources } from "./sours";
 
 export enum Existed {
 	SPOUSE = "spouse",
@@ -938,7 +939,9 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 	async ancestryMedia(namespace?: string | number): Promise<MediaList> {
 		const list: MediaList = {};
-		const objeList = this.get("OBJE")?.toList() as Objects | undefined;
+		const objeList = this.get("OBJE")?.toList().copy() as
+			| Objects
+			| undefined;
 		const www = this._gedcom?.HEAD?.SOUR?.CORP?.WWW?.value;
 		const tree = this.getAncestryTreeId();
 
@@ -1056,17 +1059,21 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			return;
 		}
 
-		const objeList = this.get("OBJE")?.toList() as Objects | undefined;
-		const birthObj = this.get("BIRT.OBJE")?.toList() as Objects | undefined;
-		const deathObj = this.get("DEAT.OBJE")?.toList() as Objects | undefined;
+		const objeList = this.get("OBJE")?.toList().copy() as
+			| Objects
+			| undefined;
+		const birthObj = this.get("BIRT.OBJE")?.toList().copy() as
+			| Objects
+			| undefined;
+		const deathObj = this.get("DEAT.OBJE")?.toList().copy() as
+			| Objects
+			| undefined;
 
+		objeList?.merge(birthObj).merge(deathObj);
 		(this.get("FAMS")?.toValueList().values() ?? [])
 			.concat(this.get("FAMC")?.toValueList().values() ?? [])
 			.forEach((fam) => {
-				objeList
-					?.merge(birthObj)
-					.merge(deathObj)
-					.merge(fam?.get("MARR.OBJE"));
+				objeList.merge(fam?.get("MARR.OBJE"));
 			});
 
 		objeList?.forEach((o, index) => {
@@ -1248,6 +1255,144 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		});
 	}
 
+	geniMedia(): MediaList {
+		const list: MediaList = {};
+
+		// Get level 1 OBJE tags (directly under INDI - person's media)
+		const objeList = this.get("OBJE")?.toList().copy() as
+			| Objects
+			| undefined;
+
+		// Get level 2 OBJE tags (under SOUR - source documents)
+		const sourList = this.get("SOUR")?.toList().copy() as
+			| Sources
+			| undefined;
+
+		sourList?.forEach((sour) => {
+			const sourObje = sour?.get("OBJE")?.toList() as Objects | undefined;
+			objeList.merge(sourObje);
+		});
+
+		if (!objeList || objeList.length === 0) {
+			return undefined;
+		}
+
+		// Extract RFN for tree identification (format: "geni:6000000209823738826")
+		const rfn = this.get("RFN")?.toValue() as string | undefined;
+		const geniId = rfn?.replace(/^geni:/, "") || "unknown";
+
+		objeList.forEach((obje, index) => {
+			if (!obje) {
+				return;
+			}
+
+			const key = `@O${index}@`;
+
+			// Get media information
+			const isPrimary = obje?.get("_PRIM")?.toValue() === "Y";
+			const url = obje?.get("FILE")?.toValue() as string | undefined;
+			const title =
+				(obje?.get("TITL")?.toValue() as string | undefined) ?? "";
+			const type =
+				(obje?.get("FORM")?.toValue() as string | undefined) ?? "raw";
+
+			if (url) {
+				// Extract imgId from URL (hash parameter or filename)
+				// Example: https://media.geni.com/p13/cb/0e/10/8a/53444844bdae63e7/czec0004d_150-1_m_00227_original.jpg?hash=ca325164...
+				const urlMatch = url.match(/\/([^/]+)\?hash=/);
+				const imgId =
+					urlMatch?.[1] || `img-${index}-${Date.now().toString(36)}`;
+
+				const id = `geni-${geniId}-${imgId}`;
+				list[id] = {
+					isPrimary,
+					key,
+					id,
+					tree: geniId,
+					imgId,
+					person: this.id,
+					title: title as string,
+					url,
+					contentType: type as string,
+					downloadName: `${this.id.replaceAll("@", "")}_${
+						this.toNaturalName()?.replaceAll(" ", "-") || ""
+					}_${(
+						(title as string) || key.replaceAll("@", "").toString()
+					).replaceAll(" ", "-")}`,
+				};
+			}
+		});
+
+		return list;
+	}
+
+	universalMedia(): MediaList {
+		const list: MediaList = {};
+
+		if (!this.id) {
+			return list;
+		}
+
+		// Get only level 1 OBJE tags (directly under INDI - person's media)
+		const objeList = this.get("OBJE")?.toList().copy() as
+			| Objects
+			| undefined;
+
+		if (!objeList || objeList.length === 0) {
+			return list;
+		}
+
+		// Try to extract some kind of tree identifier
+		const rfn = this.get("RFN")?.toValue() as string | undefined;
+		const treeId = rfn || "universal";
+
+		objeList.forEach((obje, index) => {
+			if (!obje) {
+				return;
+			}
+
+			const key = `@O${index}@`;
+
+			obje.standardizeMedia();
+
+			// Get media information
+			const isPrimary = obje?.get("_PRIM")?.toValue() === "Y";
+			const url = obje?.get("FILE")?.toValue() as string | undefined;
+			const title =
+				(obje?.get("TITL")?.toValue() as string | undefined) ?? "";
+			const type =
+				(obje?.get("FORM")?.toValue() as string | undefined) ?? "raw";
+
+			if (url) {
+				// Generate a unique imgId from the URL or index
+				const imgId = `media-${index}-${
+					url.split("/").pop()?.split("?")[0]?.substring(0, 20) ||
+					Date.now().toString(36)
+				}`;
+
+				const id = `${treeId}-${this.id}-${imgId}`;
+				list[id] = {
+					isPrimary,
+					key,
+					id,
+					tree: treeId,
+					imgId,
+					person: this.id,
+					title: title as string,
+					url,
+					contentType: type as string,
+					downloadName: `${this.id.replaceAll("@", "")}_${
+						this.toNaturalName()?.replaceAll(" ", "-") || ""
+					}_${(
+						(title as string) || key.replaceAll("@", "").toString()
+					).replaceAll(" ", "-")}`,
+				};
+			}
+		});
+
+		return list;
+	}
+
 	async multimedia(
 		namespace?: string | number
 	): Promise<MediaList | undefined> {
@@ -1259,16 +1404,41 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			return this.myheritageMedia();
 		}
 
-		return undefined;
+		if (this?.isGeni()) {
+			return this.geniMedia();
+		}
+
+		return this.universalMedia();
 	}
 
 	async getProfilePicture(
 		namespace?: string | number,
 		onlyPrimary = true
 	): Promise<ProfilePicture | undefined> {
+		// Check cache first (only if id is defined)
+		if (!this.id) {
+			return undefined;
+		}
+
+		const cacheKey = this.id;
+		const cached = profilePictureCache<ProfilePicture | undefined>(
+			this._gedcom,
+			cacheKey
+		);
+
+		if (cached !== undefined) {
+			return cached;
+		}
+
 		const mediaList = await this.multimedia(namespace);
 
 		if (!mediaList) {
+			// Cache the undefined result to avoid repeated lookups
+			profilePictureCache<ProfilePicture | undefined>(
+				this._gedcom,
+				cacheKey,
+				undefined
+			);
 			return undefined;
 		}
 
@@ -1283,15 +1453,24 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		);
 
 		if (primaryMedia) {
-			return {
+			const result: ProfilePicture = {
 				file: primaryMedia.url,
 				form: primaryMedia.contentType,
 				title: primaryMedia.title,
 				isPrimary: true,
 			};
+			// Cache the result
+			profilePictureCache<ProfilePicture>(this._gedcom, cacheKey, result);
+			return result;
 		}
 
-		if (!onlyPrimary) {
+		if (onlyPrimary) {
+			// Cache the undefined result
+			profilePictureCache<ProfilePicture | undefined>(
+				this._gedcom,
+				cacheKey,
+				undefined
+			);
 			return undefined;
 		}
 
@@ -1301,14 +1480,23 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		);
 
 		if (secondaryMedia) {
-			return {
+			const result: ProfilePicture = {
 				file: secondaryMedia.url,
 				form: secondaryMedia.contentType,
 				title: secondaryMedia.title,
 				isPrimary: false,
 			};
+			// Cache the result
+			profilePictureCache<ProfilePicture>(this._gedcom, cacheKey, result);
+			return result;
 		}
 
+		// Cache the undefined result
+		profilePictureCache<ProfilePicture | undefined>(
+			this._gedcom,
+			cacheKey,
+			undefined
+		);
 		return undefined;
 	}
 
@@ -1878,7 +2066,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		}
 
 		const cacheKey = `${this.id}|${usedIndi.id}` as `${IndiKey}|${IndiKey}`;
-		const cache = pathCache(cacheKey);
+		const cache = pathCache(this._gedcom, cacheKey);
 		if (cache) {
 			return cache;
 		}
@@ -1931,7 +2119,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					return undefined;
 				}
 
-				pathCache(cacheKey, path);
+				pathCache(this._gedcom, cacheKey, path);
 				return path;
 			}
 			visited.append(indi);
@@ -2197,7 +2385,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 	getRelativesOnDegree(degree = 0) {
 		this.id = this.id || `@I${Math.random()}@`;
-		const cache = relativesOnDegreeCache(this.id, degree);
+		const cache = relativesOnDegreeCache(this._gedcom, this.id, degree);
 		if (cache) {
 			return cache;
 		}
@@ -2209,6 +2397,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 		if (!Math.abs(degree)) {
 			return relativesOnDegreeCache(
+				this._gedcom,
 				this.id,
 				degree,
 				persons.except(this)
@@ -2224,12 +2413,12 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				.exclude(excludes);
 		}
 
-		return relativesOnDegreeCache(this.id, degree, persons);
+		return relativesOnDegreeCache(this._gedcom, this.id, degree, persons);
 	}
 
 	getRelativesOnLevel(level = 0, filter?: Filter) {
 		this.id = this.id || `@I${Math.random()}@`;
-		const cache = relativesOnLevelCache(this.id, level);
+		const cache = relativesOnLevelCache(this._gedcom, this.id, level);
 		if (cache) {
 			return cache;
 		}
@@ -2244,7 +2433,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		let families = this.get(config.key as MultiTag)?.toValueList();
 
 		if (!families) {
-			return relativesOnLevelCache(this.id, level, persons);
+			return relativesOnLevelCache(this._gedcom, this.id, level, persons);
 		}
 
 		if (filter) {
@@ -2258,7 +2447,12 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		}
 
 		if (level >= -1 && level <= 1) {
-			return relativesOnLevelCache(this.id, level, persons.except(this));
+			return relativesOnLevelCache(
+				this._gedcom,
+				this.id,
+				level,
+				persons.except(this)
+			);
 		}
 
 		for (let i = 1; i < Math.abs(level); i++) {
@@ -2269,7 +2463,12 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			}
 		}
 
-		return relativesOnLevelCache(this.id, level, persons.except(this));
+		return relativesOnLevelCache(
+			this._gedcom,
+			this.id,
+			level,
+			persons.except(this)
+		);
 	}
 
 	getAscendants(level = 0, filter?: Filter) {
@@ -2324,7 +2523,12 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			currentGen++;
 			generations[currentGen] = descentants;
 
-			relativesOnLevelCache(this.id, -currentGen, descentants);
+			relativesOnLevelCache(
+				this._gedcom,
+				this.id,
+				-currentGen,
+				descentants
+			);
 
 			descentants && relatives.merge(descentants);
 		}
@@ -2371,7 +2575,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			currentGen++;
 			generations[currentGen] = parents;
 
-			relativesOnLevelCache(this.id, currentGen, parents);
+			relativesOnLevelCache(this._gedcom, this.id, currentGen, parents);
 
 			parents && relatives.merge(parents);
 		}

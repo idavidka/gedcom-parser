@@ -1,9 +1,10 @@
 import { debounce } from "lodash-es";
 
-import type {Path} from "../classes/indi";
-import type {Individuals} from "../classes/indis";
+import type { GedComType } from "../classes/gedcom";
+import type { Path, ProfilePicture } from "../classes/indi";
+import type { Individuals } from "../classes/indis";
 import { getCacheManagerFactory } from "../factories/cache-factory";
-import type {IndiKey} from "../types/types";
+import type { IndiKey } from "../types/types";
 
 /**
  * Cache manager interface for pluggable cache implementations.
@@ -14,13 +15,49 @@ export interface ICacheManager<T> {
 	setItem: (value: T) => Promise<void>;
 }
 
+/**
+ * Generates a unique identifier for a GEDCOM file
+ * Uses tree ID and tree name to create a stable, human-readable cache key
+ */
+const getGedcomId = (gedcom?: GedComType): string => {
+	if (!gedcom) {
+		return "unknown";
+	}
+
+	// Use getTreeId() and getTreeName() from Common class for consistent identification
+	const treeId = gedcom.getTreeId?.() || "";
+	const treeName = gedcom.getTreeName?.() || "";
+
+	// Sanitize tree name for use in cache key (remove special chars, spaces)
+	const sanitizedName = treeName
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, "_")
+		.replace(/^_+|_+$/g, "");
+
+	// Create a unique key combining tree ID and sanitized name
+	// Format: treeId_treeName or just treeId if no name
+	if (treeId && sanitizedName) {
+		return `${treeId}_${sanitizedName}`;
+	} else if (treeId) {
+		return treeId;
+	} else if (sanitizedName) {
+		return sanitizedName;
+	}
+
+	// Fallback: use refcount
+	return `gedcom_${gedcom.refcount}`;
+};
 interface Caches {
-	pathCache: Record<`${IndiKey}|${IndiKey}`, Path> | undefined;
+	// Cache keys now include GEDCOM ID prefix: `${gedcomId}:${...originalKey}`
+	pathCache: Record<`${string}:${IndiKey}|${IndiKey}`, Path> | undefined;
 	relativesOnLevelCache:
-		| Record<IndiKey, Record<number, Individuals>>
+		| Record<`${string}:${IndiKey}`, Record<number, Individuals>>
 		| undefined;
 	relativesOnDegreeCache:
-		| Record<IndiKey, Record<number, Individuals>>
+		| Record<`${string}:${IndiKey}`, Record<number, Individuals>>
+		| undefined;
+	profilePictureCache:
+		| Record<`${string}:${IndiKey}`, ProfilePicture>
 		| undefined;
 }
 
@@ -36,42 +73,70 @@ const caches: Caches = {
 	pathCache: {},
 	relativesOnDegreeCache: {},
 	relativesOnLevelCache: {},
+	profilePictureCache: {},
 };
 
-const getInstance = getCacheManagerFactory();
+// NOTE: Only profilePictureCache is actively persisted to IndexedDB
+// The other caches (pathCache, relativesOn*Cache) are kept in memory only for performance
+// IMPORTANT: cacheDbs is lazily initialized to ensure getCacheManagerFactory() returns
+// the correct factory (set by initGedcomParser) instead of the default placeholder
+let cacheDbs: CacheDbs | undefined;
 
-const cacheDbs: CacheDbs = {
-	pathCache: getInstance<Caches["pathCache"]>("ftv", "Main", "path", true),
-	relativesOnDegreeCache: getInstance<Caches["relativesOnDegreeCache"]>(
-		"ftv",
-		"Main",
-		"path",
-		true
-	),
-	relativesOnLevelCache: getInstance<Caches["relativesOnLevelCache"]>(
-		"ftv",
-		"Main",
-		"path",
-		true
-	),
+const getCacheDbs = (): CacheDbs => {
+	if (!cacheDbs) {
+		const getInstance = getCacheManagerFactory();
+		cacheDbs = {
+			pathCache: getInstance<Caches["pathCache"]>(
+				"ftv",
+				"Main",
+				"path",
+				true
+			),
+			relativesOnDegreeCache: getInstance<
+				Caches["relativesOnDegreeCache"]
+			>("ftv", "Main", "path", true),
+			relativesOnLevelCache: getInstance<Caches["relativesOnLevelCache"]>(
+				"ftv",
+				"Main",
+				"path",
+				true
+			),
+			profilePictureCache: getInstance<Caches["profilePictureCache"]>(
+				"ftv",
+				"Main",
+				"images",
+				false
+			),
+		};
+	}
+	return cacheDbs;
 };
 
-const _storeCache: CacheStores = {
+const storeCache: CacheStores = {
+	// NOTE: pathCache, relativesOnLevelCache, and relativesOnDegreeCache are intentionally
+	// kept in memory only. These debounced functions exist to satisfy the type system
+	// but are never called.
 	pathCache: debounce((value) => {
 		if (value) {
-			cacheDbs.pathCache.setItem(value);
+			getCacheDbs().pathCache.setItem(value);
 		}
 	}, 50),
 	relativesOnLevelCache: debounce((value) => {
 		if (value) {
-			cacheDbs.relativesOnLevelCache.setItem(value);
+			getCacheDbs().relativesOnLevelCache.setItem(value);
 		}
 	}, 50),
 	relativesOnDegreeCache: debounce((value) => {
 		if (value) {
-			cacheDbs.relativesOnDegreeCache.setItem(value);
+			getCacheDbs().relativesOnDegreeCache.setItem(value);
 		}
 	}, 50),
+	// profilePictureCache IS persisted to IndexedDB
+	profilePictureCache: debounce((value) => {
+		if (value) {
+			getCacheDbs().profilePictureCache.setItem(value);
+		}
+	}, 100),
 };
 
 export type CacheRelatives<O extends keyof Caches = "pathCache"> = <
@@ -85,48 +150,126 @@ export type CacheRelatives<O extends keyof Caches = "pathCache"> = <
 	...values: [keyof NonNullable<Omit<Caches, O>[T]>[K]]
 ) => NonNullable<Omit<Caches, O>[T]>[K];
 
+// Initialize cache from IndexedDB on startup
+// NOTE: This function MUST be called from the main app after setting up the cache manager factory
+// (via setCacheManagerFactory in initGedcomParser). If not called, the gedcom-parser will use
+// in-memory cache only, which is still functional but won't persist data between sessions.
+let cacheInitialized = false;
+export const initializeCache = async () => {
+	if (cacheInitialized) {
+		return;
+	}
+
+	cacheInitialized = true;
+
+	// NOTE: Only profilePictureCache is persisted to IndexedDB
+	// pathCache, relativesOnLevelCache, and relativesOnDegreeCache are intentionally
+	// kept in memory only for performance reasons
+	try {
+		const profilePictureData =
+			await getCacheDbs().profilePictureCache.getItem();
+
+		if (profilePictureData) {
+			caches.profilePictureCache = profilePictureData;
+		}
+	} catch (_error) {
+		// Cache manager factory might not be initialized yet
+		// This is fine - cache will be populated as images are loaded
+	}
+};
+
 export const resetRelativesCache = () => {
 	caches.relativesOnDegreeCache = {};
 	caches.relativesOnLevelCache = {};
 };
 
 export const relativesCache =
-	(cacheKey: keyof Omit<Caches, "pathCache">) =>
+	(cacheKey: "relativesOnLevelCache" | "relativesOnDegreeCache") =>
 	<T extends Individuals | undefined>(
+		gedcom: GedComType | undefined,
 		key: IndiKey,
 		subKey: number,
 		value?: T
 	) => {
-		if (!caches[cacheKey]) {
-			caches[cacheKey] = {};
+		const gedcomId = getGedcomId(gedcom);
+		const fullKey = `${gedcomId}:${key}` as `${string}:${IndiKey}`;
+
+		const cache = caches[cacheKey] as
+			| Record<`${string}:${IndiKey}`, Record<number, Individuals>>
+			| undefined;
+
+		if (!cache) {
+			caches[cacheKey] = {} as Record<
+				`${string}:${IndiKey}`,
+				Record<number, Individuals>
+			>;
 		}
 
-		if (value && caches[cacheKey]) {
-			if (!caches[cacheKey]![key]) {
-				caches[cacheKey]![key] = {};
+		if (value) {
+			const typedCache = caches[cacheKey] as Record<
+				`${string}:${IndiKey}`,
+				Record<number, Individuals>
+			>;
+			if (!typedCache[fullKey]) {
+				typedCache[fullKey] = {};
 			}
 
-			caches[cacheKey]![key]![subKey] = value;
+			typedCache[fullKey]![subKey] = value;
 
-			return caches[cacheKey]![key][subKey] as Exclude<T, undefined>;
+			// NOTE: relativesOnLevelCache and relativesOnDegreeCache are intentionally
+			// kept in memory only (not persisted to IndexedDB)
+
+			return typedCache[fullKey]![subKey] as Exclude<T, undefined>;
 		}
 
-		return caches[cacheKey]?.[key]?.[subKey] as T;
+		const typedCache = caches[cacheKey] as
+			| Record<`${string}:${IndiKey}`, Record<number, Individuals>>
+			| undefined;
+		return typedCache?.[fullKey]?.[subKey] as T;
 	};
 
 export const pathCache = <T extends Path | undefined>(
+	gedcom: GedComType | undefined,
 	key: `${IndiKey}|${IndiKey}`,
 	value?: T
 ) => {
+	const gedcomId = getGedcomId(gedcom);
+	const fullKey = `${gedcomId}:${key}` as `${string}:${IndiKey}|${IndiKey}`;
+
 	if (!caches.pathCache) {
 		caches.pathCache = {};
 	}
 
 	if (value && caches.pathCache) {
-		caches.pathCache[key] = value;
+		caches.pathCache[fullKey] = value;
 
-		return caches.pathCache[key] as Exclude<T, undefined>;
+		// NOTE: pathCache is intentionally kept in memory only (not persisted to IndexedDB)
+
+		return caches.pathCache[fullKey] as Exclude<T, undefined>;
 	}
 
-	return caches.pathCache?.[key] as T;
+	return caches.pathCache?.[fullKey] as T;
+};
+
+export const profilePictureCache = <T extends ProfilePicture | undefined>(
+	gedcom: GedComType | undefined,
+	key: IndiKey,
+	value?: T
+) => {
+	const gedcomId = getGedcomId(gedcom);
+	const fullKey = `${gedcomId}:${key}` as `${string}:${IndiKey}`;
+
+	if (!caches.profilePictureCache) {
+		caches.profilePictureCache = {};
+	}
+
+	if (value && caches.profilePictureCache) {
+		caches.profilePictureCache[fullKey] = value;
+		storeCache.profilePictureCache(caches.profilePictureCache);
+
+		return caches.profilePictureCache[fullKey] as Exclude<T, undefined>;
+	}
+
+	const cached = caches.profilePictureCache?.[fullKey] as T;
+	return cached;
 };

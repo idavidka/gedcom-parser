@@ -23,6 +23,11 @@ import { getRawSize } from "./get-raw-size";
 
 const isDev = isDevelopment();
 
+type LinesWithFlags = string[] & {
+	_inHead?: boolean;
+	_hasFile?: boolean;
+};
+
 // let lastTime: number | undefined;
 // interface Props {
 // 	index:
@@ -70,15 +75,18 @@ const isDev = isDevelopment();
 // };
 
 const GedcomTree = {
-	parse: function (content: string, options?: { settings?: Settings }) {
+	parse: function (
+		content: string,
+		options?: { settings?: Settings; filename?: string }
+	) {
 		return this.parseHierarchy(content, options);
 	},
 	parseHierarchy: function (
 		content: string,
-		options?: { settings?: Settings }
+		options?: { settings?: Settings; filename?: string }
 	) {
 		// printTime{ index: 0, label: "[Debug]", lastTime: Date.now() });
-		const { settings } = options ?? {};
+		const { settings, filename = "" } = options ?? {};
 		const { linkedPersons = "skip", linkingKey } = settings ?? {};
 
 		const gedcom = createGedCom();
@@ -126,6 +134,38 @@ const GedcomTree = {
 				if (lineMatch) {
 					const lineIndent = Number(lineMatch?.groups?.indent ?? 0);
 					const lineValue = lineMatch?.groups?.value ?? "";
+					const lineType = lineMatch?.groups?.type ?? "";
+					const linesAcc = acc as LinesWithFlags;
+
+					// Track if we're in HEAD section and if FILE tag exists
+					if (lineIndent === 0 && lineType === "HEAD") {
+						acc.push(line);
+						// Mark that we entered HEAD section
+						linesAcc._inHead = true;
+						linesAcc._hasFile = false;
+						return acc;
+					}
+
+					// Check if we're leaving HEAD section (next 0-level tag)
+					if (lineIndent === 0 && linesAcc._inHead) {
+						// Add FILE tag if missing and filename is provided
+						if (filename && !linesAcc._hasFile) {
+							acc.push(`1 FILE ${filename}`);
+						}
+						linesAcc._inHead = false;
+						acc.push(line);
+						return acc;
+					}
+
+					// Track if we found FILE tag in HEAD
+					if (
+						linesAcc._inHead &&
+						lineIndent === 1 &&
+						lineType === "FILE"
+					) {
+						linesAcc._hasFile = true;
+					}
+
 					if (
 						lineIndent > 0 &&
 						lineIndent > prevLineIndent &&

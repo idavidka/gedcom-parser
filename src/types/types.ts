@@ -204,6 +204,8 @@ interface Tags {
 	BAPT?: Common;
 	CHRI?: Common;
 	BURI?: Common;
+	GEDC?: Common;
+	RFN?: Common;
 }
 
 export type Tag = keyof Tags | keyof NonStandard;

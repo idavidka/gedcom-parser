@@ -1,12 +1,12 @@
 import { get, set, uniqBy, unset } from "lodash-es";
 
 import { ID_GETTER_REG, ID_REG } from "../constants/constants";
-import type {ConvertOptions} from "../interfaces/common";
+import type { ConvertOptions } from "../interfaces/common";
 import type ICommon from "../interfaces/common";
 import type IObje from "../interfaces/obje";
-import type {Tag, IdType, MultiTag, ObjeKey, ListTag } from "../types/types";
+import type { Tag, IdType, MultiTag, ObjeKey, ListTag } from "../types/types";
 
-import type {GedComType} from "./gedcom";
+import type { GedComType } from "./gedcom";
 import { List } from "./list";
 
 // import GedcomTree from "../../../utils/parser";
@@ -530,11 +530,33 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		return !!sour?.toLowerCase()?.startsWith("myheritage");
 	}
 
+	/**
+	 * Get the source type as a string (for prefixing tree IDs and names)
+	 * Returns the detected source type or undefined if unknown
+	 */
+	getSourceType(): string | undefined {
+		if (this.isAncestry()) return "Ancestry";
+		if (this.isMyHeritage()) return "MyHeritage";
+		if (this.isFamilySearch()) return "FamilySearch";
+		if (this.isGNO2GED()) return "GNO2GED";
+		if (this.isGenoPro()) return "GenoPro";
+		if (this.isAhnenblatt()) return "Ahnenblatt";
+		if (this.isGeni()) return "Geni";
+		return undefined;
+	}
+
 	isFamilySearch() {
 		const head = get(this, "HEAD") || get(this.getGedcom(), "HEAD");
 		const sourName = get(head, "SOUR.NAME.value") as string | undefined;
 
 		return sourName === "FamilySearch API";
+	}
+
+	isGNO2GED() {
+		const head = get(this, "HEAD") || get(this.getGedcom(), "HEAD");
+		const sour = get(head, "SOUR.value") as string | undefined;
+
+		return sour === "GNO2GED";
 	}
 
 	getAncestryTreeId() {
@@ -553,12 +575,42 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 
 	getTreeId() {
 		if (this?.isAncestry()) {
-			return this.getAncestryTreeId();
+			const id = this.getAncestryTreeId();
+			if (id !== undefined) return id;
 		}
 
 		if (this?.isMyHeritage()) {
-			return this.getMyHeritageTreeId();
+			const id = this.getMyHeritageTreeId();
+			if (id !== undefined) return id;
 		}
+
+		if (this?.isFamilySearch()) {
+			const id = this.getFamilySearchTreeId();
+			if (id !== undefined) return id;
+		}
+
+		if (this?.isGNO2GED()) {
+			const id = this.getGNO2GEDTreeId();
+			if (id !== undefined) return id;
+		}
+
+		if (this?.isAhnenblatt()) {
+			const id = this.getAhnenblattTreeId();
+			if (id !== undefined) return id;
+		}
+
+		if (this?.isGeni()) {
+			const id = this.getGeniTreeId();
+			if (id !== undefined) return id;
+		}
+
+		if (this?.isGenoPro()) {
+			const id = this.getGenoProTreeId();
+			if (id !== undefined) return id;
+		}
+
+		// Fallback: universal tree ID extraction
+		return this.getUniversalTreeId();
 	}
 
 	getAncestryTreeName() {
@@ -580,14 +632,241 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		)?.groups?.tree;
 	}
 
+	getFamilySearchTreeId() {
+		// Try to get RIN from _TREE (similar to Ancestry format)
+		const rin = (get(this, "HEAD.SOUR._TREE.RIN.value") ||
+			get(this.getGedcom(), "HEAD.SOUR._TREE.RIN.value")) as
+			| string
+			| undefined;
+
+		if (rin) {
+			return rin;
+		}
+
+		// Fallback: use "familysearch" as identifier
+		return "familysearch";
+	}
+
+	getFamilySearchTreeName() {
+		// Try _TREE first (custom FamilySearch field)
+		const treeName = (get(this, "HEAD.SOUR._TREE.value") ||
+			get(this.getGedcom(), "HEAD.SOUR._TREE.value")) as
+			| string
+			| undefined;
+
+		if (treeName) {
+			return treeName;
+		}
+
+		// Fallback to HEAD.FILE
+		const fileName = (get(this, "HEAD.FILE.value") ||
+			get(this.getGedcom(), "HEAD.FILE.value")) as string | undefined;
+
+		return fileName || "FamilySearch Import";
+	}
+
+	getAhnenblattTreeId() {
+		// TODO: Implement based on sample GEDCOM from Ahnenblatt
+		// Placeholder: extract from HEAD.FILE or other location
+		const fileName = (get(this, "HEAD.FILE.value") ||
+			get(this.getGedcom(), "HEAD.FILE.value")) as string | undefined;
+		if (fileName) {
+			const idMatch = fileName.match(/_(\d+)/);
+			if (idMatch) {
+				return idMatch[1];
+			}
+		}
+		return undefined;
+	}
+
+	getAhnenblattTreeName() {
+		// TODO: Implement based on sample GEDCOM from Ahnenblatt
+		// Placeholder: use HEAD.FILE
+		const fileName = (get(this, "HEAD.FILE.value") ||
+			get(this.getGedcom(), "HEAD.FILE.value")) as string | undefined;
+		return fileName?.replace(/\.ged$/i, "").replace(/_/g, " ");
+	}
+
+	getGeniTreeId() {
+		// TODO: Implement based on sample GEDCOM from Geni
+		// Placeholder: extract from HEAD.FILE or other location
+		const fileName = (get(this, "HEAD.FILE.value") ||
+			get(this.getGedcom(), "HEAD.FILE.value")) as string | undefined;
+		if (fileName) {
+			const idMatch = fileName.match(/_(\d+)/);
+			if (idMatch) {
+				return idMatch[1];
+			}
+		}
+		return undefined;
+	}
+
+	getGeniTreeName() {
+		// TODO: Implement based on sample GEDCOM from Geni
+		// Placeholder: use HEAD.FILE
+		const fileName = (get(this, "HEAD.FILE.value") ||
+			get(this.getGedcom(), "HEAD.FILE.value")) as string | undefined;
+		return fileName?.replace(/\.ged$/i, "").replace(/_/g, " ");
+	}
+
+	getGenoProTreeId() {
+		// TODO: Implement based on sample GEDCOM from GenoPro
+		// Placeholder: extract from HEAD.FILE or other location
+		const fileName = (get(this, "HEAD.FILE.value") ||
+			get(this.getGedcom(), "HEAD.FILE.value")) as string | undefined;
+		if (fileName) {
+			const idMatch = fileName.match(/_(\d+)/);
+			if (idMatch) {
+				return idMatch[1];
+			}
+		}
+		return undefined;
+	}
+
+	getGenoProTreeName() {
+		// TODO: Implement based on sample GEDCOM from GenoPro
+		// Placeholder: use HEAD.FILE
+		const fileName = (get(this, "HEAD.FILE.value") ||
+			get(this.getGedcom(), "HEAD.FILE.value")) as string | undefined;
+		return fileName?.replace(/\.ged$/i, "").replace(/_/g, " ");
+	}
+
+	getGNO2GEDTreeId() {
+		// GNO2GED uses _TREE.RIN format (similar to Ancestry/FamilySearch)
+		const rin = (get(this, "HEAD._TREE.RIN.value") ||
+			get(this.getGedcom(), "HEAD._TREE.RIN.value")) as
+			| string
+			| undefined;
+
+		if (rin) {
+			return rin;
+		}
+
+		// Fallback: use refcount
+		return `gno_${this._gedcom?.refcount || "unknown"}`;
+	}
+
+	getGNO2GEDTreeName() {
+		// Try _TREE first (custom GNO2GED field)
+		const treeName = (get(this, "HEAD._TREE.value") ||
+			get(this.getGedcom(), "HEAD._TREE.value")) as string | undefined;
+
+		if (treeName) {
+			return treeName;
+		}
+
+		// Fallback to HEAD.FILE
+		const fileName = (get(this, "HEAD.FILE.value") ||
+			get(this.getGedcom(), "HEAD.FILE.value")) as string | undefined;
+
+		return fileName || "GNO2GED Export";
+	}
+
+	/**
+	 * Universal tree ID getter for unknown/unrecognized GEDCOM sources
+	 * Tries to extract an ID from various common locations
+	 */
+	getUniversalTreeId() {
+		// Detect source type for prefix
+		const sourceType = this.getSourceType();
+		const prefix = sourceType ? sourceType.toLowerCase() : "tree";
+
+		// Try HEAD.FILE first (might contain ID in filename)
+		const fileName = (get(this, "HEAD.FILE.value") ||
+			get(this.getGedcom(), "HEAD.FILE.value")) as string | undefined;
+
+		if (fileName) {
+			// Try to extract numeric ID from filename (e.g., "tree_12345.ged" -> "12345")
+			const idMatch = fileName.match(/_(\d+)/);
+			if (idMatch) {
+				return `${prefix}_${idMatch[1]}`;
+			}
+		}
+
+		// Fallback: use refcount as unique identifier with source type prefix
+		return `${prefix}_${this._gedcom?.refcount || "unknown"}`;
+	}
+
+	/**
+	 * Universal tree name getter for unknown/unrecognized GEDCOM sources
+	 * Tries to extract a name from various common locations
+	 */
+	getUniversalTreeName() {
+		// Detect source type for prefix
+		const sourceType = this.getSourceType();
+		const prefix = sourceType ? `${sourceType}-` : "";
+
+		// Try HEAD.FILE first (most common location for tree name)
+		const fileName = (get(this, "HEAD.FILE.value") ||
+			get(this.getGedcom(), "HEAD.FILE.value")) as string | undefined;
+
+		if (fileName) {
+			// Remove .ged extension and clean up
+			const cleanName = fileName
+				.replace(/\.ged$/i, "")
+				.replace(/_/g, " ");
+			return `${prefix}${cleanName}`;
+		}
+
+		// Fallback to SOUR.NAME or SOUR value
+		const sourName = (get(this, "HEAD.SOUR.NAME.value") ||
+			get(this.getGedcom(), "HEAD.SOUR.NAME.value")) as
+			| string
+			| undefined;
+
+		if (sourName) {
+			return `${prefix}${sourName}`;
+		}
+
+		const sourValue = (get(this, "HEAD.SOUR.value") ||
+			get(this.getGedcom(), "HEAD.SOUR.value")) as string | undefined;
+
+		if (sourValue) {
+			return `${prefix}${sourValue}`;
+		}
+
+		// Last resort: "Unknown Tree"
+		return `${prefix}Unknown Tree`;
+	}
+
 	getTreeName() {
 		if (this?.isAncestry()) {
-			return this.getAncestryTreeName();
+			const name = this.getAncestryTreeName();
+			if (name) return name;
 		}
 
 		if (this?.isMyHeritage()) {
-			return this.getMyHeritageTreeName();
+			const name = this.getMyHeritageTreeName();
+			if (name) return name;
 		}
+
+		if (this?.isFamilySearch()) {
+			const name = this.getFamilySearchTreeName();
+			if (name) return name;
+		}
+
+		if (this?.isGNO2GED()) {
+			const name = this.getGNO2GEDTreeName();
+			if (name) return name;
+		}
+
+		if (this?.isAhnenblatt()) {
+			const name = this.getAhnenblattTreeName();
+			if (name) return name;
+		}
+
+		if (this?.isGeni()) {
+			const name = this.getGeniTreeName();
+			if (name) return name;
+		}
+
+		if (this?.isGenoPro()) {
+			const name = this.getGenoProTreeName();
+			if (name) return name;
+		}
+
+		// Fallback: universal tree name extraction
+		return this.getUniversalTreeName();
 	}
 }
 
