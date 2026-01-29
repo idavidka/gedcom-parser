@@ -15,11 +15,24 @@ export default defineConfig({
 		"types/index": "src/types/index.ts",
 		"utils/index": "src/utils/index.ts",
 
-		// CLI entry
+		// CLI entry (no DTS needed for CLI)
 		"cli/index": "src/cli/index.ts",
 	},
 	format: ["esm"],
-	dts: true,
+	dts: {
+		// Only generate DTS for non-CLI entries
+		entry: {
+			index: "src/index.ts",
+			"classes/index": "src/classes/index.ts",
+			"factories/index": "src/factories/index.ts",
+			"constants/index": "src/constants/index.ts",
+			"structures/index": "src/structures/index.ts",
+			"kinship-translator/index": "src/kinship-translator/index.ts",
+			"interfaces/index": "src/interfaces/index.ts",
+			"types/index": "src/types/index.ts",
+			"utils/index": "src/utils/index.ts",
+		},
+	},
 	clean: true,
 	sourcemap: false, // Source maps not needed for npm packages
 	splitting: false,
