@@ -101,7 +101,9 @@
 		"LICENSE"
 	],
 	"scripts": {
-		"build": "NODE_OPTIONS='--max-old-space-size=4096' tsup",
+		"build": "npm run build:js && npm run build:dts",
+		"build:js": "tsup",
+		"build:dts": "tsc --emitDeclarationOnly",
 		"dev": "tsup --watch",
 		"test": "vitest run",
 		"test:watch": "vitest",
@@ -151,11 +153,18 @@
 	},
 	"devDependencies": {
 		"@types/lodash": "^4.17.13",
-		"@types/lodash-es": "^4.17.12",
 		"@types/node": "^20.17.23",
 		"tsup": "^8.5.1",
 		"typescript": "^5.6.3",
 		"vitest": "^3.0.7"
+	},
+	"peerDependencies": {
+		"@types/lodash-es": "^4.17.12"
+	},
+	"peerDependenciesMeta": {
+		"@types/lodash-es": {
+			"optional": true
+		}
 	},
 	"engines": {
 		"node": ">=20.0.0"
