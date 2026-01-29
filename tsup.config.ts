@@ -19,20 +19,8 @@ export default defineConfig({
 		"cli/index": "src/cli/index.ts",
 	},
 	format: ["esm"],
-	dts: {
-		// Only generate DTS for non-CLI entries
-		entry: {
-			index: "src/index.ts",
-			"classes/index": "src/classes/index.ts",
-			"factories/index": "src/factories/index.ts",
-			"constants/index": "src/constants/index.ts",
-			"structures/index": "src/structures/index.ts",
-			"kinship-translator/index": "src/kinship-translator/index.ts",
-			"interfaces/index": "src/interfaces/index.ts",
-			"types/index": "src/types/index.ts",
-			"utils/index": "src/utils/index.ts",
-		},
-	},
+	// Disable tsup's DTS generation - we'll use TypeScript compiler directly
+	dts: false,
 	clean: true,
 	sourcemap: false, // Source maps not needed for npm packages
 	splitting: false,
