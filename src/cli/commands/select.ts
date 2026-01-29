@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import type { Command } from "commander";
 import type { GedCom } from "../../classes/gedcom";
 import type { IndiType } from "../../classes/indi";
@@ -41,14 +42,12 @@ export function formatSelectResult(
 ): void {
 	if (individual) {
 		const name = cleanGedcomName(individual.NAME?.toValue());
-		// eslint-disable-next-line no-console
 		console.log(
 			formatSuccess(
-				`Selected: ${formatId(individual.id)} ${formatName(name)}`
+				`Selected: ${formatId(individual.id as IndiKey)} ${formatName(name)}`
 			)
 		);
 	} else {
-		// eslint-disable-next-line no-console
 		console.log(formatError(`Individual ${input} not found`));
 	}
 }

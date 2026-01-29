@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import type { Command } from "commander";
 import type { GedCom } from "../../classes/gedcom";
 import type { IndiType } from "../../classes/indi";
@@ -18,22 +19,18 @@ import { readGedcomFile, handleError, cleanGedcomName } from "../utils/helpers";
  */
 export function showIndividual(tree: GedCom, individual: IndiType): void {
 	const name = cleanGedcomName(individual.NAME?.toValue());
-	// eslint-disable-next-line no-console
 	console.log(
-		formatHeader(`\n${formatId(individual.id)} ${formatName(name)}`)
+		formatHeader(`\n${formatId(individual.id ?? "")} ${formatName(name)}`)
 	);
-	// eslint-disable-next-line no-console
 	console.log("");
 
 	if (individual.SEX?.value) {
-		// eslint-disable-next-line no-console
 		console.log(formatListItem(`Sex: ${individual.SEX.value}`));
 	}
 
 	if (individual.BIRT) {
 		const date = individual.BIRT.DATE?.toValue();
 		const place = individual.BIRT.PLAC?.value;
-		// eslint-disable-next-line no-console
 		console.log(
 			formatListItem(
 				`Birth: ${date || "?"}${place ? ` at ${place}` : ""}`
@@ -44,7 +41,6 @@ export function showIndividual(tree: GedCom, individual: IndiType): void {
 	if (individual.DEAT) {
 		const date = individual.DEAT.DATE?.toValue();
 		const place = individual.DEAT.PLAC?.value;
-		// eslint-disable-next-line no-console
 		console.log(
 			formatListItem(
 				`Death: ${date || "?"}${place ? ` at ${place}` : ""}`
@@ -57,7 +53,6 @@ export function showIndividual(tree: GedCom, individual: IndiType): void {
 	if (parentFams) {
 		const parentList =
 			parentFams instanceof List ? parentFams.values() : [parentFams];
-		// eslint-disable-next-line no-console
 		console.log(formatListItem("\nParents:"));
 		parentList.forEach((famRef) => {
 			if (famRef) {
@@ -74,10 +69,9 @@ export function showIndividual(tree: GedCom, individual: IndiType): void {
 						const fatherName = cleanGedcomName(
 							father.NAME?.toValue()
 						);
-						// eslint-disable-next-line no-console
 						console.log(
 							formatListItem(
-								`  ${formatId(father.id)} ${formatName(fatherName)}`
+								`  ${formatId(father.id as IndiKey)} ${formatName(fatherName)}`
 							)
 						);
 					}
@@ -85,10 +79,9 @@ export function showIndividual(tree: GedCom, individual: IndiType): void {
 						const motherName = cleanGedcomName(
 							mother.NAME?.toValue()
 						);
-						// eslint-disable-next-line no-console
 						console.log(
 							formatListItem(
-								`  ${formatId(mother.id)} ${formatName(motherName)}`
+								`  ${formatId(mother.id as IndiKey)} ${formatName(motherName)}`
 							)
 						);
 					}
@@ -102,7 +95,6 @@ export function showIndividual(tree: GedCom, individual: IndiType): void {
 	if (spouseFams) {
 		const famList =
 			spouseFams instanceof List ? spouseFams.values() : [spouseFams];
-		// eslint-disable-next-line no-console
 		console.log(formatListItem("\nSpouses:"));
 		famList.forEach((famRef) => {
 			if (famRef) {
@@ -116,10 +108,9 @@ export function showIndividual(tree: GedCom, individual: IndiType): void {
 							const spouseName = cleanGedcomName(
 								spouse.NAME?.toValue()
 							);
-							// eslint-disable-next-line no-console
 							console.log(
 								formatListItem(
-									`  ${formatId(spouse.id)} ${formatName(spouseName)}`
+									`  ${formatId(spouse.id as IndiKey)} ${formatName(spouseName)}`
 								)
 							);
 						}
@@ -140,7 +131,6 @@ export function showIndividual(tree: GedCom, individual: IndiType): void {
 				const fam = tree.fam(famRef.value);
 				if (fam && fam.CHIL) {
 					if (!hasChildren) {
-						// eslint-disable-next-line no-console
 						console.log(formatListItem("\nChildren:"));
 						hasChildren = true;
 					}
@@ -156,10 +146,9 @@ export function showIndividual(tree: GedCom, individual: IndiType): void {
 								const childName = cleanGedcomName(
 									child.NAME?.toValue()
 								);
-								// eslint-disable-next-line no-console
 								console.log(
 									formatListItem(
-										`  ${formatId(child.id)} ${formatName(childName)}`
+										`  ${formatId(child.id ?? "")} ${formatName(childName)}`
 									)
 								);
 							}
@@ -170,7 +159,6 @@ export function showIndividual(tree: GedCom, individual: IndiType): void {
 		});
 	}
 
-	// eslint-disable-next-line no-console
 	console.log("");
 }
 
@@ -182,10 +170,9 @@ export function registerShowCommand(program: Command): void {
 			try {
 				const content = readGedcomFile(file);
 				const { gedcom: tree } = GedcomTree.parse(content);
-				const individual = tree.indi(id);
+				const individual = tree.indi(id as IndiKey);
 
 				if (!individual) {
-					// eslint-disable-next-line no-console
 					console.error(formatError(`Individual ${id} not found`));
 					process.exit(1);
 				}

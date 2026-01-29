@@ -1015,7 +1015,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 							url,
 							contentType: type as string,
 							downloadName: `${this.id!.replaceAll("@", "")}_${
-								this.toNaturalName()!.replaceAll(" ", "-") || ""
+								this.toNaturalName()?.replaceAll(" ", "-") || ""
 							}_${(
 								(title as string) ||
 								key.replaceAll("@", "").toString()
@@ -1073,7 +1073,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		(this.get("FAMS")?.toValueList().values() ?? [])
 			.concat(this.get("FAMC")?.toValueList().values() ?? [])
 			.forEach((fam) => {
-				objeList.merge(fam?.get("MARR.OBJE"));
+				objeList?.merge(fam?.get("MARR.OBJE"));
 			});
 
 		objeList?.forEach((o, index) => {
@@ -1110,7 +1110,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					url,
 					contentType: type as string,
 					downloadName: `${this.id!.replaceAll("@", "")}_${
-						this.toNaturalName()!.replaceAll(" ", "-") || ""
+						this.toNaturalName()?.replaceAll(" ", "-") || ""
 					}_${(
 						(title as string) || key.replaceAll("@", "").toString()
 					).replaceAll(" ", "-")}`,
@@ -1270,18 +1270,14 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 		sourList?.forEach((sour) => {
 			const sourObje = sour?.get("OBJE")?.toList() as Objects | undefined;
-			objeList.merge(sourObje);
+			objeList?.merge(sourObje);
 		});
-
-		if (!objeList || objeList.length === 0) {
-			return undefined;
-		}
 
 		// Extract RFN for tree identification (format: "geni:6000000209823738826")
 		const rfn = this.get("RFN")?.toValue() as string | undefined;
 		const geniId = rfn?.replace(/^geni:/, "") || "unknown";
 
-		objeList.forEach((obje, index) => {
+		objeList?.forEach((obje, index) => {
 			if (!obje) {
 				return;
 			}
@@ -1310,11 +1306,11 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					id,
 					tree: geniId,
 					imgId,
-					person: this.id,
+					person: this.id!,
 					title: title as string,
 					url,
 					contentType: type as string,
-					downloadName: `${this.id.replaceAll("@", "")}_${
+					downloadName: `${this.id!.replaceAll("@", "")}_${
 						this.toNaturalName()?.replaceAll(" ", "-") || ""
 					}_${(
 						(title as string) || key.replaceAll("@", "").toString()
@@ -1344,7 +1340,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 		// Try to extract some kind of tree identifier
 		const rfn = this.get("RFN")?.toValue() as string | undefined;
-		const treeId = rfn || "universal";
+		const treeId = this.getUniversalTreeId() || rfn || "universal";
 
 		objeList.forEach((obje, index) => {
 			if (!obje) {
@@ -1377,11 +1373,11 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					id,
 					tree: treeId,
 					imgId,
-					person: this.id,
+					person: this.id!,
 					title: title as string,
 					url,
 					contentType: type as string,
-					downloadName: `${this.id.replaceAll("@", "")}_${
+					downloadName: `${this.id!.replaceAll("@", "")}_${
 						this.toNaturalName()?.replaceAll(" ", "-") || ""
 					}_${(
 						(title as string) || key.replaceAll("@", "").toString()

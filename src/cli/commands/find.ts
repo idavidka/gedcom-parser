@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import type { Command } from "commander";
 import type { GedCom } from "../../classes/gedcom";
 import type { IndiType } from "../../classes/indi";
@@ -40,7 +41,7 @@ export function findIndividuals(
 	const results: IndiType[] = [];
 
 	// Collect all individuals that match filters
-	individuals.forEach((indi) => {
+	individuals?.forEach((indi) => {
 		let matches = true;
 
 		// Filter by ID
@@ -106,18 +107,15 @@ export function formatFindResults(
 			deathPlace: indi.DEAT?.PLAC?.value || null,
 			sex: indi.SEX?.value || null,
 		}));
-		// eslint-disable-next-line no-console
 		console.log(
 			formatJson({ count: jsonResults.length, individuals: jsonResults })
 		);
 	} else {
 		if (results.length === 0) {
-			// eslint-disable-next-line no-console
 			console.log(
 				formatWarning("No individuals found matching the criteria")
 			);
 		} else {
-			// eslint-disable-next-line no-console
 			console.log(
 				formatHeader(`Found ${results.length} individual(s)\n`)
 			);
@@ -127,17 +125,15 @@ export function formatFindResults(
 				const deathDate = indi.DEAT?.DATE?.toValue();
 				const lifespan = formatLifespan(birthDate, deathDate);
 
-				// eslint-disable-next-line no-console
 				console.log(
 					formatListItem(
-						`${formatId(indi.id)} ${formatName(name)} ${lifespan}`
+						`${formatId(indi.id ?? "")} ${formatName(name)} ${lifespan}`
 					)
 				);
 
 				// Show birth place if available
 				const birthPlace = indi.BIRT?.PLAC?.value;
 				if (birthPlace) {
-					// eslint-disable-next-line no-console
 					console.log(
 						formatListItem(
 							`Birth: ${formatDate(birthDate)} in ${birthPlace}`,
@@ -149,7 +145,6 @@ export function formatFindResults(
 				// Show death place if available
 				const deathPlace = indi.DEAT?.PLAC?.value;
 				if (deathPlace) {
-					// eslint-disable-next-line no-console
 					console.log(
 						formatListItem(
 							`Death: ${formatDate(deathDate)} in ${deathPlace}`,
@@ -158,7 +153,6 @@ export function formatFindResults(
 					);
 				}
 
-				// eslint-disable-next-line no-console
 				console.log();
 			});
 		}

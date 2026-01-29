@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import type { Command } from "commander";
 import { List, Common } from "../../classes";
 import type { GedCom } from "../../classes/gedcom";
@@ -219,18 +220,13 @@ export function registerGetCommand(program: Command): void {
 				}
 				// Check if it's a family
 				else if (id.startsWith("@F")) {
-					record = tree.fam(id);
+					record = tree.fam(id as FamKey);
 					recordType = "Family";
 				}
 				// Check if it's a source
 				else if (id.startsWith("@S")) {
-					record = tree.sour(id);
+					record = tree.sour(id as SourKey);
 					recordType = "Source";
-				}
-				// Check if it's a note
-				else if (id.startsWith("@N")) {
-					record = tree.note(id);
-					recordType = "Note";
 				}
 				// Try as individual by default
 				else {
@@ -239,7 +235,6 @@ export function registerGetCommand(program: Command): void {
 				}
 
 				if (!record) {
-					// eslint-disable-next-line no-console
 					console.error(formatError(`Record ${id} not found`));
 					process.exit(1);
 				}
@@ -276,13 +271,10 @@ export function registerGetCommand(program: Command): void {
 							}
 						}
 
-						// eslint-disable-next-line no-console
 						console.log(formatJson(simplified));
 					} else {
-						// eslint-disable-next-line no-console
 						console.log(`${recordType}: ${id}`);
 						if (recordType === "Individual" && record.NAME) {
-							// eslint-disable-next-line no-console
 							console.log(`Name: ${record.NAME.toValue()}`);
 						}
 					}
@@ -293,7 +285,6 @@ export function registerGetCommand(program: Command): void {
 				const value = getValueByPath(record, options.path);
 
 				if (value === undefined) {
-					// eslint-disable-next-line no-console
 					console.error(
 						formatError(
 							`Path "${options.path}" not found in ${recordType} ${id}`
@@ -302,7 +293,6 @@ export function registerGetCommand(program: Command): void {
 					process.exit(1);
 				}
 
-				// eslint-disable-next-line no-console
 				console.log(formatOutput(value, options));
 			} catch (error) {
 				handleError(error);

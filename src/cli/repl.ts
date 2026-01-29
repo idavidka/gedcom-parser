@@ -1,8 +1,8 @@
+/* eslint-disable no-console */
 import * as readline from "readline";
 import type { FamType } from "../classes";
-import type { GedCom, GedComType } from "../classes/gedcom";
+import type { GedComType } from "../classes/gedcom";
 import type { IndiType } from "../classes/indi";
-import type IGedComStructure from "../structures/gedcom";
 import type { IndiKey } from "../types/types";
 import { findIndividuals, formatFindResults } from "./commands/find";
 import { getValue } from "./commands/get";
@@ -90,7 +90,6 @@ export class GedcomRepl {
 		});
 
 		this.rl.on("close", () => {
-			// eslint-disable-next-line no-console
 			console.log("\nGoodbye!");
 			process.exit(0);
 		});
@@ -132,7 +131,6 @@ export class GedcomRepl {
 				this.handleValidate(commandArgs);
 				break;
 			case "clear":
-				// eslint-disable-next-line no-console
 				console.clear();
 				break;
 			case "exit":
@@ -140,9 +138,7 @@ export class GedcomRepl {
 				this.rl.close();
 				return;
 			default:
-				// eslint-disable-next-line no-console
 				console.log(formatError(`Unknown command: ${command}`));
-				// eslint-disable-next-line no-console
 				console.log('Type "help" for available commands');
 		}
 
@@ -154,253 +150,168 @@ export class GedcomRepl {
 			// Show help for specific command
 			switch (command.toLowerCase()) {
 				case "stats":
-					// eslint-disable-next-line no-console
 					console.log(formatHeader("\nstats"));
-					// eslint-disable-next-line no-console
 					console.log("Show GEDCOM file statistics\n");
-					// eslint-disable-next-line no-console
 					console.log("Usage: stats [--json]");
-					// eslint-disable-next-line no-console
 					console.log("\nOptions:");
-					// eslint-disable-next-line no-console
 					console.log("  --json    Output in JSON format");
 					break;
 				case "find":
-					// eslint-disable-next-line no-console
 					console.log(formatHeader("\nfind"));
-					// eslint-disable-next-line no-console
 					console.log("Search for individuals in the tree\n");
-					// eslint-disable-next-line no-console
 					console.log("Usage: find <query> [options]");
-					// eslint-disable-next-line no-console
 					console.log("\nArguments:");
-					// eslint-disable-next-line no-console
 					console.log("  <query>   Search query (name or ID)");
-					// eslint-disable-next-line no-console
 					console.log("\nOptions:");
-					// eslint-disable-next-line no-console
 					console.log("  --birth-year <year>   Filter by birth year");
-					// eslint-disable-next-line no-console
 					console.log("  --death-year <year>   Filter by death year");
-					// eslint-disable-next-line no-console
 					console.log(
 						"  --json                Output in JSON format"
 					);
 					break;
 				case "select":
-					// eslint-disable-next-line no-console
 					console.log(formatHeader("\nselect"));
-					// eslint-disable-next-line no-console
 					console.log("Select an individual by ID or index\n");
-					// eslint-disable-next-line no-console
 					console.log("Usage: select <id|index>");
-					// eslint-disable-next-line no-console
 					console.log("\nArguments:");
-					// eslint-disable-next-line no-console
 					console.log(
 						"  <id|index>   Individual ID (e.g., @I123@) or search result index (e.g., 1)"
 					);
 					break;
 				case "show":
-					// eslint-disable-next-line no-console
 					console.log(formatHeader("\nshow"));
-					// eslint-disable-next-line no-console
 					console.log(
 						"Show detailed information about an individual\n"
 					);
-					// eslint-disable-next-line no-console
 					console.log("Usage: show [id]");
-					// eslint-disable-next-line no-console
 					console.log("\nArguments:");
-					// eslint-disable-next-line no-console
 					console.log(
 						"  [id]   Optional individual ID. If not provided, shows currently selected person"
 					);
 					break;
 				case "get":
-					// eslint-disable-next-line no-console
 					console.log(formatHeader("\nget"));
-					// eslint-disable-next-line no-console
 					console.log("Get a value from a GEDCOM record\n");
-					// eslint-disable-next-line no-console
 					console.log("Usage: get [id] [options]");
-					// eslint-disable-next-line no-console
 					console.log("\nArguments:");
-					// eslint-disable-next-line no-console
 					console.log(
 						"  [id]   Record ID (e.g., @I123@, @F456@). If not provided, uses selected person"
 					);
-					// eslint-disable-next-line no-console
 					console.log("\nOptions:");
-					// eslint-disable-next-line no-console
 					console.log(
 						'  --path, -p <path>   Dot-separated path (e.g., "BIRT.PLAC", "NAME")'
 					);
-					// eslint-disable-next-line no-console
 					console.log("  --json, -j          Output in JSON format");
-					// eslint-disable-next-line no-console
 					console.log(
 						"  --raw, -r           Output raw value only (no formatting)"
 					);
-					// eslint-disable-next-line no-console
 					console.log("\nExamples:");
-					// eslint-disable-next-line no-console
 					console.log('  get --path "BIRT.PLAC"');
-					// eslint-disable-next-line no-console
 					console.log('  get @I123@ --path "NAME"');
-					// eslint-disable-next-line no-console
 					console.log("  get @I123@ --json");
 					break;
 				case "relatives":
-					// eslint-disable-next-line no-console
 					console.log(formatHeader("\nrelatives"));
-					// eslint-disable-next-line no-console
 					console.log(
 						"Get ancestors and/or descendants of the selected individual\n"
 					);
-					// eslint-disable-next-line no-console
 					console.log("Usage: relatives [options]");
-					// eslint-disable-next-line no-console
 					console.log("\nOptions:");
-					// eslint-disable-next-line no-console
 					console.log("  --ancestors, -a     Include ancestors");
-					// eslint-disable-next-line no-console
 					console.log("  --descendants, -d   Include descendants");
-					// eslint-disable-next-line no-console
 					console.log(
 						"  --tree, -t          Include both ancestors and descendants"
 					);
-					// eslint-disable-next-line no-console
 					console.log(
 						"  --depth <n>         Limit depth (generations, default: 999)"
 					);
-					// eslint-disable-next-line no-console
 					console.log("  --json, -j          Output in JSON format");
-					// eslint-disable-next-line no-console
 					console.log(
 						"\nNote: You must select an individual first using 'select'"
 					);
-					// eslint-disable-next-line no-console
 					console.log("\nExamples:");
-					// eslint-disable-next-line no-console
 					console.log("  relatives --ancestors");
-					// eslint-disable-next-line no-console
 					console.log("  relatives --descendants --depth 3");
-					// eslint-disable-next-line no-console
 					console.log("  relatives --tree --json");
 					break;
 				case "validate":
-					// eslint-disable-next-line no-console
 					console.log(formatHeader("\nvalidate"));
-					// eslint-disable-next-line no-console
 					console.log("Validate the GEDCOM file\n");
-					// eslint-disable-next-line no-console
 					console.log("Usage: validate [options]");
-					// eslint-disable-next-line no-console
 					console.log("\nOptions:");
-					// eslint-disable-next-line no-console
 					console.log("  --json, -j    Output in JSON format");
-					// eslint-disable-next-line no-console
 					console.log("  --strict, -s  Enable strict validation");
-					// eslint-disable-next-line no-console
 					console.log("\nExamples:");
-					// eslint-disable-next-line no-console
 					console.log("  validate");
-					// eslint-disable-next-line no-console
 					console.log("  validate --strict --json");
 					break;
 				case "clear":
-					// eslint-disable-next-line no-console
 					console.log(formatHeader("\nclear"));
-					// eslint-disable-next-line no-console
 					console.log("Clear the screen\n");
-					// eslint-disable-next-line no-console
 					console.log("Usage: clear");
 					break;
 				case "exit":
 				case "quit":
-					// eslint-disable-next-line no-console
 					console.log(formatHeader("\nexit"));
-					// eslint-disable-next-line no-console
 					console.log("Exit the REPL\n");
-					// eslint-disable-next-line no-console
 					console.log("Usage: exit");
-					// eslint-disable-next-line no-console
 					console.log("Alias: quit");
 					break;
 				default:
-					// eslint-disable-next-line no-console
 					console.log(formatError(`Unknown command: ${command}`));
-					// eslint-disable-next-line no-console
 					console.log('Type "help" for available commands');
 			}
-			// eslint-disable-next-line no-console
 			console.log("");
 			return;
 		}
 
 		// Show all commands
-		// eslint-disable-next-line no-console
 		console.log(formatHeader("\nAvailable Commands:"));
-		// eslint-disable-next-line no-console
 		console.log("");
-		// eslint-disable-next-line no-console
 		console.log(
 			chalk.cyan("  stats [--json]") +
 				"              - Show tree statistics"
 		);
-		// eslint-disable-next-line no-console
 		console.log(
 			chalk.cyan("  find <query> [options]") +
 				"     - Search for individuals"
 		);
-		// eslint-disable-next-line no-console
 		console.log(
 			chalk.cyan("  select <id|index>") +
 				"          - Select an individual"
 		);
-		// eslint-disable-next-line no-console
 		console.log(
 			chalk.cyan("  show [id]") +
 				"                  - Show details (current or specified person)"
 		);
-		// eslint-disable-next-line no-console
 		console.log(
 			chalk.cyan("  get [id] [options]") +
 				"         - Get a value from a record"
 		);
-		// eslint-disable-next-line no-console
 		console.log(
 			chalk.cyan("  relatives [options]") +
 				"        - Get ancestors/descendants of selected person"
 		);
-		// eslint-disable-next-line no-console
 		console.log(
 			chalk.cyan("  validate [options]") +
 				"         - Validate the GEDCOM file"
 		);
-		// eslint-disable-next-line no-console
 		console.log(
 			chalk.cyan("  clear") + "                      - Clear screen"
 		);
-		// eslint-disable-next-line no-console
 		console.log(
 			chalk.cyan("  help [command]") +
 				"             - Show this help or help for a specific command"
 		);
-		// eslint-disable-next-line no-console
 		console.log(
 			chalk.cyan("  exit") + "                       - Exit REPL"
 		);
-		// eslint-disable-next-line no-console
 		console.log("");
 	}
 
 	private handleFind(args: string[]): void {
 		if (args.length === 0) {
-			// eslint-disable-next-line no-console
 			console.log(formatError("Usage: find <query> [options]"));
-			// eslint-disable-next-line no-console
 			console.log('Type "help find" for more information');
 			return;
 		}
@@ -442,7 +353,6 @@ export class GedcomRepl {
 		formatFindResults(results, isJson);
 
 		if (results.length > 0 && !isJson) {
-			// eslint-disable-next-line no-console
 			console.log(
 				chalk.dim(
 					'\nTip: Use "select <number>" to select an individual from results'
@@ -453,7 +363,6 @@ export class GedcomRepl {
 
 	private handleSelect(args: string[]): void {
 		if (args.length === 0) {
-			// eslint-disable-next-line no-console
 			console.log(formatError("Usage: select <id|index>"));
 			return;
 		}
@@ -469,7 +378,6 @@ export class GedcomRepl {
 
 		if (individual) {
 			this.context.selectedPerson = individual;
-			// eslint-disable-next-line no-console
 			console.log(chalk.dim('Tip: Use "show" to see details'));
 		}
 	}
@@ -481,7 +389,6 @@ export class GedcomRepl {
 			// Show specific person by ID
 			individual = this.context.tree.indi(args[0] as IndiKey);
 			if (!individual) {
-				// eslint-disable-next-line no-console
 				console.log(formatError(`Individual ${args[0]} not found`));
 				return;
 			}
@@ -489,7 +396,6 @@ export class GedcomRepl {
 			// Show currently selected person
 			individual = this.context.selectedPerson;
 			if (!individual) {
-				// eslint-disable-next-line no-console
 				console.log(
 					formatError(
 						'No person selected. Use "select <id>" first or "show <id>"'
@@ -504,11 +410,9 @@ export class GedcomRepl {
 
 	private handleGet(args: string[]): void {
 		if (args.length === 0) {
-			// eslint-disable-next-line no-console
 			console.log(
 				formatError("Usage: get <id> [--path <path>] [--json] [--raw]")
 			);
-			// eslint-disable-next-line no-console
 			console.log('Type "help get" for more information');
 			return;
 		}
@@ -543,7 +447,6 @@ export class GedcomRepl {
 			if (this.context.selectedPerson) {
 				id = this.context.selectedPerson.id;
 			} else {
-				// eslint-disable-next-line no-console
 				console.log(
 					formatError("No ID specified and no person selected")
 				);
@@ -552,11 +455,15 @@ export class GedcomRepl {
 		}
 
 		try {
-			const result = getValue(this.context.tree, id, path, json, raw);
-			// eslint-disable-next-line no-console
+			const result = getValue(
+				this.context.tree,
+				id || "",
+				path,
+				json,
+				raw
+			);
 			console.log(result);
 		} catch (error) {
-			// eslint-disable-next-line no-console
 			console.log(formatError((error as Error).message));
 		}
 	}
@@ -564,7 +471,6 @@ export class GedcomRepl {
 	private handleRelatives(args: string[]): void {
 		// Must have a selected person
 		if (!this.context.selectedPerson) {
-			// eslint-disable-next-line no-console
 			console.log(
 				formatError('No person selected. Use "select <id>" first')
 			);
@@ -585,13 +491,11 @@ export class GedcomRepl {
 			args.includes("-t");
 
 		if (!includeAncestors && !includeDescendants) {
-			// eslint-disable-next-line no-console
 			console.log(
 				formatError(
 					"Must specify --ancestors, --descendants, or --tree"
 				)
 			);
-			// eslint-disable-next-line no-console
 			console.log('Type "help relatives" for more information');
 			return;
 		}
@@ -602,7 +506,6 @@ export class GedcomRepl {
 		if (depthIndex !== -1 && depthIndex + 1 < args.length) {
 			maxDepth = parseInt(args[depthIndex + 1], 10);
 			if (isNaN(maxDepth) || maxDepth < 1) {
-				// eslint-disable-next-line no-console
 				console.log(formatError("Invalid depth value"));
 				return;
 			}
@@ -610,7 +513,7 @@ export class GedcomRepl {
 
 		const individual = this.context.selectedPerson;
 		const relatives = new Set<string>();
-		relatives.add(individual.id);
+		individual?.id && relatives.add(individual.id);
 
 		// Get ancestors
 		if (includeAncestors) {
@@ -618,6 +521,7 @@ export class GedcomRepl {
 				if (depth > maxDepth) return;
 				const parents = indi.getParents();
 				parents?.forEach((parent) => {
+					if (!parent?.id) return;
 					relatives.add(parent.id);
 					getAncestors(parent, depth + 1);
 				});
@@ -631,6 +535,7 @@ export class GedcomRepl {
 				if (depth > maxDepth) return;
 				const children = indi.getChildren();
 				children?.forEach((child) => {
+					if (!child?.id) return;
 					relatives.add(child.id);
 					getDescendants(child, depth + 1);
 				});
@@ -644,31 +549,35 @@ export class GedcomRepl {
 			.filter((indi) => indi !== null);
 
 		if (isJson) {
-			const jsonData = allRelatives.map((indi) => ({
-				id: indi.id,
-				name: cleanGedcomName(indi.NAME?.toValue()),
-				birthDate: indi.BIRT?.DATE?.toValue() || null,
-				deathDate: indi.DEAT?.DATE?.toValue() || null,
-			}));
-			// eslint-disable-next-line no-console
+			const jsonData = allRelatives
+				.map(
+					(indi) =>
+						indi && {
+							id: indi.id,
+							name: cleanGedcomName(indi.NAME?.toValue()),
+							birthDate: indi.BIRT?.DATE?.toValue() || null,
+							deathDate: indi.DEAT?.DATE?.toValue() || null,
+						}
+				)
+				.filter(Boolean);
 			console.log(
 				formatJson({ count: jsonData.length, individuals: jsonData })
 			);
 		} else {
-			// eslint-disable-next-line no-console
 			console.log(
 				formatHeader(`Found ${allRelatives.length} relative(s)\n`)
 			);
 			allRelatives.forEach((indi) => {
+				if (!indi) return;
+
 				const name = cleanGedcomName(indi.NAME?.toValue());
 				const lifespan = formatLifespan(
 					indi.BIRT?.DATE?.toValue(),
 					indi.DEAT?.DATE?.toValue()
 				);
-				// eslint-disable-next-line no-console
 				console.log(
 					formatListItem(
-						`${formatId(indi.id)} ${formatName(name)} ${lifespan}`
+						`${formatId(indi.id ?? "")} ${formatName(name)} ${lifespan}`
 					)
 				);
 			});
@@ -692,7 +601,7 @@ export class GedcomRepl {
 		const families = this.context.tree.fams();
 
 		// Check for individuals without names
-		individuals.forEach((indi) => {
+		individuals?.forEach((indi) => {
 			if (!indi.NAME?.toValue()) {
 				warnings.push(`Individual ${indi.id} is missing a name`);
 			}
@@ -700,7 +609,7 @@ export class GedcomRepl {
 
 		// Check for individuals without birth dates
 		let missingBirthDates = 0;
-		individuals.forEach((indi) => {
+		individuals?.forEach((indi) => {
 			if (!indi.BIRT?.DATE?.toValue()) {
 				missingBirthDates++;
 			}
@@ -708,7 +617,7 @@ export class GedcomRepl {
 
 		// Check for individuals without death dates (but marked as deceased)
 		let missingDeathDates = 0;
-		individuals.forEach((indi) => {
+		individuals?.forEach((indi) => {
 			if (indi.DEAT && !indi.DEAT.DATE?.toValue()) {
 				missingDeathDates++;
 			}
@@ -718,6 +627,9 @@ export class GedcomRepl {
 		const seenIds = new Set<string>();
 		const duplicateIds: string[] = [];
 		const checkDuplicates = (item: IndiType | FamType) => {
+			if (!item.id) {
+				return;
+			}
 			if (seenIds.has(item.id)) {
 				duplicateIds.push(item.id);
 				errors.push(`Duplicate ID found: ${item.id}`);
@@ -725,11 +637,11 @@ export class GedcomRepl {
 			seenIds.add(item.id);
 		};
 
-		individuals.forEach(checkDuplicates);
-		families.forEach(checkDuplicates);
+		individuals?.forEach(checkDuplicates);
+		families?.forEach(checkDuplicates);
 
 		// Check for missing family members
-		families.forEach((fam) => {
+		families?.forEach((fam) => {
 			const husb = fam.HUSB?.value;
 			const wife = fam.WIFE?.value;
 
@@ -752,7 +664,7 @@ export class GedcomRepl {
 
 		// Check for invalid date formats (basic check)
 		if (isStrict) {
-			individuals.forEach((indi) => {
+			individuals?.forEach((indi) => {
 				const birthDate = indi.BIRT?.DATE?.toValue();
 				const deathDate = indi.DEAT?.DATE?.toValue();
 
@@ -774,14 +686,11 @@ export class GedcomRepl {
 		};
 
 		if (isJson) {
-			// eslint-disable-next-line no-console
 			console.log(formatJson(result));
 		} else {
 			if (result.valid) {
-				// eslint-disable-next-line no-console
 				console.log(formatSuccess(`Valid GEDCOM ${version} file`));
 			} else {
-				// eslint-disable-next-line no-console
 				console.log(
 					formatError(
 						`Invalid GEDCOM file - ${errors.length} error(s) found`
@@ -789,30 +698,22 @@ export class GedcomRepl {
 				);
 			}
 
-			// eslint-disable-next-line no-console
 			console.log();
-			// eslint-disable-next-line no-console
 			console.log(formatHeader("Validation Summary"));
-			// eslint-disable-next-line no-console
 			console.log(
 				`${formatError("Errors:")} ${formatCount(errors.length)}`
 			);
-			// eslint-disable-next-line no-console
 			console.log(
 				`${formatWarning("Warnings:")} ${formatCount(warnings.length)}`
 			);
 
 			if (errors.length > 0) {
-				// eslint-disable-next-line no-console
 				console.log();
-				// eslint-disable-next-line no-console
 				console.log(formatHeader("Errors"));
 				errors.slice(0, 10).forEach((error) => {
-					// eslint-disable-next-line no-console
 					console.log(formatListItem(formatError(error)));
 				});
 				if (errors.length > 10) {
-					// eslint-disable-next-line no-console
 					console.log(
 						formatListItem(
 							`... and ${errors.length - 10} more errors`
@@ -822,14 +723,11 @@ export class GedcomRepl {
 			}
 
 			if (warnings.length > 0) {
-				// eslint-disable-next-line no-console
 				console.log();
-				// eslint-disable-next-line no-console
 				console.log(formatHeader("Warnings"));
 
 				// Summarize warnings
 				if (missingBirthDates > 0) {
-					// eslint-disable-next-line no-console
 					console.log(
 						formatListItem(
 							formatWarning(
@@ -839,7 +737,6 @@ export class GedcomRepl {
 					);
 				}
 				if (missingDeathDates > 0) {
-					// eslint-disable-next-line no-console
 					console.log(
 						formatListItem(
 							formatWarning(
@@ -849,7 +746,6 @@ export class GedcomRepl {
 					);
 				}
 				if (duplicateIds.length > 0) {
-					// eslint-disable-next-line no-console
 					console.log(
 						formatListItem(
 							formatWarning(
@@ -864,11 +760,9 @@ export class GedcomRepl {
 					(w) => !w.includes("birth") && !w.includes("death")
 				);
 				otherWarnings.slice(0, 5).forEach((warning) => {
-					// eslint-disable-next-line no-console
 					console.log(formatListItem(formatWarning(warning)));
 				});
 				if (otherWarnings.length > 5) {
-					// eslint-disable-next-line no-console
 					console.log(
 						formatListItem(
 							`... and ${otherWarnings.length - 5} more warnings`
@@ -880,13 +774,9 @@ export class GedcomRepl {
 	}
 
 	start(): void {
-		// eslint-disable-next-line no-console
 		console.log(formatHeader("GEDCOM Interactive Explorer"));
-		// eslint-disable-next-line no-console
 		console.log("");
-		// eslint-disable-next-line no-console
 		console.log(chalk.dim('Type "help" for available commands'));
-		// eslint-disable-next-line no-console
 		console.log("");
 		this.rl.prompt();
 	}
