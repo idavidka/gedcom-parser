@@ -17,19 +17,19 @@ import { getVersion } from "../utils/get-product-details";
 
 import { Common, createCommon } from "./common";
 import type { FamType } from "./fam";
-import type { Families } from "./fams";
+import { Families } from "./fams";
 import { CustomTags } from "./indi";
 import type { IndiType } from "./indi";
-import type { Individuals } from "./indis";
+import { Individuals } from "./indis";
 import { List } from "./list";
 import type { ObjeType } from "./obje";
-import type { Objects } from "./objes";
+import { Objects } from "./objes";
 import type { RepoType } from "./repo";
-import type { Repositories } from "./repos";
+import { Repositories } from "./repos";
 import type { SourType } from "./sour";
-import type { Sources } from "./sours";
+import { Sources } from "./sours";
 import type { SubmType } from "./subm";
-import type { Submitters } from "./subms";
+import { Submitters } from "./subms";
 
 export class GedCom extends Common implements IGedcom {
 	tagMembers: Record<string, { tag: Common; indis: Individuals }> = {};
@@ -740,6 +740,102 @@ export class GedCom extends Common implements IGedcom {
 export type GedComType = GedCom & IGedComStructure;
 export const createGedCom = (): GedComType => {
 	return new GedCom();
+};
+
+/**
+ * Mapping of top-level GEDCOM list tag names (as they appear in toObject JSON)
+ * to their corresponding @@ list tag and List constructor.
+ * These are handled specially because they contain multiple items with IDs,
+ * rather than a single nested object.
+ */
+const LIST_TAG_MAP: Record<string, { listTag: ListTag; ctor: new () => List }> =
+	{
+		INDI: { listTag: "@@INDI", ctor: Individuals },
+		FAM: { listTag: "@@FAM", ctor: Families },
+		OBJE: { listTag: "@@OBJE", ctor: Objects },
+		SOUR: { listTag: "@@SOUR", ctor: Sources },
+		REPO: { listTag: "@@REPO", ctor: Repositories },
+		SUBM: { listTag: "@@SUBM", ctor: Submitters },
+	};
+
+/**
+ * Reconstructs a full GedComType from a plain object (produced by toObject/toJson).
+ *
+ * Usage:
+ *   const json = gedcom.toObject();        // or JSON.parse(gedcom.toJson())
+ *   const restored = GedCom.fromObject(json);
+ *
+ * The factory (Common._objectFactory) must be registered before calling this.
+ * It is automatically registered when you import 'common-creator.ts' (which the
+ * parser already does), so in normal usage it will always be available.
+ */
+export const gedcomFromObject = (obj: Record<string, unknown>): GedComType => {
+	const gedcom = createGedCom();
+	const factory = Common._objectFactory;
+
+	if (!factory) {
+		throw new Error(
+			"Common._objectFactory is not registered. " +
+				"Import 'utils/common-creator' before calling gedcomFromObject."
+		);
+	}
+
+	// Collect non-list keys for lazy parsing via fromObject
+	const rawNonList: Record<string, unknown> = {};
+
+	for (const [key, rawValue] of Object.entries(obj)) {
+		if (rawValue === undefined || rawValue === null) {
+			continue;
+		}
+
+		const listConfig = LIST_TAG_MAP[key];
+
+		if (listConfig) {
+			// This is a top-level list (INDI, FAM, OBJE, etc.)
+			const { listTag, ctor } = listConfig;
+			const list = new ctor();
+			const items = Array.isArray(rawValue) ? rawValue : [rawValue];
+
+			items.forEach((rawItem: unknown) => {
+				if (!rawItem || typeof rawItem !== "object") {
+					return;
+				}
+				const raw = rawItem as Record<string, unknown>;
+				const id = raw.id as IdType | undefined;
+				if (!id) {
+					return;
+				}
+
+				// Use the factory to build the typed Common instance
+				const node = factory(
+					key as MultiTag,
+					rawItem,
+					gedcom,
+					gedcom as unknown as Common,
+					gedcom as unknown as Common
+				);
+
+				if (node instanceof Common) {
+					// Ensure the gedcom reference is set correctly
+					node.setGedcom(gedcom);
+					list.item(id, node);
+				}
+			});
+
+			// Attach the list to the gedcom object under its @@ tag
+			gedcom.set(listTag as unknown as MultiTag, list);
+		} else {
+			// HEAD, _IS_PURGED, etc. → lazy parsed on first access
+			rawNonList[key] = rawValue;
+		}
+	}
+
+	// Register all non-list keys for lazy parsing
+	if (Object.keys(rawNonList).length > 0) {
+		(gedcom as unknown as Common).fromObject(rawNonList);
+	}
+
+	return gedcom;
 };
 
 export const isGedcomString = (gedcomString?: string) => {
