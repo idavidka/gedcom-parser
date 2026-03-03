@@ -1,5 +1,42 @@
 # GitHub Copilot Instructions - GEDCOM Parser
 
+---
+
+## ⚠️ MANDATORY BEHAVIORAL RULES — READ FIRST, ALWAYS APPLY
+
+These rules are **non-negotiable** and apply to **every single response**, without exception.
+
+### 1. 🌐 Response Language
+
+> **ALWAYS respond in the same language the user used in their question.**
+> - User writes in Hungarian → respond in Hungarian
+> - User writes in English → respond in English
+> - **NEVER** switch languages mid-response unless the user explicitly asks
+> - This rule overrides all other language rules in this document
+
+### 2. 📝 Suggested Commit Message — ALWAYS Required After Changes
+
+> **EVERY response where any file, code, or configuration was modified MUST end with a suggested commit message.**
+> This is automatic and unconditional — never skip it, never ask if needed.
+
+**Required format at the end of every modifying response:**
+
+```
+---
+
+## 🎯 Suggested Commit Message
+
+type(scope): brief description
+```
+
+**Rules:**
+- Use **Conventional Commits** format: `type(scope): subject`
+- Keep it **under 72 characters**
+- Use **imperative mood** ("add feature", not "added feature")
+- **Valid types:** `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`
+
+---
+
 ## Project Overview
 
 **GEDCOM Parser** (@treeviz/gedcom-parser) is a TypeScript library for parsing and manipulating GEDCOM (GEnealogical Data COMmunication) files. It provides a robust API for reading genealogy data, navigating family relationships, and exporting data in various formats.
