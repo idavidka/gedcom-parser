@@ -960,7 +960,8 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					);
 
 					const isPrimary = obje?.get("_PRIM")?.toValue() === "Y";
-					const media = obje?.RIN?.toValue() || obje?.get("_OID")?.toValue();
+					const media =
+						obje?.RIN?.toValue() || obje?.get("_OID")?.toValue();
 					const clone = obje?.get("_CLON._OID")?.toValue() as
 						| string
 						| undefined;
