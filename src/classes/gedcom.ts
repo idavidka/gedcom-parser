@@ -31,6 +31,21 @@ import type { Sources } from "./sours";
 import type { SubmType } from "./subm";
 import type { Submitters } from "./subms";
 
+type GedcomObjectPrimitive = string | number | boolean;
+export interface GedcomObjectPatch {
+	[key: string]: GedcomObjectPatchValue;
+}
+export type GedcomObjectPatchValue =
+	| GedcomObjectPrimitive
+	| GedcomObjectPatch
+	| GedcomObjectPatchValue[]
+	| null
+	| undefined;
+
+const isObjectPatch = (value: unknown): value is GedcomObjectPatch => {
+	return !!value && typeof value === "object" && !Array.isArray(value);
+};
+
 export class GedCom extends Common implements IGedcom {
 	tagMembers: Record<string, { tag: Common; indis: Individuals }> = {};
 	reflist: Record<string, Common> = {};
@@ -86,6 +101,103 @@ export class GedCom extends Common implements IGedcom {
 
 	getList<T extends List = List>(type: MultiTag): T | undefined {
 		return this.get(type);
+	}
+
+	private createNodeFromPatchValue(
+		value: GedcomObjectPatchValue,
+		main: Common
+	): Common | undefined {
+		if (value === undefined || value === null) {
+			return undefined;
+		}
+
+		const node = createCommon(this, undefined, main);
+
+		if (Array.isArray(value)) {
+			value.forEach((item) => {
+				const childNode = this.createNodeFromPatchValue(item, node);
+				if (childNode) {
+					node.assign("DATA" as MultiTag, childNode);
+				}
+			});
+
+			return node;
+		}
+
+		if (isObjectPatch(value)) {
+			this.applyObjectToCommon(node, value);
+			return node;
+		}
+
+		node.value = String(value);
+		return node;
+	}
+
+	private applyObjectToCommon(target: Common, patch: GedcomObjectPatch) {
+		Object.entries(patch).forEach(([rawTag, value]) => {
+			if (rawTag === "value") {
+				if (
+					value === null ||
+					value === undefined ||
+					Array.isArray(value) ||
+					isObjectPatch(value)
+				) {
+					return;
+				}
+
+				target.value = String(value);
+				return;
+			}
+
+			if (rawTag === "id") {
+				if (typeof value === "string") {
+					target.id = value as IdType;
+				}
+				return;
+			}
+
+			const tag = rawTag as MultiTag;
+
+			if (value === undefined) {
+				return;
+			}
+
+			if (value === null) {
+				target.remove(tag);
+				return;
+			}
+
+			if (Array.isArray(value)) {
+				target.remove(tag);
+				value.forEach((item) => {
+					const listNode = this.createNodeFromPatchValue(
+						item,
+						target.main ?? this
+					);
+					if (listNode) {
+						target.assign(tag, listNode);
+					}
+				});
+				return;
+			}
+
+			if (isObjectPatch(value)) {
+				const existing = target.get<Common>(tag);
+				const objectNode =
+					existing ??
+					createCommon(this, undefined, target.main ?? this);
+				this.applyObjectToCommon(objectNode, value);
+				target.set(tag, objectNode);
+				return;
+			}
+
+			target.set(tag, String(value));
+		});
+	}
+
+	applyObject(patch: GedcomObjectPatch) {
+		this.applyObjectToCommon(this, patch);
+		return this;
 	}
 
 	indis() {

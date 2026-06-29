@@ -20,6 +20,17 @@ import type {
 	SubmKey,
 } from "../types/types";
 
+type GedcomObjectPrimitive = string | number | boolean;
+export interface GedcomObjectPatch {
+	[key: string]: GedcomObjectPatchValue;
+}
+export type GedcomObjectPatchValue =
+	| GedcomObjectPrimitive
+	| GedcomObjectPatch
+	| GedcomObjectPatchValue[]
+	| null
+	| undefined;
+
 interface IGedcom extends Common {
 	indis: () => Individuals | undefined;
 
@@ -44,6 +55,8 @@ interface IGedcom extends Common {
 	repo: (index: number | RepoKey) => RepoType | undefined;
 
 	subm: (index: number | SubmKey) => SubmType | undefined;
+
+	applyObject: (patch: GedcomObjectPatch) => IGedcom;
 }
 
 export default IGedcom;
