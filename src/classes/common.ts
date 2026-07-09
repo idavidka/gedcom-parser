@@ -11,10 +11,28 @@ import { List } from "./list";
 
 // import GedcomTree from "../../../utils/parser";
 
+/**
+ * Factory function type for converting raw object values into typed Common/List instances.
+ * Registered externally (e.g. from common-creator.ts) to avoid circular dependencies.
+ */
+export type RawObjectFactory = (
+	tag: MultiTag,
+	rawValue: unknown,
+	gedcom?: GedComType,
+	main?: Common,
+	parent?: Common
+) => Common | List | undefined;
+
 export class Common<T = string, I extends IdType = IdType> implements ICommon<
 	T,
 	I
 > {
+	/**
+	 * Injectable factory for parsing raw object entries into class instances.
+	 * Set this from outside (e.g. common-creator.ts) to avoid circular imports.
+	 */
+	static _objectFactory: RawObjectFactory | undefined = undefined;
+
 	protected _gedcom?: GedComType;
 	protected _value?: T;
 	protected _id?: I;
@@ -23,6 +41,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 	protected _uniqueId?: string | undefined;
 	protected _type?: MultiTag;
 	protected _refs?: List;
+	protected _rawObject?: Record<string, unknown>;
 
 	isListable = true;
 	refType?: ListTag;
@@ -201,7 +220,16 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 
 	get<T extends Common | List = Common | List>(name: MultiTag) {
 		if (!name.includes(".")) {
-			return get(this, name) as T | undefined;
+			const direct = get(this, name) as T | undefined;
+			// If not found on the instance, try lazy-parsing from _rawObject
+			if (
+				direct === undefined &&
+				this._rawObject &&
+				name in this._rawObject
+			) {
+				return this._parseRawKey(name) as T | undefined;
+			}
+			return direct;
 		}
 
 		const nameParts = name.split(".") as Tag[];
@@ -358,6 +386,74 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		return JSON.stringify(json);
 	}
 
+	fromObject(obj: Record<string, unknown>) {
+		// Shallow-copy so that deleting keys during lazy flush does not mutate
+		// the caller's original object (important for round-trip idempotency).
+		this._rawObject = { ...obj };
+
+		// Apply top-level id/value immediately so they are always accessible
+		if (obj.id !== undefined) {
+			this.id = obj.id as I;
+		}
+		if (obj.value !== undefined) {
+			this.value = obj.value as T;
+		}
+
+		// Restore refType so that the .ref getter can resolve pointer nodes
+		// (e.g. FAMS / FAMC / HUSB / WIFE nodes whose value is an @ID@ reference).
+		if (obj._refType !== undefined) {
+			this.refType = obj._refType as ListTag;
+			delete this._rawObject._refType;
+		}
+
+		return this;
+	}
+
+	/**
+	 * Public wrapper used by createProxy to attempt lazy raw-object parsing
+	 * from outside the class (proxy get handler has no protected access).
+	 */
+	tryParseRaw(name: MultiTag): Common | List | undefined {
+		if (!this._rawObject || !(name in this._rawObject)) {
+			return undefined;
+		}
+		return this._parseRawKey(name);
+	}
+
+	/**
+	 * Lazily parse a single key from _rawObject into a proper class instance
+	 * and attach it to this object. Removes the key from _rawObject afterwards.
+	 * Returns the parsed instance, or undefined if the key is not in _rawObject.
+	 */
+	protected _parseRawKey(name: MultiTag): Common | List | undefined {
+		if (!this._rawObject || !(name in this._rawObject)) {
+			return undefined;
+		}
+
+		const rawValue = this._rawObject[name];
+		// Remove from raw storage before recursing to prevent infinite loops
+		delete this._rawObject[name];
+
+		const factory = Common._objectFactory;
+		if (!factory) {
+			return undefined;
+		}
+
+		const main = (this._main ?? this) as unknown as Common;
+		const parsed = factory(
+			name,
+			rawValue,
+			this._gedcom,
+			main,
+			this as unknown as Common
+		);
+		if (parsed !== undefined) {
+			this.set(name, parsed);
+		}
+
+		return parsed;
+	}
+
 	toObject(tag?: MultiTag, options?: ConvertOptions) {
 		this.standardizeObject(tag, options);
 		const validKeys = getValidKeys(this);
@@ -372,6 +468,11 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 					| ({ value?: string } & Record<string, unknown>)
 			  >
 		> = {};
+
+		// Serialize refType so that fromObject can restore .ref pointer resolution
+		if (this.refType !== undefined) {
+			json._refType = this.refType;
+		}
 
 		validKeys.forEach((key) => {
 			if (key === "id" && this.id !== undefined) {
@@ -397,6 +498,40 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 				}
 			}
 		});
+
+		// Include any lazily-stored raw keys that have not been accessed yet.
+		// Parse them now so that they are serialized correctly.
+		if (this._rawObject) {
+			const remainingKeys = Object.keys(this._rawObject) as MultiTag[];
+			for (const rawKey of remainingKeys) {
+				if (rawKey === "id" || rawKey === "value") {
+					continue; // already handled above
+				}
+				const parsed = this._parseRawKey(rawKey);
+				if (
+					parsed !== undefined &&
+					typeof parsed.toObject === "function"
+				) {
+					if (parsed instanceof Common) {
+						json[rawKey] = parsed.toObject(rawKey, options);
+					} else {
+						type WithToObject = {
+							toObject: (
+								tag: MultiTag,
+								options?: ConvertOptions
+							) => Record<string, unknown>;
+						};
+						json = {
+							...json,
+							...(parsed as unknown as WithToObject).toObject(
+								rawKey,
+								options
+							),
+						};
+					}
+				}
+			}
+		}
 
 		return json;
 	}
@@ -881,6 +1016,15 @@ export const createProxy = <T extends Common>(target: T): T => {
 			if (prop in t) {
 				return Reflect.get(t, prop, receiver);
 			}
+
+			// Lazy-parse from _rawObject before falling back to ref
+			if (typeof prop === "string" && !isOnlyMainProp(prop)) {
+				const parsed = t.tryParseRaw(prop as MultiTag);
+				if (parsed !== undefined) {
+					return parsed;
+				}
+			}
+
 			if (!isOnlyMainProp(prop)) {
 				const ref = t.ref as T;
 				if (ref && prop in ref) {
@@ -924,11 +1068,16 @@ export const isValidKey = <T>(
 	const prop = get(common, key);
 	return (
 		key !== "_gedcom" &&
+		key !== "_rawObject" &&
 		key !== "_main" &&
 		key !== "_parent" &&
 		key !== "_uniqueId" &&
 		key !== "_refs" &&
 		key !== "_type" &&
+		key !== "refType" &&
+		key !== "cloneOf" &&
+		key !== "clonedBy" &&
+		key !== "isListable" &&
 		(key === "id" ||
 			key === "_id" ||
 			key === "value" ||
