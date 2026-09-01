@@ -169,10 +169,13 @@ describe("Date Class Functionality", () => {
 				if (birt) {
 					const date = birt.get("DATE");
 					if (date) {
-						const dateStr = date.toList().index(0)?.toValue();
+						const dateEntry = date.toList().index(0);
+						const dateStr = dateEntry?.toValue();
+						const note = dateEntry?.toNote?.();
 						if (
 							dateStr?.includes("Abt") ||
-							dateStr?.includes("ABT")
+							dateStr?.includes("ABT") ||
+							note === "Abt."
 						) {
 							foundApproximate = true;
 							break;

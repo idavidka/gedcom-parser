@@ -166,8 +166,11 @@ describe("GEDCOM Common Class Functionality", () => {
 			const secondBirtDate1 = individual?.get("BIRT.1.DATE");
 			const secondBirtDate2 = individual?.get("BIRT.items[1].DATE");
 
-			expect(secondBirtDate1?.toValue()).toBe("ABT 1989");
-			expect(secondBirtDate2?.toValue()).toBe("ABT 1989");
+			// Standard ABT qualifier is normalized into the note channel
+			expect(secondBirtDate1?.toValue()).toBe("1989");
+			expect(secondBirtDate2?.toValue()).toBe("1989");
+			expect(secondBirtDate1?.toNote()).toBe("Abt.");
+			expect(secondBirtDate2?.toNote()).toBe("Abt.");
 			expect(secondBirtDate1?.toValue()).toEqual(
 				secondBirtDate2?.toValue()
 			);
@@ -309,9 +312,11 @@ describe("GEDCOM Common Class Functionality", () => {
 					"BIRT.items[0].DATE.items[1]"
 				);
 
-				expect(dotNotation?.toValue()).toBe("ABT 1984");
-				expect(indexedNotation?.toValue()).toBe("ABT 1984");
-				expect(arrayNotation?.toValue()).toBe("ABT 1984");
+			// Standard ABT qualifier is normalized into the note channel
+			expect(dotNotation?.toValue()).toBe("1984");
+			expect(indexedNotation?.toValue()).toBe("1984");
+			expect(arrayNotation?.toValue()).toBe("1984");
+			expect(dotNotation?.toNote()).toBe("Abt.");
 
 				// All should return the same value
 				expect(dotNotation?.toValue()).toEqual(

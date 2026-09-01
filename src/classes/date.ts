@@ -2,6 +2,7 @@ import type { Locale } from "date-fns";
 import { format, isValid, parse } from "date-fns";
 
 import { getDateLocale } from "../factories";
+import type { ConvertOptions } from "../interfaces/common";
 import type { IdType, MultiTag } from "../types/types";
 import { ACCEPTED_DATE_FORMATS } from "../utils/date-formatter";
 import { inRange } from "../utils/range";
@@ -17,6 +18,29 @@ const LONG_NOTES = {
 	"Bef.": "Before",
 	"Aft.": "After",
 };
+
+/**
+ * Standard GEDCOM date qualifiers mapped to the dotted note form used
+ * internally (and as i18n keys) across the app.
+ */
+const STANDARD_QUALIFIERS: Record<string, keyof typeof LONG_NOTES> = {
+	ABT: "Abt.",
+	ABOUT: "Abt.",
+	BEF: "Bef.",
+	BEFORE: "Bef.",
+	AFT: "Aft.",
+	AFTER: "Aft.",
+};
+
+/** Reverse mapping for standard-compliant GEDCOM export. */
+const EXPORT_QUALIFIERS: Record<string, string> = {
+	"Abt.": "ABT",
+	"Bef.": "BEF",
+	"Aft.": "AFT",
+};
+
+const GEDCOM_MONTHS =
+	/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/g;
 
 const NOTE_MARKER = "####";
 /**
@@ -93,6 +117,25 @@ export class CommonDate extends Common<string> {
 				this.NOTE.value = noteMatch?.note;
 
 				validValue = value.replace(noteRegExp, "");
+			} else {
+				// Standard GEDCOM qualifiers (ABT, BEF, AFT, ...) carry no
+				// trailing dot; normalize them to the internal dotted form.
+				const qualifierMatch = value.match(
+					/^(?<qualifier>ABT|ABOUT|BEF|BEFORE|AFT|AFTER)\b\s*/i
+				);
+				const qualifier =
+					qualifierMatch?.groups?.qualifier?.toUpperCase();
+				const note = qualifier
+					? STANDARD_QUALIFIERS[qualifier]
+					: undefined;
+				if (note) {
+					this.NOTE =
+						this.NOTE ||
+						createCommon(this._gedcom, undefined, this.main);
+					this.NOTE.value = note;
+
+					validValue = value.slice(qualifierMatch![0].length);
+				}
 			}
 
 			const acceptedDate = this.isValidDateFormat(validValue);
@@ -248,7 +291,35 @@ export class CommonDate extends Common<string> {
 	}
 
 	exportValue() {
-		return this.toValue("NOTE dd MMM yyyy", null);
+		const formatted = this.toValue("NOTE dd MMM yyyy", null);
+		if (!formatted) {
+			return formatted;
+		}
+
+		// Emit standard GEDCOM: uppercase month codes and standard date
+		// qualifiers (ABT/BEF/AFT) instead of the internal dotted notes.
+		const note = this.NOTE?.value?.trim();
+		const qualifier = note ? EXPORT_QUALIFIERS[note] : undefined;
+		const standardized = qualifier
+			? formatted.replace(note!, qualifier)
+			: formatted;
+
+		return standardized.replace(GEDCOM_MONTHS, (month) =>
+			month.toUpperCase()
+		);
+	}
+
+	toGedcomLines(tag?: MultiTag, level = 0, options?: ConvertOptions) {
+		// DAY/MONTH/YEAR are internal decompositions of the DATE value, not
+		// valid GEDCOM sub-structures — never emit them as child lines.
+		// The qualifier NOTE (Abt./Bef./Aft.) is already embedded in the
+		// DATE value by exportValue(), so skip it here as well.
+		const internal = new RegExp(
+			`^${level} (DAY|MONTH|YEAR)( |$)|^${level} NOTE (Abt\\.|Bef\\.|Aft\\.)$`
+		);
+		return super
+			.toGedcomLines(tag, level, options)
+			.filter((line) => !internal.test(line));
 	}
 
 	inRange(range: Range, trueIfNoYear = false) {
