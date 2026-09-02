@@ -28,7 +28,12 @@ import type {
 	MultiTag,
 	IdType,
 } from "../types/types";
-import { pathCache, relativesCache, profilePictureCache } from "../utils/cache";
+import {
+	pathCache,
+	relativesCache,
+	profilePictureCache,
+	cacheDiscoveredPath,
+} from "../utils/cache";
 import { dateFormatter } from "../utils/date-formatter";
 import { PlaceType, getPlaces } from "../utils/get-places";
 import type { Place } from "../utils/get-places";
@@ -2070,8 +2075,6 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			return cache;
 		}
 
-		const visited = new Individuals().append(this);
-
 		const mainItem: PathItem = {
 			indi: this,
 			level: 0,
@@ -2080,171 +2083,219 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			degree: 0,
 			kinship: "self",
 		};
-		const path = [mainItem];
+		const mainPath = [mainItem];
 		if (this.id === usedIndi.id) {
-			return path;
+			return mainPath;
 		}
 
-		const queue: Queue = [
-			{
-				...mainItem,
-				path,
-			},
-		];
+		// Breadth-first search to find the shortest path.
+		// With biologicalOnly, only blood (biological parent/child) edges are
+		// traversed; spouse and step/adopted/foster/... edges are skipped.
+		const bfs = (biologicalOnly: boolean): Path | undefined => {
+			const visited = new Individuals().append(this);
 
-		// Breadth-first search to find the shortest path
-		let helper = 0;
-		while (queue.length > 0) {
-			if (helper++ > 1000000) {
-				break;
-			}
+			const queue: Queue = [
+				{
+					...mainItem,
+					path: mainPath,
+				},
+			];
 
-			const {
-				indi,
-				path,
-				kinship,
-				relation,
-				level,
-				levelUp,
-				levelDown,
-				degree,
-				breakOnNext,
-				breakAfterNext,
-				inLaw,
-			} = queue.shift() as QueueItem;
-
-			if (usedIndi.id === indi.id) {
-				if (breakOnNext) {
-					return undefined;
+			let helper = 0;
+			while (queue.length > 0) {
+				if (helper++ > 1000000) {
+					break;
 				}
 
-				pathCache(this._gedcom, cacheKey, path);
-				return path;
-			}
-			visited.append(indi);
+				const {
+					indi,
+					path,
+					kinship,
+					relation,
+					level,
+					levelUp,
+					levelDown,
+					degree,
+					breakOnNext,
+					breakAfterNext,
+					inLaw,
+				} = queue.shift() as QueueItem;
 
-			const additional: Partial<PathItem> = {};
+				if (usedIndi.id === indi.id) {
+					if (breakOnNext) {
+						return undefined;
+					}
 
-			if (breakOnNext || breakAfterNext) {
-				additional.breakOnNext = breakOnNext || breakAfterNext;
-			}
-			if (inLaw) {
-				additional.inLaw = inLaw;
-			}
-
-			if (kinship === "spouse" && breakAfterSpouse) {
-				if (path.length <= 2) {
-					additional.inLaw = true;
-				} else {
-					additional.breakOnNext = true;
+					return path;
 				}
-			}
+				visited.append(indi);
 
-			// Direct relatives: Parents and Children
-			if (kinship !== "child" || !breakAfterSpouse) {
-				indi.getBiologicalFathers()
-					.copy()
-					.merge(indi.getBiologicalMothers())
-					.merge(indi.getFathers().copy().merge(indi.getMothers()))
-					.forEach((relative) => {
-						if (!visited.has(relative)) {
-							const currentRelation =
-								indi.getParentType(relative);
-							if (
-								breakAfterNonBiological &&
-								currentRelation !== RelationType.BIOLOGICAL
-							) {
-								additional.breakAfterNext = true;
-							}
+				const additional: Partial<PathItem> = {};
 
-							const newItem: PathItem = {
-								indi: relative,
-								kinship: "parent",
-								relation:
-									currentRelation &&
-									currentRelation !== RelationType.BIOLOGICAL
+				if (breakOnNext || breakAfterNext) {
+					additional.breakOnNext = breakOnNext || breakAfterNext;
+				}
+				if (inLaw) {
+					additional.inLaw = inLaw;
+				}
+
+				if (!biologicalOnly && kinship === "spouse" && breakAfterSpouse) {
+					if (path.length <= 2) {
+						additional.inLaw = true;
+					} else {
+						additional.breakOnNext = true;
+					}
+				}
+
+				// Direct relatives: Parents and Children
+				if (kinship !== "child" || !breakAfterSpouse) {
+					indi.getBiologicalFathers()
+						.copy()
+						.merge(indi.getBiologicalMothers())
+						.merge(indi.getFathers().copy().merge(indi.getMothers()))
+						.forEach((relative) => {
+							if (!visited.has(relative)) {
+								const currentRelation =
+									indi.getParentType(relative);
+								const isNonBiological =
+									!!currentRelation &&
+									currentRelation !== RelationType.BIOLOGICAL;
+
+								if (biologicalOnly && isNonBiological) {
+									return;
+								}
+
+								if (
+									!biologicalOnly &&
+									breakAfterNonBiological &&
+									isNonBiological
+								) {
+									additional.breakAfterNext = true;
+								}
+
+								const newItem: PathItem = {
+									indi: relative,
+									kinship: "parent",
+									relation: isNonBiological
 										? currentRelation
 										: relation,
-								level: level + 1,
-								levelUp: levelUp + 1,
-								levelDown,
-								degree,
-								...additional,
-							};
-							queue.push({
-								...newItem,
-								path: [...path, newItem],
-							});
+									level: level + 1,
+									levelUp: levelUp + 1,
+									levelDown,
+									degree,
+									...additional,
+								};
+								queue.push({
+									...newItem,
+									path: [...path, newItem],
+								});
+							}
+						});
+				}
+
+				indi.getChildren().forEach((relative) => {
+					if (!visited.has(relative)) {
+						const currentRelation = relative.getParentType(indi);
+						const isNonBiological =
+							!!currentRelation &&
+							currentRelation !== RelationType.BIOLOGICAL;
+
+						if (biologicalOnly && isNonBiological) {
+							return;
 						}
-					});
-			}
 
-			indi.getChildren().forEach((relative) => {
-				if (!visited.has(relative)) {
-					const currentRelation = relative.getParentType(indi);
-					if (
-						breakAfterNonBiological &&
-						currentRelation !== RelationType.BIOLOGICAL
-					) {
-						additional.breakAfterNext = true;
-					}
+						if (
+							!biologicalOnly &&
+							breakAfterNonBiological &&
+							isNonBiological
+						) {
+							additional.breakAfterNext = true;
+						}
 
-					const newItem: PathItem = {
-						indi: relative,
-						kinship: "child",
-						relation:
-							currentRelation &&
-							currentRelation !== RelationType.BIOLOGICAL
+						const newItem: PathItem = {
+							indi: relative,
+							kinship: "child",
+							relation: isNonBiological
 								? currentRelation
 								: relation,
-						level: level - 1,
-						levelUp,
-						levelDown: levelDown + 1,
+							level: level - 1,
+							levelUp,
+							levelDown: levelDown + 1,
 
-						degree: levelUp
-							? level > 0
-								? levelUp - level + 1
-								: levelDown - Math.abs(level)
-							: 0,
-						...additional,
-					};
-					queue.push({
-						...newItem,
-						path: [...path, newItem],
-					});
-				}
-			});
-
-			// Spouses
-			indi.getCoParents().forEach((relative) => {
-				if (!visited.has(relative)) {
-					const currentAddition: Partial<PathItem> = {};
-
-					if (relation && relation !== RelationType.BIOLOGICAL) {
-						currentAddition.relation = relation;
+							degree: levelUp
+								? level > 0
+									? levelUp - level + 1
+									: levelDown - Math.abs(level)
+								: 0,
+							...additional,
+						};
+						queue.push({
+							...newItem,
+							path: [...path, newItem],
+						});
 					}
-					if (inLaw) {
-						currentAddition.breakOnNext = true;
-					}
-					const newItem: PathItem = {
-						indi: relative,
-						kinship: "spouse",
-						level,
-						levelUp,
-						levelDown,
-						degree,
-						...additional,
-						...currentAddition,
-					};
-					queue.push({
-						...newItem,
-						path: [...path, newItem],
-					});
+				});
+
+				if (biologicalOnly) {
+					continue;
 				}
-			});
+
+				// Spouses
+				indi.getCoParents().forEach((relative) => {
+					if (!visited.has(relative)) {
+						const currentAddition: Partial<PathItem> = {};
+
+						if (relation && relation !== RelationType.BIOLOGICAL) {
+							currentAddition.relation = relation;
+						}
+						if (inLaw) {
+							currentAddition.breakOnNext = true;
+						}
+						const newItem: PathItem = {
+							indi: relative,
+							kinship: "spouse",
+							level,
+							levelUp,
+							levelDown,
+							degree,
+							...additional,
+							...currentAddition,
+						};
+						queue.push({
+							...newItem,
+							path: [...path, newItem],
+						});
+					}
+				});
+			}
+
+			return undefined;
+		};
+
+		const foundPath = bfs(false);
+
+		const lastItem = foundPath?.[foundPath.length - 1];
+
+		// A path through a step/adopted/foster/... relation is only used when
+		// no purely biological path exists, because blood kinship (including
+		// half-siblings) ranks above step relations.
+		if (
+			lastItem?.relation &&
+			lastItem.relation !== RelationType.BIOLOGICAL
+		) {
+			const biologicalPath = bfs(true);
+
+			if (biologicalPath) {
+				cacheDiscoveredPath(this._gedcom, biologicalPath);
+				return biologicalPath;
+			}
 		}
 
-		return undefined;
+		if (foundPath) {
+			cacheDiscoveredPath(this._gedcom, foundPath);
+		}
+
+		return foundPath;
 	}
 
 	kinship<T extends boolean | undefined>(

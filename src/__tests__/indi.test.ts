@@ -122,11 +122,11 @@ describe("Individual (INDI) Class Functionality", () => {
 
 			it("should be MN1's 7th cousin -1x removed", () => {
 				expect(indis.DI1?.kinship(indis.MN1)).toEqual(
-					"7th cousin 1x removed"
+					"half 7th cousin 1x removed"
 				);
 
 				expect(indis.MN1?.kinship(indis.DI1)).toEqual(
-					"7th cousin -1x removed"
+					"half 7th cousin -1x removed"
 				);
 			});
 

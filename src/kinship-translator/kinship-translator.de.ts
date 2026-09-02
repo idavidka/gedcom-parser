@@ -105,25 +105,27 @@ export default class KinshipTranslatorDe extends KinshipTranslatorBasic {
 	}
 
 	sibling() {
-		const parents1 = this.person1?.getBiologicalParents();
-		const parentsN = this.personN?.getBiologicalParents();
-
-		const inter = parents1?.intersection(parentsN);
-
-		let prefix = "";
-		if (!inter || inter.length < 2) {
-			prefix = "Halb";
-		}
-
 		if (this.personN?.isMale()) {
-			return `${prefix}bruder`;
+			return "bruder";
 		}
 
 		if (this.personN?.isFemale()) {
-			return `${prefix}schwester`;
+			return "schwester";
 		}
 
-		return `${prefix}geschwister`;
+		return "geschwister";
+	}
+
+	halfBlood(relation?: string | undefined) {
+		if (!relation || !this.isHalfBlood) {
+			return relation ?? "";
+		}
+
+		if (/^[A-ZÄÖÜ]/.test(relation) || /[-\s]/.test(relation)) {
+			return `Halb-${relation}`;
+		}
+
+		return `Halb${relation}`;
 	}
 
 	spouse() {

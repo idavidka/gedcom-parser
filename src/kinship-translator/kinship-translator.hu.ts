@@ -186,17 +186,39 @@ export default class KinshipTranslatorHU extends KinshipTranslatorBasic {
 	}
 
 	sibling() {
-		const parents1 = this.person1?.getBiologicalParents();
-		const parentsN = this.personN?.getBiologicalParents();
+		return "testvér";
+	}
 
-		const inter = parents1?.intersection(parentsN);
-
-		// TODO if both has one parent in tree, this returns with an invalid/unsure half-blood state
-		if (!inter || inter.length < 2) {
-			return "féltestvér";
+	halfBlood(relation?: string | undefined) {
+		if (!relation || !this.isHalfBlood) {
+			return relation ?? "";
 		}
 
-		return "testvér";
+		const [head, ...rest] = relation.split(" ");
+		if (!head) {
+			return relation;
+		}
+
+		const prefixed = this.prefixHalf(head);
+		return [prefixed, ...rest].join(" ");
+	}
+
+	/**
+	 * AkH. 139: compounds of more than two members stay closed up to 6
+	 * syllables; longer ones are hyphenated at the main boundary. A head
+	 * that is already hyphenated also takes a hyphenated half- prefix.
+	 */
+	private prefixHalf(head: string) {
+		if (head.includes("-") || !/[aáeéiíoóöőuúüű]/i.test(head)) {
+			return `fél-${head}`;
+		}
+
+		const syllables = (head.match(/[aáeéiíoóöőuúüű]/gi) ?? []).length + 1;
+		if (syllables > 6) {
+			return `fél-${head}`;
+		}
+
+		return `fél${head}`;
 	}
 
 	spouse() {

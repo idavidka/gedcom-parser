@@ -5,10 +5,14 @@ export const InLawsEs: Record<string, string> = {
 	"madre del (cónyuge|esposa|esposo)": "suegra",
 	"padre del (cónyuge|esposa|esposo)": "suegro",
 	"padre/madre del (cónyuge|esposa|esposo)": "suegro/suegra",
-	"esposa de (medio )?(hermano/hermana|hermana|hermano)": "cuñada",
-	"esposo de (medio )?(hermano/hermana|hermana|hermano)": "cuñado",
-	"cónyuge de (medio )?(hermano/hermana|hermana|hermano)": "cuñado/cuñada",
-	"(medio )?hermana del (cónyuge|esposa|esposo)": "cuñada",
-	"(medio )?hermano del (cónyuge|esposa|esposo)": "cuñado",
-	"(medio )?hermano/hermana del (cónyuge|esposa|esposo)": "cuñado/cuñada",
+	"esposa de (medio |media |medio/a )?(hermano/hermana|hermana|hermano)":
+		"cuñada",
+	"esposo de (medio |media |medio/a )?(hermano/hermana|hermana|hermano)":
+		"cuñado",
+	"cónyuge de (medio |media |medio/a )?(hermano/hermana|hermana|hermano)":
+		"cuñado/cuñada",
+	"(medio |media |medio/a )?hermana del (cónyuge|esposa|esposo)": "cuñada",
+	"(medio |media |medio/a )?hermano del (cónyuge|esposa|esposo)": "cuñado",
+	"(medio |media |medio/a )?hermano/hermana del (cónyuge|esposa|esposo)":
+		"cuñado/cuñada",
 };

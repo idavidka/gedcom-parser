@@ -106,26 +106,27 @@ export default class KinshipTranslatorEn extends KinshipTranslatorBasic {
 	}
 
 	sibling() {
-		const parents1 = this.person1?.getBiologicalParents();
-		const parentsN = this.personN?.getBiologicalParents();
-
-		const inter = parents1?.intersection(parentsN);
-
-		// TODO if both has one parent in tree, this returns with an invalid/unsure half-blood state
-		let prefix = "";
-		if (!inter || inter.length < 2) {
-			prefix = "half-";
-		}
-
 		if (this.personN?.isMale()) {
-			return `${prefix}brother`;
+			return "brother";
 		}
 
 		if (this.personN?.isFemale()) {
-			return `${prefix}sister`;
+			return "sister";
 		}
 
-		return `${prefix}sibling`;
+		return "sibling";
+	}
+
+	halfBlood(relation?: string | undefined) {
+		if (!relation || !this.isHalfBlood) {
+			return relation ?? "";
+		}
+
+		if (relation.includes(" ")) {
+			return `half ${relation}`;
+		}
+
+		return `half-${relation}`;
 	}
 
 	spouse() {

@@ -24,6 +24,8 @@ interface IKinshipTranslator {
 
 	relationType: (relation?: string) => string | undefined;
 
+	halfBlood: (relation?: string) => string | undefined;
+
 	of: (relation?: string) => string | undefined;
 }
 

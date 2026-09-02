@@ -145,6 +145,8 @@ export default class KinshipTranslator<T extends boolean | undefined> {
 			relation = this.removal();
 		}
 
+		relation = this.translator?.halfBlood(relation);
+
 		relation = this.translator?.relationType(relation);
 
 		if (this.translator?.isOfSpouse) {
