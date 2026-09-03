@@ -5,6 +5,7 @@ export { default as KinshipTranslatorEN } from "./kinship-translator.en";
 export { default as KinshipTranslatorES } from "./kinship-translator.es";
 export { default as KinshipTranslatorFR } from "./kinship-translator.fr";
 export { default as KinshipTranslatorHU } from "./kinship-translator.hu";
+export { default as KinshipTranslatorRU } from "./kinship-translator.ru";
 export type { default as KinshipTranslatorInterface } from "./kinship-translator.interface";
 export { default as KinshipTranslator } from "./kinship-translator";
 

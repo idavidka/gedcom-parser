@@ -37,6 +37,7 @@ describe("kinship: biological path preferred over step path", () => {
     it("keeps direct labels for both fathers", () => {
         expect(anchor?.kinship(indi(4))).toEqual("father");
         expect(anchor?.kinship(indi(4), false, "hu")).toEqual("apa");
+        expect(anchor?.kinship(indi(4), false, "ru")).toEqual("отец");
         expect(anchor?.kinship(indi(2))).toEqual("step father");
         expect(anchor?.kinship(indi(2), false, "hu")).toEqual("mostoha apa");
     });

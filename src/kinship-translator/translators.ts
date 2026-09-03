@@ -3,3 +3,4 @@ export { default as en } from "./kinship-translator.en";
 export { default as de } from "./kinship-translator.de";
 export { default as fr } from "./kinship-translator.fr";
 export { default as es } from "./kinship-translator.es";
+export { default as ru } from "./kinship-translator.ru";

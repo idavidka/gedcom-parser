@@ -314,7 +314,7 @@ import GedcomTree from '@treeviz/gedcom-parser';
 - Verify IndexedDB is available in your environment
 
 ### Kinship Translation Issues
-- Check that the `lang` parameter matches supported languages: `"en" | "hu" | "de" | "es" | "fr"`
+- Check that the `lang` parameter matches supported languages: `"en" | "hu" | "de" | "es" | "fr" | "ru"`
 - Ensure custom translator implements the correct interface
 - Use built-in translator as reference implementation
 
