@@ -498,18 +498,26 @@ export class GedCom extends Common implements IGedcom {
 
 		Object.assign(newHead!, this.get("HEAD") ?? {});
 
+		const existingTreeName = this.get("HEAD")
+			?.get("SOUR")
+			?.get("_TREE")
+			?.toValue();
+
 		const newSour = createCommon() as Required<
 			Required<IGedComStructure>["HEAD"]
 		>["SOUR"];
-		newSour.set("CORP", createCommon());
-		newSour.set("CORP.WWW", createCommon());
-		newSour.set("NAME", createCommon());
-		newSour.set("VERS", createCommon());
+		newSour.value = "TreeViz - The Family Tree Visualiser";
+		newSour.set("NAME", "TreeViz - The Family Tree Visualiser");
+		newSour.set("VERS", getVersion());
+		if (typeof existingTreeName === "string" && existingTreeName.trim()) {
+			newSour.set("_TREE", existingTreeName.trim());
+		}
 
-		newSour.CORP!.value = "TreeViz - The Family Tree Visualiser";
-		newSour.CORP!.WWW!.value = "treeviz.com";
-		newSour.NAME!.value = "TreeViz - The Family Tree Visualiser";
-		newSour.VERS!.value = getVersion();
+		const corp = createCommon();
+		corp.value = "TreeViz - The Family Tree Visualiser";
+		corp.set("WWW", "treeviz.com");
+		corp.set("EMAIL", "info@treeviz.com");
+		newSour.set("CORP", corp);
 
 		newHead!.set("SOUR", newSour);
 
@@ -571,13 +579,13 @@ export class GedCom extends Common implements IGedcom {
 
 		const newGedcom = createGedCom();
 
+		Object.assign(newGedcom, this);
+
 		if (!options?.original) {
 			Object.assign(newGedcom, {
 				HEAD: this.getDownloadHeader(),
 			});
 		}
-
-		Object.assign(newGedcom, this);
 
 		if (options?.indis?.length) {
 			const newContent = this.getIndiRelatedLists(options.indis);

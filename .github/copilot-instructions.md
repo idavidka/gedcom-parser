@@ -14,7 +14,11 @@ These rules are **non-negotiable** and apply to **every single response**, witho
 > - **NEVER** switch languages mid-response unless the user explicitly asks
 > - This rule overrides all other language rules in this document
 
-### 2. 📝 Suggested Commit Message — ALWAYS Required After Changes
+### 2. 🧪 Never run unit or E2E tests
+
+> **NEVER run unit tests or E2E tests** (`npm test`, Vitest, Playwright). The developer runs them manually.
+
+### 3. 📝 Suggested Commit Message — ALWAYS Required After Changes
 
 > **EVERY response where any file, code, or configuration was modified MUST end with a suggested commit message.**
 > This is automatic and unconditional — never skip it, never ask if needed.

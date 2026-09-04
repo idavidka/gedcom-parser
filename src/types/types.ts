@@ -59,6 +59,9 @@ interface Tags {
 	_LABEL?: Common;
 	_WLNK?: Common;
 	_MARNM?: Common;
+	_UID?: Common;
+	_TREE?: Common;
+	_ENV?: Common;
 	_INDI?: Common; // Individual
 	_GUESSEDORIGINAL?: Common;
 	_FS_LINK?: Common; // Legacy: FamilySearch link (now stored in WWW with _IS_FS Y marker)
@@ -118,6 +121,7 @@ interface Tags {
 	DSCR?: Common; // Physical description of a person, place, or thing
 	EDUC?: Common; // Education
 	EMIG?: Common; // Emigration
+	EMAIL?: Common; // Email address
 	ENDL?: Common; // Endowment (LDS)
 	ENGA?: Common; // Engagement
 	EVEN?: Common; // Event (noteworthy event)
