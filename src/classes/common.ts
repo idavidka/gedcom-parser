@@ -5,6 +5,7 @@ import type { ConvertOptions } from "../interfaces/common";
 import type ICommon from "../interfaces/common";
 import type IObje from "../interfaces/obje";
 import type { Tag, IdType, MultiTag, ObjeKey, ListTag } from "../types/types";
+import { isGedcomTrailerTag } from "../utils/gedcom-trailer";
 
 import type { GedComType } from "./gedcom";
 import { List } from "./list";
@@ -157,6 +158,10 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		name: MultiTag,
 		value: T | string
 	) {
+		if (isGedcomTrailerTag(name)) {
+			return undefined;
+		}
+
 		if (typeof value === "string") {
 			const usedValue = createCommon(this._gedcom, undefined, this.main);
 			usedValue.value = value as string;
@@ -173,6 +178,9 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		value: T,
 		unique = false
 	) {
+		if (isGedcomTrailerTag(name)) {
+			return undefined;
+		}
 		let curValue = this.get<List>(name);
 		if (curValue?.isListable) {
 			if (curValue instanceof Common) {
@@ -929,6 +937,7 @@ export const isValidKey = <T>(
 		key !== "_uniqueId" &&
 		key !== "_refs" &&
 		key !== "_type" &&
+		!(typeof key === "string" && isGedcomTrailerTag(key)) &&
 		(key === "id" ||
 			key === "_id" ||
 			key === "value" ||

@@ -18,6 +18,7 @@ import type { Settings } from "../types/settings";
 import type { ConvertType, IdType, MultiTag, ListTag } from "../types/types";
 
 import { create } from "./common-creator";
+import { isGedcomTrailerLine } from "./gedcom-trailer";
 import { isDevelopment } from "./get-product-details";
 import { getRawSize } from "./get-raw-size";
 
@@ -126,7 +127,7 @@ const GedcomTree = {
 		const tags: Common[] = [];
 		// printTime{ index: 3, label: "[Debug]" });
 
-		let lines = `${content.replace(/\n0 TRLR(\r?\n)*$/, "")}\n0 TRLR\n`
+		let lines = content
 			.split(/\r?\n/)
 			.reduce<string[]>((acc, line) => {
 				const lineMatch = line.match(LINE_REG);
@@ -143,6 +144,17 @@ const GedcomTree = {
 						// Mark that we entered HEAD section
 						linesAcc._inHead = true;
 						linesAcc._hasFile = false;
+						return acc;
+					}
+
+					// TRLR is the file terminator, not a stored record.
+					// Keep it out of the parse stream so later assign/set
+					// (people, settings, detective board) cannot land after it.
+					if (lineIndent === 0 && lineType === "TRLR") {
+						if (linesAcc._inHead && filename && !linesAcc._hasFile) {
+							acc.push(`1 FILE ${filename}`);
+						}
+						linesAcc._inHead = false;
 						return acc;
 					}
 
@@ -229,9 +241,11 @@ const GedcomTree = {
 			// printTime{ index: 6, label: "[Debug]" }, { lines: lines.join("\n") });
 		}
 
+		lines = lines.filter((line) => !isGedcomTrailerLine(line));
+
 		lines.forEach((line: string, index: number) => {
-			if (line.length === 0) {
-				return; // skip empty
+			if (line.length === 0 || isGedcomTrailerLine(line)) {
+				return; // skip empty and GEDCOM trailer records
 			}
 			const match = reg.exec(line);
 

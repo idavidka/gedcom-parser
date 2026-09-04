@@ -4,6 +4,7 @@ export * from "./common-creator";
 export * from "./date-formatter";
 export * from "./family-edit";
 export * from "./fact-edit";
+export * from "./gedcom-trailer";
 export * from "./get-all-prop";
 export * from "./get-family-with";
 export * from "./get-places";

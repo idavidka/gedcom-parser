@@ -15,6 +15,7 @@ import type {
 	MultiTag,
 } from "../types/types";
 import { nextRecordId } from "../utils/family-edit";
+import { appendGedcomTrailer } from "../utils/gedcom-trailer";
 import { getVersion } from "../utils/get-product-details";
 
 import { Common, createCommon } from "./common";
@@ -575,7 +576,9 @@ export class GedCom extends Common implements IGedcom {
 			| undefined
 	): string {
 		if (options?.super) {
-			return super.toGedcom(tag, level, options);
+			return appendGedcomTrailer(
+				super.toGedcom(tag, level, options)
+			);
 		}
 
 		const newGedcom = createGedCom();
