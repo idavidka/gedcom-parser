@@ -35,6 +35,11 @@ import {
 	cacheDiscoveredPath,
 } from "../utils/cache";
 import { dateFormatter } from "../utils/date-formatter";
+import {
+	findReusableParentChildFamily,
+	setChildPedigree,
+} from "../utils/family-edit";
+import { getFamilyWith } from "../utils/get-family-with";
 import { PlaceType, getPlaces } from "../utils/get-places";
 import type { Place } from "../utils/get-places";
 import { implemented } from "../utils/logger";
@@ -1848,6 +1853,67 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 	isUnknownSex() {
 		return !this.isMale() && !this.isFemale();
+	}
+
+	addSpouse(other: IndiType) {
+		if (!this.id || !other?.id || this.id === other.id || !this._gedcom) {
+			return undefined;
+		}
+
+		const existing = getFamilyWith(this as unknown as IndiType, other.id);
+		if (existing) {
+			return existing;
+		}
+
+		const fam = this._gedcom.createFamily();
+		if (!fam.addSpouse(this as unknown as IndiType) || !fam.addSpouse(other)) {
+			return undefined;
+		}
+
+		return fam;
+	}
+
+	addChild(child: IndiType, pedigree?: string | RelationType) {
+		if (!this.id || !child?.id || this.id === child.id || !this._gedcom) {
+			return undefined;
+		}
+
+		const existing = findReusableParentChildFamily(
+			this as unknown as IndiType,
+			child
+		);
+		if (existing === "already") {
+			const fam = child.getFamilies("FAMC")?.find(
+				(item) =>
+					!!item &&
+					item.hasParent(this.id as IndiKey) &&
+					item.hasChild(child.id as IndiKey)
+			);
+			if (fam) {
+				setChildPedigree(
+					fam,
+					child,
+					pedigree,
+					this as unknown as IndiType
+				);
+			}
+			return fam;
+		}
+
+		const fam = existing ?? this._gedcom.createFamily();
+		if (!fam.addSpouse(this as unknown as IndiType)) {
+			return undefined;
+		}
+
+		if (!fam.addChild(child, pedigree, this as unknown as IndiType)) {
+			return undefined;
+		}
+
+		return fam;
+	}
+
+	addParent(parent: IndiType, pedigree?: string | RelationType) {
+		return parent.addChild(this as unknown as IndiType, pedigree);
 	}
 
 	getParentType(id: IndiType | IndiKey) {

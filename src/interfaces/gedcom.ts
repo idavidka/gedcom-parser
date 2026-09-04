@@ -48,6 +48,14 @@ interface IGedcom extends Common {
 
 	fam: (index: number | FamKey) => FamType | undefined;
 
+	nextIndiKey: () => IndiKey;
+
+	nextFamKey: () => FamKey;
+
+	createIndividual: () => IndiType;
+
+	createFamily: () => FamType;
+
 	obje: (index: number | ObjeKey) => ObjeType | undefined;
 
 	sour: (index: number | SourKey) => SourType | undefined;

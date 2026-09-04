@@ -13,14 +13,16 @@ import type {
 	SubmKey,
 	MultiTag,
 } from "../types/types";
+import { nextRecordId } from "../utils/family-edit";
 import { getVersion } from "../utils/get-product-details";
 
 import { Common, createCommon } from "./common";
+import { createFam } from "./fam";
 import type { FamType } from "./fam";
-import type { Families } from "./fams";
-import { CustomTags } from "./indi";
+import { Families } from "./fams";
+import { CustomTags, createIndi } from "./indi";
 import type { IndiType } from "./indi";
-import type { Individuals } from "./indis";
+import { Individuals } from "./indis";
 import { List } from "./list";
 import type { ObjeType } from "./obje";
 import type { Objects } from "./objes";
@@ -329,6 +331,50 @@ export class GedCom extends Common implements IGedcom {
 
 	fams() {
 		return this.getList<Families>("@@FAM");
+	}
+
+	nextIndiKey() {
+		const ids: string[] = [];
+		this.indis()?.forEach((_indi, id) => {
+			ids.push(String(id));
+		});
+		return nextRecordId(ids, "I") as IndiKey;
+	}
+
+	nextFamKey() {
+		const ids: string[] = [];
+		this.fams()?.forEach((_fam, id) => {
+			ids.push(String(id));
+		});
+		return nextRecordId(ids, "F") as FamKey;
+	}
+
+	createIndividual() {
+		const existing = this.indis();
+		const indis = existing ?? new Individuals();
+		if (!existing) {
+			this.set("@@INDI" as MultiTag, indis);
+		}
+
+		const id = this.nextIndiKey();
+		const indi = createIndi(this as unknown as GedComType, id);
+		indi.type = "INDI";
+		indis.item(id, indi);
+		return indi;
+	}
+
+	createFamily() {
+		const existing = this.fams();
+		const fams = existing ?? new Families();
+		if (!existing) {
+			this.set("@@FAM" as MultiTag, fams);
+		}
+
+		const id = this.nextFamKey();
+		const fam = createFam(this as unknown as GedComType, id);
+		fam.type = "FAM";
+		fams.item(id, fam);
+		return fam;
 	}
 
 	objes() {

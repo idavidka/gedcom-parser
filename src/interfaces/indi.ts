@@ -1,9 +1,10 @@
 import type { Common } from "../classes/common";
+import type { FamType } from "../classes/fam";
 import type { Families } from "../classes/fams";
 import type { IndiType } from "../classes/indi";
 import type { Individuals } from "../classes/indis";
 import type { List } from "../classes/list";
-import type { IndiKey } from "../types/types";
+import type { IndiKey, RelationType } from "../types/types";
 
 export type GeneratorKey = `${"2nd" | "3rd" | `${4 | 5 | 6 | 7 | 8 | 9}th`}`;
 export type GeneratorType =
@@ -64,6 +65,18 @@ interface IIndi extends Common<string, IndiKey> {
 	isSiblingInLawOf: (indi?: IndiKey | IndiType) => IndiKey | boolean;
 
 	toFamilies: (list?: List) => Families;
+
+	addSpouse: (other: IndiType) => FamType | undefined;
+
+	addChild: (
+		child: IndiType,
+		pedigree?: string | RelationType
+	) => FamType | undefined;
+
+	addParent: (
+		parent: IndiType,
+		pedigree?: string | RelationType
+	) => FamType | undefined;
 
 	getAscendants: () => Individuals;
 

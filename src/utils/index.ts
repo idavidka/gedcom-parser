@@ -2,6 +2,7 @@
 export * from "./cache";
 export * from "./common-creator";
 export * from "./date-formatter";
+export * from "./family-edit";
 export * from "./get-all-prop";
 export * from "./get-family-with";
 export * from "./get-places";
