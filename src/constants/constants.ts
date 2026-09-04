@@ -1,4 +1,10 @@
 /**
+ * Written into HEAD.SOUR / NAME / CORP when TreeViz exports a GEDCOM.
+ * Keep in sync with frontend `APP_BRANDING` in `src/constants/app-config.ts`.
+ */
+export const APP_BRANDING = "TreeViz - The Family Tree Visualiser & Editor";
+
+/**
  * GEDCOM Parsing Patterns
  * Regular expressions for parsing GEDCOM files
  */

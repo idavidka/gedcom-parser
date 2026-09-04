@@ -43,10 +43,10 @@ describe("GEDCOM Class Functionality", () => {
 			gedcom.applyObject({
 				HEAD: {
 					SOUR: {
-						NAME: "TreeViz - The Family Tree Visualiser",
+						NAME: "TreeViz - The Family Tree Visualiser & Editor",
 						VERS: "9.9.9",
 						CORP: {
-							value: "TreeViz - The Family Tree Visualiser",
+							value: "TreeViz - The Family Tree Visualiser & Editor",
 							WWW: "treeviz.com",
 						},
 					},
@@ -61,11 +61,11 @@ describe("GEDCOM Class Functionality", () => {
 			});
 
 			expect(gedcomString).toContain(
-				"2 NAME TreeViz - The Family Tree Visualiser"
+				"2 NAME TreeViz - The Family Tree Visualiser & Editor"
 			);
 			expect(gedcomString).toContain("2 VERS 9.9.9");
 			expect(gedcomString).toContain(
-				"2 CORP TreeViz - The Family Tree Visualiser"
+				"2 CORP TreeViz - The Family Tree Visualiser & Editor"
 			);
 			expect(gedcomString).toContain("3 WWW treeviz.com");
 			expect(gedcomString).toContain("0 _TREEVIZ_SETTINGS");

@@ -1,3 +1,4 @@
+import { APP_BRANDING } from "../constants/constants";
 import type { ConvertOptions } from "../interfaces/common";
 import type IGedcom from "../interfaces/gedcom";
 import type IEventDetailStructure from "../structures/event-detail-structure";
@@ -506,15 +507,15 @@ export class GedCom extends Common implements IGedcom {
 		const newSour = createCommon() as Required<
 			Required<IGedComStructure>["HEAD"]
 		>["SOUR"];
-		newSour.value = "TreeViz - The Family Tree Visualiser";
-		newSour.set("NAME", "TreeViz - The Family Tree Visualiser");
+		newSour.value = APP_BRANDING;
+		newSour.set("NAME", APP_BRANDING);
 		newSour.set("VERS", getVersion());
 		if (typeof existingTreeName === "string" && existingTreeName.trim()) {
 			newSour.set("_TREE", existingTreeName.trim());
 		}
 
 		const corp = createCommon();
-		corp.value = "TreeViz - The Family Tree Visualiser";
+		corp.value = APP_BRANDING;
 		corp.set("WWW", "treeviz.com");
 		corp.set("EMAIL", "info@treeviz.com");
 		newSour.set("CORP", corp);
