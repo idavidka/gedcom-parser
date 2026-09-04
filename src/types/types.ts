@@ -60,6 +60,7 @@ interface Tags {
 	_WLNK?: Common;
 	_MARNM?: Common;
 	_UID?: Common;
+	_TID?: Common;
 	_TREE?: Common;
 	_ENV?: Common;
 	_INDI?: Common; // Individual

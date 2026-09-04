@@ -500,10 +500,9 @@ export class GedCom extends Common implements IGedcom {
 
 		Object.assign(newHead!, this.get("HEAD") ?? {});
 
-		const existingTreeName = this.get("HEAD")
-			?.get("SOUR")
-			?.get("_TREE")
-			?.toValue();
+		const existingSour = this.get("HEAD")?.get("SOUR");
+		const existingTreeName = existingSour?.get("_TREE")?.toValue();
+		const existingTreeUniqueId = existingSour?.get("_TID")?.toValue();
 
 		const newSour = createCommon() as Required<
 			Required<IGedComStructure>["HEAD"]
@@ -513,6 +512,12 @@ export class GedCom extends Common implements IGedcom {
 		newSour.set("VERS", getVersion());
 		if (typeof existingTreeName === "string" && existingTreeName.trim()) {
 			newSour.set("_TREE", existingTreeName.trim());
+		}
+		if (
+			typeof existingTreeUniqueId === "string" &&
+			existingTreeUniqueId.trim()
+		) {
+			newSour.set("_TID", existingTreeUniqueId.trim());
 		}
 
 		const corp = createCommon();
