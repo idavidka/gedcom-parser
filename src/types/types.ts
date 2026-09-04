@@ -2,13 +2,7 @@ import type { Common } from "../classes/common";
 import type { Individuals } from "../classes/indis";
 
 export type ConvertType =
-	| "FAM"
-	| "INDI"
-	| "_INDI"
-	| "OBJE"
-	| "SOUR"
-	| "REPO"
-	| "SUBM";
+	"FAM" | "INDI" | "_INDI" | "OBJE" | "SOUR" | "REPO" | "SUBM";
 
 export type IndiKey = `@${"I" | "P" | "XI" | "XXI"}${number}@`;
 export type FamKey = `@${"F" | "XF" | "XXF"}${number}@`;
@@ -19,13 +13,7 @@ export type SubmKey = `@SUBM${number}@`;
 export type TagKey = `@T${number}@`;
 export type UnknownKey = `@U${number}@`;
 export type IdType =
-	| IndiKey
-	| FamKey
-	| ObjeKey
-	| SourKey
-	| RepoKey
-	| SubmKey
-	| UnknownKey;
+	IndiKey | FamKey | ObjeKey | SourKey | RepoKey | SubmKey | UnknownKey;
 
 export enum RelationType {
 	BIOLOGICAL = "biological",
@@ -201,6 +189,7 @@ interface Tags {
 	VERS?: Common;
 	FORM?: Common;
 	WWW?: Common;
+	URL?: Common;
 	BAPT?: Common;
 	CHRI?: Common;
 	BURI?: Common;

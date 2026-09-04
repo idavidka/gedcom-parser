@@ -55,6 +55,7 @@ export * from "./utils/cache";
 export * from "./utils/common-creator";
 export * from "./utils/date-formatter";
 export * from "./utils/family-edit";
+export * from "./utils/fact-edit";
 export * from "./utils/get-all-prop";
 export * from "./utils/get-family-with";
 export * from "./utils/get-places";

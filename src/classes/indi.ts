@@ -35,6 +35,7 @@ import {
 	cacheDiscoveredPath,
 } from "../utils/cache";
 import { dateFormatter } from "../utils/date-formatter";
+import { addIndividualFact, type AddFactInput } from "../utils/fact-edit";
 import {
 	findReusableParentChildFamily,
 	setChildPedigree,
@@ -75,19 +76,51 @@ const ALLOWED_FACTS: MultiTag[] = [
 	"OCCU",
 	"OCCUPATIONS",
 	"RESI",
+	"BIRT",
+	"DEAT",
 	"BAPT",
+	"BAPM",
 	"CHRI",
 	"CHR",
+	"CHRA",
 	"BURI",
-	"EDUC",
-	"GRAD",
-	"DIV",
+	"CREM",
+	"ADOP",
+	"BARM",
+	"BASM",
+	"BLES",
+	"CONF",
+	"FCOM",
+	"ORDN",
+	"NATU",
+	"EMIG",
 	"IMMI",
+	"CENS",
+	"PROB",
+	"WILL",
+	"GRAD",
+	"RETI",
+	"EDUC",
+	"DIV",
 	"RELI",
+	"CAST",
+	"DSCR",
+	"NATI",
+	"PROP",
+	"SSN",
+	"TITL",
+	"ADDR",
+	"BAPL",
+	"CONL",
+	"ENDL",
+	"SLGC",
 	"_MILT",
 	"_MILTID",
 	"FACT",
 	"_ORIG",
+	"_WLNK",
+	"WWW",
+	"URL",
 ];
 
 const DISALLOWED_CUSTOM_FACTS: string[] = ["DNA Test", "Newspaper"];
@@ -104,8 +137,7 @@ const CustomFactRenderers: Partial<
 		const suffix = originalNameObj?.NSFX?.toValue() as string | undefined;
 		const surname = originalNameObj?.SURN?.toValue() as string | undefined;
 		const givenname = originalNameObj?.GIVN?.toValue() as
-			| string
-			| undefined;
+			string | undefined;
 
 		const nameParts: Array<{
 			name: string;
@@ -950,8 +982,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	async ancestryMedia(namespace?: string | number): Promise<MediaList> {
 		const list: MediaList = {};
 		const objeList = this.get("OBJE")?.toList().copy() as
-			| Objects
-			| undefined;
+			Objects | undefined;
 		const www = this._gedcom?.HEAD?.SOUR?.CORP?.WWW?.value;
 		const tree = this.getAncestryTreeId();
 
@@ -973,14 +1004,11 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					const media =
 						obje?.RIN?.toValue() || obje?.get("_OID")?.toValue();
 					const clone = obje?.get("_CLON._OID")?.toValue() as
-						| string
-						| undefined;
+						string | undefined;
 					const mser = obje?.get("_MSER._LKID")?.toValue() as
-						| string
-						| undefined;
+						string | undefined;
 					let url = obje?.get("FILE")?.toValue() as
-						| string
-						| undefined;
+						string | undefined;
 					const title =
 						(obje?.get("TITL")?.toValue() as string | undefined) ??
 						"";
@@ -1073,14 +1101,11 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		}
 
 		const objeList = this.get("OBJE")?.toList().copy() as
-			| Objects
-			| undefined;
+			Objects | undefined;
 		const birthObj = this.get("BIRT.OBJE")?.toList().copy() as
-			| Objects
-			| undefined;
+			Objects | undefined;
 		const deathObj = this.get("DEAT.OBJE")?.toList().copy() as
-			| Objects
-			| undefined;
+			Objects | undefined;
 
 		objeList?.merge(birthObj).merge(deathObj);
 		(this.get("FAMS")?.toValueList().values() ?? [])
@@ -1107,8 +1132,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				(obje?.get("FORM")?.toValue() as string | undefined) ?? "raw";
 
 			const imgId = obje?.get("_PHOTO_RIN")?.toValue() as
-				| string
-				| undefined;
+				string | undefined;
 
 			if (url && imgId) {
 				const id = `${tree}-${this.id}-${imgId}`;
@@ -1184,8 +1208,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			const type = matchTag.get("TYPE")?.toValue() as string | undefined;
 			const ref = matchTag.get("REF")?.toValue() as string | undefined;
 			const scoreStr = matchTag.get("SCORE")?.toValue() as
-				| string
-				| undefined;
+				string | undefined;
 			const text = matchTag.get("TEXT")?.toValue() as string | undefined;
 			const www = matchTag.get("WWW")?.toValue() as string | undefined;
 
@@ -1247,8 +1270,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 			// Extract all sub-tags using get() method
 			const title = sourceTag.get("TITL")?.toValue() as
-				| string
-				| undefined;
+				string | undefined;
 			const text = sourceTag.get("TEXT")?.toValue() as string | undefined;
 			const www = sourceTag.get("WWW")?.toValue() as string | undefined;
 
@@ -1273,13 +1295,11 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 		// Get level 1 OBJE tags (directly under INDI - person's media)
 		const objeList = this.get("OBJE")?.toList().copy() as
-			| Objects
-			| undefined;
+			Objects | undefined;
 
 		// Get level 2 OBJE tags (under SOUR - source documents)
 		const sourList = this.get("SOUR")?.toList().copy() as
-			| Sources
-			| undefined;
+			Sources | undefined;
 
 		sourList?.forEach((sour) => {
 			const sourObje = sour?.get("OBJE")?.toList() as Objects | undefined;
@@ -1344,8 +1364,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 		// Get only level 1 OBJE tags (directly under INDI - person's media)
 		const objeList = this.get("OBJE")?.toList().copy() as
-			| Objects
-			| undefined;
+			Objects | undefined;
 
 		if (!objeList || objeList.length === 0) {
 			return list;
@@ -1627,15 +1646,13 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 	getBirthPlace() {
 		const birthEvent = this.get("BIRT")?.index(0) as
-			| IEventDetailStructure
-			| undefined;
+			IEventDetailStructure | undefined;
 		return birthEvent?.PLAC?.value;
 	}
 
 	getDeathPlace() {
 		const deathEvent = this.get("DEAT")?.index(0) as
-			| IEventDetailStructure
-			| undefined;
+			IEventDetailStructure | undefined;
 		return deathEvent?.PLAC?.value;
 	}
 
@@ -1662,8 +1679,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				// Process all MARR events
 				marrEvents.forEach((marrEvent) => {
 					const marriageEventDetail = marrEvent as
-						| IEventDetailStructure
-						| undefined;
+						IEventDetailStructure | undefined;
 					const marriagePlace = marriageEventDetail?.PLAC?.value;
 					marriagePlaces.push(marriagePlace);
 				});
@@ -1696,8 +1712,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				// Process all MARR events
 				marrEvents.forEach((marrEvent) => {
 					const marriageEventDetail = marrEvent as
-						| IEventDetailStructure
-						| undefined;
+						IEventDetailStructure | undefined;
 					const marriageDate = marriageEventDetail?.DATE?.value;
 					marriageDates.push(marriageDate);
 				});
@@ -1866,7 +1881,10 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		}
 
 		const fam = this._gedcom.createFamily();
-		if (!fam.addSpouse(this as unknown as IndiType) || !fam.addSpouse(other)) {
+		if (
+			!fam.addSpouse(this as unknown as IndiType) ||
+			!fam.addSpouse(other)
+		) {
 			return undefined;
 		}
 
@@ -1883,12 +1901,14 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			child
 		);
 		if (existing === "already") {
-			const fam = child.getFamilies("FAMC")?.find(
-				(item) =>
-					!!item &&
-					item.hasParent(this.id as IndiKey) &&
-					item.hasChild(child.id as IndiKey)
-			);
+			const fam = child
+				.getFamilies("FAMC")
+				?.find(
+					(item) =>
+						!!item &&
+						item.hasParent(this.id as IndiKey) &&
+						item.hasChild(child.id as IndiKey)
+				);
 			if (fam) {
 				setChildPedigree(
 					fam,
@@ -1914,6 +1934,10 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 	addParent(parent: IndiType, pedigree?: string | RelationType) {
 		return parent.addChild(this as unknown as IndiType, pedigree);
+	}
+
+	addFact(input: AddFactInput) {
+		return addIndividualFact(this as unknown as IndiType, input);
 	}
 
 	getParentType(id: IndiType | IndiKey) {
@@ -1955,11 +1979,9 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				return;
 			}
 			const fatherId = family.get("HUSB")?.toValue() as
-				| IndiKey
-				| undefined;
+				IndiKey | undefined;
 			const motherId = family.get("WIFE")?.toValue() as
-				| IndiKey
-				| undefined;
+				IndiKey | undefined;
 
 			const usedRel =
 				parent?.id === fatherId
@@ -2012,8 +2034,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 	getLinks() {
 		return this.get("_WLNK")?.toList() as
-			| List<IdType, Required<IIndividualStructure>["_WLNK"]>
-			| undefined;
+			List<IdType, Required<IIndividualStructure>["_WLNK"]> | undefined;
 	}
 
 	getAkas(limit?: number) {
@@ -2205,7 +2226,11 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					additional.inLaw = inLaw;
 				}
 
-				if (!biologicalOnly && kinship === "spouse" && breakAfterSpouse) {
+				if (
+					!biologicalOnly &&
+					kinship === "spouse" &&
+					breakAfterSpouse
+				) {
 					if (path.length <= 2) {
 						additional.inLaw = true;
 					} else {
@@ -2218,7 +2243,9 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					indi.getBiologicalFathers()
 						.copy()
 						.merge(indi.getBiologicalMothers())
-						.merge(indi.getFathers().copy().merge(indi.getMothers()))
+						.merge(
+							indi.getFathers().copy().merge(indi.getMothers())
+						)
 						.forEach((relative) => {
 							if (!visited.has(relative)) {
 								const currentRelation =
@@ -2779,11 +2806,9 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 		families.forEach((family) => {
 			const fatherId = family.get("HUSB")?.toValue() as
-				| IndiKey
-				| undefined;
+				IndiKey | undefined;
 			const motherId = family.get("WIFE")?.toValue() as
-				| IndiKey
-				| undefined;
+				IndiKey | undefined;
 
 			const usedRel =
 				this.id === fatherId
@@ -2800,8 +2825,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 			famChildren?.forEach((child) => {
 				const childType = child.get(usedRel)?.toValue() as
-					| string
-					| undefined;
+					string | undefined;
 				if (
 					(!childType && filter.PEDI === RelationType.BIOLOGICAL) ||
 					childType?.toLowerCase() === filter.PEDI.toLowerCase()
@@ -2985,19 +3009,16 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			}
 
 			const fatherType = child.get("_FREL")?.toValue() as
-				| string
-				| undefined;
+				string | undefined;
 			const motherType = child.get("_MREL")?.toValue() as
-				| string
-				| undefined;
+				string | undefined;
 
 			if (
 				(!fatherType && filter.PEDI === RelationType.BIOLOGICAL) ||
 				fatherType?.toLowerCase() === filter.PEDI.toLowerCase()
 			) {
 				const fatherId = family.get("HUSB")?.toValue() as
-					| IndiKey
-					| undefined;
+					IndiKey | undefined;
 				const father = fatherId && this._gedcom?.indi(fatherId);
 
 				if (father) {
@@ -3010,8 +3031,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				motherType?.toLowerCase() === filter.PEDI.toLowerCase()
 			) {
 				const motherId = family.get("WIFE")?.toValue() as
-					| IndiKey
-					| undefined;
+					IndiKey | undefined;
 				const mother = motherId && this._gedcom?.indi(motherId);
 				if (mother) {
 					parents.append(mother);
@@ -3036,8 +3056,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 		families.forEach((family) => {
 			const spouseType = family.get("_SREL")?.toValue() as
-				| string
-				| undefined;
+				string | undefined;
 
 			if (
 				(!spouseType && filter.PART === PartnerType.SPOUSE) ||

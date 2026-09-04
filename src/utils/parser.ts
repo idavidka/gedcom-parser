@@ -321,8 +321,7 @@ const GedcomTree = {
 				Record<string, { tag: Common; indis: Individuals }>
 			>((acc, tag) => {
 				const tagName = tag?.get("NAME")?.toValue() as
-					| string
-					| undefined;
+					string | undefined;
 
 				if (
 					!tagName ||
@@ -411,3 +410,19 @@ if (isDev) {
 }
 
 export default GedcomTree;
+
+export const createEmptyGedcom = (options?: { filename?: string }) => {
+	const { gedcom } = GedcomTree.parse(
+		`0 HEAD
+1 GEDC
+2 VERS 5.5.1
+2 FORM LINEAGE-LINKED
+1 CHAR UTF-8
+0 TRLR`,
+		{ filename: options?.filename }
+	);
+	if (!gedcom) {
+		throw new Error("Failed to create empty GEDCOM");
+	}
+	return gedcom;
+};

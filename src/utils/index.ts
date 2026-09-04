@@ -3,6 +3,7 @@ export * from "./cache";
 export * from "./common-creator";
 export * from "./date-formatter";
 export * from "./family-edit";
+export * from "./fact-edit";
 export * from "./get-all-prop";
 export * from "./get-family-with";
 export * from "./get-places";
@@ -13,7 +14,7 @@ export * from "./media-utils";
 export * from "./name-formatter";
 export * from "./nested-group";
 export * from "./ordinalize";
-export { default as GedcomTree } from "./parser";
+export { default as GedcomTree, createEmptyGedcom } from "./parser";
 export * from "./place-parser";
 export * from "./place-translator";
 // Note: place-types is already exported by get-places
