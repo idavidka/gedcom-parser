@@ -6,6 +6,8 @@ export type CommonWild = Partial<Record<`_${string}`, Common>>;
 
 export interface ConvertOptions {
 	original?: boolean;
+	/** Target GEDCOM spec when serializing. Ignored when `original` is true. */
+	gedcomVersion?: "5.5.1" | "7.0";
 	obje?: {
 		standardize?: boolean;
 		override?: boolean;

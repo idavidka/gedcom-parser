@@ -16,6 +16,11 @@ import type {
 } from "../types/types";
 import { nextRecordId } from "../utils/family-edit";
 import { appendGedcomTrailer } from "../utils/gedcom-trailer";
+import {
+	DEFAULT_GEDCOM_EXPORT_VERSION,
+	normalizeGedcomVersion,
+} from "../utils/gedcom-version";
+import type { GedcomExportVersion } from "../utils/gedcom-version";
 import { getVersion } from "../utils/get-product-details";
 
 import { Common, createCommon } from "./common";
@@ -495,10 +500,59 @@ export class GedCom extends Common implements IGedcom {
 		return lists;
 	}
 
-	private getDownloadHeader() {
+	getGedcomVersion(): GedcomExportVersion {
+		const raw = this.get("HEAD")?.get("GEDC")?.get("VERS")?.toValue();
+		return normalizeGedcomVersion(
+			typeof raw === "string" ? raw : undefined
+		);
+	}
+
+	private applyGedcomSpecToHead(
+		head: Required<IGedComStructure>["HEAD"],
+		version: GedcomExportVersion
+	) {
+		const previousGedc = head.get("GEDC");
+		const previousForm = previousGedc?.get("FORM")?.toValue();
+		const previousChar = head.get("CHAR")?.toValue();
+
+		head.remove("GEDC");
+		const gedc = head.set("GEDC", "");
+		if (!gedc) {
+			return;
+		}
+		gedc.set("VERS", version);
+
+		if (version === "7.0") {
+			head.remove("CHAR");
+			return;
+		}
+
+		gedc.set(
+			"FORM",
+			typeof previousForm === "string" && previousForm
+				? previousForm
+				: "LINEAGE-LINKED"
+		);
+		if (!head.get("CHAR")?.toValue()) {
+			head.set(
+				"CHAR",
+				typeof previousChar === "string" && previousChar
+					? previousChar
+					: "UTF-8"
+			);
+		}
+	}
+
+	private getDownloadHeader(gedcomVersion?: GedcomExportVersion) {
 		const newHead = createCommon() as Required<IGedComStructure>["HEAD"];
 
 		Object.assign(newHead!, this.get("HEAD") ?? {});
+		this.applyGedcomSpecToHead(
+			newHead,
+			gedcomVersion ??
+				this.getGedcomVersion() ??
+				DEFAULT_GEDCOM_EXPORT_VERSION
+		);
 
 		const existingSour = this.get("HEAD")?.get("SOUR");
 		const existingTreeName = existingSour?.get("_TREE")?.toValue();
@@ -581,9 +635,7 @@ export class GedCom extends Common implements IGedcom {
 			| undefined
 	): string {
 		if (options?.super) {
-			return appendGedcomTrailer(
-				super.toGedcom(tag, level, options)
-			);
+			return appendGedcomTrailer(super.toGedcom(tag, level, options));
 		}
 
 		const newGedcom = createGedCom();
@@ -592,7 +644,7 @@ export class GedCom extends Common implements IGedcom {
 
 		if (!options?.original) {
 			Object.assign(newGedcom, {
-				HEAD: this.getDownloadHeader(),
+				HEAD: this.getDownloadHeader(options?.gedcomVersion),
 			});
 		}
 
@@ -835,11 +887,9 @@ export class GedCom extends Common implements IGedcom {
 		// First and last person events with type information
 		const firstPerson = indis?.getFirstEvent();
 		const firstBirth = firstPerson?.BIRT?.index(0) as
-			| IEventDetailStructure
-			| undefined;
+			IEventDetailStructure | undefined;
 		const firstDeath = firstPerson?.DEAT?.index(0) as
-			| IEventDetailStructure
-			| undefined;
+			IEventDetailStructure | undefined;
 
 		let firstPersonEvent = null;
 		const firstBirthDate = (firstBirth as IEventDetailStructure)?.DATE
@@ -863,11 +913,9 @@ export class GedCom extends Common implements IGedcom {
 
 		const lastPerson = indis?.getLastEvent();
 		const lastBirth = lastPerson?.BIRT?.index(0) as
-			| (Common & IEventDetailStructure)
-			| undefined;
+			(Common & IEventDetailStructure) | undefined;
 		const lastDeath = lastPerson?.DEAT?.index(0) as
-			| (Common & IEventDetailStructure)
-			| undefined;
+			(Common & IEventDetailStructure) | undefined;
 
 		let lastPersonEvent = null;
 		const lastBirthDate = (lastBirth as Common & IEventDetailStructure)

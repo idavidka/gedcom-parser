@@ -6,7 +6,8 @@ A lightweight, pluggable GEDCOM parser library for JavaScript/TypeScript applica
 
 ## Features
 
-- 🚀 **Parse GEDCOM files** - Full GEDCOM 5.5.1 support
+- 🚀 **Parse GEDCOM files** - GEDCOM 5.5 / 5.5.1 and GEDCOM 7 import
+- 📤 **Export** - serialize as GEDCOM 5.5.1 or 7.0 (`toGedcom(..., { gedcomVersion })`)
 - 🖥️ **Command-Line Interface** - CLI tools for common GEDCOM operations
 - 🔌 **Pluggable Architecture** - Zero dependencies on browser-specific APIs
 - 💾 **Optional Caching** - Provide your own cache implementation (IndexedDB, localStorage, Redis, etc.)

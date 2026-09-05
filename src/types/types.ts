@@ -159,6 +159,7 @@ interface Tags {
 	ORDL?: Common; // Ordination (LDS)
 	ORDN?: Common; // Ordination (non-LDS)
 	PEDI?: Common; // Pedigree
+	PEDT?: Common; // GEDCOM 7 pedigree (treated as PEDI)
 	PART?: Common; // Partner
 	PHON?: Common; // Phone number
 	PLAC?: Common; // Place

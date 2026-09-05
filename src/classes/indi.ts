@@ -2014,7 +2014,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					.index(0);
 
 				childType =
-					(childState?.get("PEDI")?.toValue() as string) ||
+					((childState?.get("PEDI") ?? childState?.get("PEDT"))?.toValue() as string) ||
 					RelationType.BIOLOGICAL;
 			} else {
 				childType =
@@ -2858,7 +2858,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 						.index(0);
 
 					const childType =
-						(childState?.get("PEDI")?.toValue() as string) ||
+						((childState?.get("PEDI") ?? childState?.get("PEDT"))?.toValue() as string) ||
 						RelationType.BIOLOGICAL;
 					if (
 						(!childType &&
@@ -3005,7 +3005,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					.index(0);
 
 				const parentType =
-					(childState?.get("PEDI")?.toValue() as string) ||
+					((childState?.get("PEDI") ?? childState?.get("PEDT"))?.toValue() as string) ||
 					RelationType.BIOLOGICAL;
 				if (
 					(!parentType && filter.PEDI === RelationType.BIOLOGICAL) ||

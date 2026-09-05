@@ -178,6 +178,17 @@ const GedcomTree = {
 						linesAcc._hasFile = true;
 					}
 
+					// GEDCOM 5.5.1 CONC concatenates onto the previous payload
+					// without a space. GEDCOM 7 dropped CONC; folding it here
+					// keeps both versions readable as a single value.
+					if (lineType.toUpperCase() === "CONC") {
+						const last = acc[acc.length - 1];
+						if (last !== undefined) {
+							acc[acc.length - 1] = `${last}${lineValue}`;
+							return acc;
+						}
+					}
+
 					if (
 						lineIndent > 0 &&
 						lineIndent > prevLineIndent &&
