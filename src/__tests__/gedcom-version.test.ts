@@ -38,6 +38,32 @@ describe("GEDCOM version", () => {
 		);
 	});
 
+	it("inherits source version when no API export version is set", () => {
+		const from7 = GedcomTree.parse(sample("7.0")).gedcom;
+		expect(from7.toGedcom()).toContain("2 VERS 7.0");
+		expect(from7.toGedcom()).not.toMatch(/\n1 CHAR /);
+
+		const from551 = GedcomTree.parse(
+			sample("5.5.1", "2 FORM LINEAGE-LINKED")
+		).gedcom;
+		expect(from551.toGedcom()).toContain("2 VERS 5.5.1");
+		expect(from551.toGedcom()).toContain("2 FORM LINEAGE-LINKED");
+	});
+
+	it("defaults to 5.5.1 when neither source nor API sets a version", () => {
+		const rawHead = [
+			"0 HEAD",
+			"1 GEDC",
+			"1 CHAR UTF-8",
+			"0 @I1@ INDI",
+			"1 NAME John /Doe/",
+			"0 TRLR",
+		].join("\n");
+		const { gedcom } = GedcomTree.parse(rawHead);
+		expect(gedcom.getGedcomVersion()).toBe("5.5.1");
+		expect(gedcom.toGedcom()).toContain("2 VERS 5.5.1");
+	});
+
 	it("exports HEAD.GEDC.VERS 7.0 without FORM or CHAR", () => {
 		const { gedcom } = GedcomTree.parse(
 			sample("5.5.1", "2 FORM LINEAGE-LINKED")

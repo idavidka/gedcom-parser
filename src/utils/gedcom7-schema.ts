@@ -7,24 +7,41 @@ import type { Common } from "../classes/common";
 import { createCommon } from "../classes/common";
 import type { GedComType } from "../classes/gedcom";
 
-/** Well-known TreeViz / vendor extension tags → stable URIs. */
+/** Well-known TreeViz / vendor extension tags → stable documentation URIs. */
+export const TREEVIZ_EXTENSION_BASE_URI = "https://treeviz.com/gedcom";
+
 export const TREEVIZ_EXTENSION_URIS: Record<string, string> = {
-	_ORIGHEAD: "https://treeviz.com/gedcom#_ORIGHEAD",
-	_TREE: "https://treeviz.com/gedcom#_TREE",
-	_TID: "https://treeviz.com/gedcom#_TID",
-	_PRIM: "https://treeviz.com/gedcom#_PRIM",
-	_FREL: "https://treeviz.com/gedcom#_FREL",
-	_MREL: "https://treeviz.com/gedcom#_MREL",
-	_UID: "https://treeviz.com/gedcom#_UID",
-	_WLNK: "https://treeviz.com/gedcom#_WLNK",
-	_MTTAG: "https://treeviz.com/gedcom#_MTTAG",
-	_MTCAT: "https://treeviz.com/gedcom#_MTCAT",
-	_CLON: "https://treeviz.com/gedcom#_CLON",
-	_MSER: "https://treeviz.com/gedcom#_MSER",
-	_OID: "https://treeviz.com/gedcom#_OID",
-	_LKID: "https://treeviz.com/gedcom#_LKID",
-	_PHOTO_RIN: "https://treeviz.com/gedcom#_PHOTO_RIN",
-	_EXPORTED_FROM_SITE_ID: "https://treeviz.com/gedcom#_EXPORTED_FROM_SITE_ID",
+	_ORIGHEAD: `${TREEVIZ_EXTENSION_BASE_URI}#_ORIGHEAD`,
+	_TREE: `${TREEVIZ_EXTENSION_BASE_URI}#_TREE`,
+	_TID: `${TREEVIZ_EXTENSION_BASE_URI}#_TID`,
+	_PRIM: `${TREEVIZ_EXTENSION_BASE_URI}#_PRIM`,
+	_FREL: `${TREEVIZ_EXTENSION_BASE_URI}#_FREL`,
+	_MREL: `${TREEVIZ_EXTENSION_BASE_URI}#_MREL`,
+	_SREL: `${TREEVIZ_EXTENSION_BASE_URI}#_SREL`,
+	_UID: `${TREEVIZ_EXTENSION_BASE_URI}#_UID`,
+	_WLNK: `${TREEVIZ_EXTENSION_BASE_URI}#_WLNK`,
+	_MTTAG: `${TREEVIZ_EXTENSION_BASE_URI}#_MTTAG`,
+	_MTCAT: `${TREEVIZ_EXTENSION_BASE_URI}#_MTCAT`,
+	_CLON: `${TREEVIZ_EXTENSION_BASE_URI}#_CLON`,
+	_MSER: `${TREEVIZ_EXTENSION_BASE_URI}#_MSER`,
+	_OID: `${TREEVIZ_EXTENSION_BASE_URI}#_OID`,
+	_LKID: `${TREEVIZ_EXTENSION_BASE_URI}#_LKID`,
+	_PHOTO_RIN: `${TREEVIZ_EXTENSION_BASE_URI}#_PHOTO_RIN`,
+	_EXPORTED_FROM_SITE_ID: `${TREEVIZ_EXTENSION_BASE_URI}#_EXPORTED_FROM_SITE_ID`,
+	_FS_ID: `${TREEVIZ_EXTENSION_BASE_URI}#_FS_ID`,
+	_FS_LINK: `${TREEVIZ_EXTENSION_BASE_URI}#_FS_LINK`,
+	_FS_MATCH: `${TREEVIZ_EXTENSION_BASE_URI}#_FS_MATCH`,
+	_FS_SOUR: `${TREEVIZ_EXTENSION_BASE_URI}#_FS_SOUR`,
+	_IS_FS: `${TREEVIZ_EXTENSION_BASE_URI}#_IS_FS`,
+	_LABEL: `${TREEVIZ_EXTENSION_BASE_URI}#_LABEL`,
+	_MILT: `${TREEVIZ_EXTENSION_BASE_URI}#_MILT`,
+	_MILTID: `${TREEVIZ_EXTENSION_BASE_URI}#_MILTID`,
+	_ORIG: `${TREEVIZ_EXTENSION_BASE_URI}#_ORIG`,
+	_ENV: `${TREEVIZ_EXTENSION_BASE_URI}#_ENV`,
+	_TREEVIZ_SETTINGS: `${TREEVIZ_EXTENSION_BASE_URI}#_TREEVIZ_SETTINGS`,
+	_TREEVIZ_VIEW: `${TREEVIZ_EXTENSION_BASE_URI}#_TREEVIZ_VIEW`,
+	_TREEVIZ_DETECTIVE: `${TREEVIZ_EXTENSION_BASE_URI}#_TREEVIZ_DETECTIVE`,
+	_TREEVIZ_DETECTIVE_STATE: `${TREEVIZ_EXTENSION_BASE_URI}#_TREEVIZ_DETECTIVE_STATE`,
 };
 
 const parseTagDefinition = (payload: string) => {
@@ -149,7 +166,7 @@ export const ensureExtensionSchema = (
 
 	tags.forEach((tag) => {
 		const uri =
-			TREEVIZ_EXTENSION_URIS[tag] ?? `https://treeviz.com/gedcom#${tag}`;
+			TREEVIZ_EXTENSION_URIS[tag] ?? `${TREEVIZ_EXTENSION_BASE_URI}#${tag}`;
 		if (tag.startsWith("_")) {
 			registerExtensionTag(gedcom, tag, uri);
 		}

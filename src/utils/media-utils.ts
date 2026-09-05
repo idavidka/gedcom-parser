@@ -1,20 +1,40 @@
 /**
- * Get file extension from filename
- * @param filename - The filename to extract extension from
- * @returns File extension without the dot, or empty string if no extension
+ * Get file extension from a filename, URL, or data URL.
  */
 export const getFileExtension = (filename: string): string => {
-	const match = filename.match(/\.([^.]+)$/);
-	return match ? match[1] : "";
+	if (!filename) {
+		return "";
+	}
+	if (filename.startsWith("data:")) {
+		const mime = filename.slice(5).split(";")[0] || "";
+		const subtype = (mime.split("/")[1] || "").toLowerCase();
+		if (subtype === "jpeg") {
+			return "jpg";
+		}
+		return subtype.split("+")[0] || "";
+	}
+	const withoutQuery = filename.split(/[?#]/)[0] || filename;
+	const match = withoutQuery.match(/\.([^.]+)$/);
+	return match ? match[1].toLowerCase() : "";
 };
 
 /**
- * Check if a file format is an image format
- * @param format - The file format/extension to check
- * @returns true if the format is a supported image format
+ * Check if a file format is an image format.
+ * Accepts extensions (`jpg`), MIME subtypes, or full `data:image/...` URLs.
  */
 export const isImageFormat = (format: string): boolean => {
-	if (!format) return false;
+	if (!format) {
+		return false;
+	}
+	let normalized = format.toLowerCase().trim();
+	if (normalized.startsWith("data:")) {
+		normalized = getFileExtension(normalized);
+	} else if (normalized.includes("/")) {
+		normalized = normalized.split("/")[1]?.split("+")[0] || "";
+		if (normalized === "jpeg") {
+			normalized = "jpg";
+		}
+	}
 	const imageFormats = [
 		"jpg",
 		"jpeg",
@@ -26,5 +46,15 @@ export const isImageFormat = (format: string): boolean => {
 		"tiff",
 		"tif",
 	];
-	return imageFormats.includes(format.toLowerCase());
+	return imageFormats.includes(normalized);
+};
+
+/** Resolve FORM / media type from flat (5.5.1) or nested (GEDCOM 7) OBJE. */
+export const resolveObjeForm = (obje?: {
+	get?: (path: string) => { toValue?: () => unknown } | undefined;
+}): string | undefined => {
+	const value =
+		obje?.get?.("FILE.FORM")?.toValue?.() ??
+		obje?.get?.("FORM")?.toValue?.();
+	return typeof value === "string" && value.trim() ? value.trim() : undefined;
 };

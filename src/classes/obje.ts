@@ -106,6 +106,32 @@ export class Obje extends Common<string, ObjeKey> implements IObje {
 			newObject.set("_PRIM", prim);
 		}
 
+		// Keep vendor media identity so re-import / Ancestry-MyHeritage
+		// resolution still works after GEDZIP / G7 reshape.
+		const photoRin = this.get("_PHOTO_RIN")?.toValue();
+		if (rin) {
+			newObject.set("RIN", String(rin));
+		}
+		if (photoRin) {
+			newObject.set("_PHOTO_RIN", String(photoRin));
+		}
+		const clonNode = this.get("_CLON");
+		if (clonNode) {
+			newObject.set("_CLON", clonNode);
+		}
+		const mserNode = this.get("_MSER");
+		if (mserNode) {
+			newObject.set("_MSER", mserNode);
+		}
+		const oidNode = this.get("_OID");
+		if (oidNode && !newObject.get("_OID")) {
+			newObject.set("_OID", oidNode);
+		}
+		const lkidNode = this.get("_LKID");
+		if (lkidNode && !newObject.get("_LKID")) {
+			newObject.set("_LKID", lkidNode);
+		}
+
 		if (override) {
 			Object.assign(this, newObject);
 

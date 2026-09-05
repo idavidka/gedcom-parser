@@ -18,7 +18,6 @@ import type {
 import { nextRecordId } from "../utils/family-edit";
 import { appendGedcomTrailer } from "../utils/gedcom-trailer";
 import {
-	DEFAULT_GEDCOM_EXPORT_VERSION,
 	normalizeGedcomVersion,
 } from "../utils/gedcom-version";
 import type { GedcomExportVersion } from "../utils/gedcom-version";
@@ -755,9 +754,7 @@ export class GedCom extends Common implements IGedcom {
 		Object.assign(newHead!, this.get("HEAD") ?? {});
 		this.applyGedcomSpecToHead(
 			newHead,
-			gedcomVersion ??
-				this.getGedcomVersion() ??
-				DEFAULT_GEDCOM_EXPORT_VERSION
+			gedcomVersion ?? this.getGedcomVersion()
 		);
 
 		const existingSour = this.get("HEAD")?.get("SOUR");
@@ -845,10 +842,11 @@ export class GedCom extends Common implements IGedcom {
 		}
 
 		const requestedVersion = options?.gedcomVersion;
-		const exportVersion = normalizeGedcomVersion(
-			requestedVersion ??
-				(!options?.original ? this.getGedcomVersion() : undefined)
-		);
+		// API option wins; else inherit HEAD.GEDC.VERS; else 5.5.1
+		// (via getGedcomVersion → normalizeGedcomVersion).
+		const exportVersion = requestedVersion
+			? normalizeGedcomVersion(requestedVersion)
+			: this.getGedcomVersion();
 
 		// Standardize OBJE for the target version (G7 nesting vs 5.5.1 flat)
 		// whenever we rewrite for download or an explicit version is set.
@@ -869,9 +867,7 @@ export class GedCom extends Common implements IGedcom {
 
 		if (!exportOptions.original) {
 			Object.assign(newGedcom, {
-				HEAD: this.getDownloadHeader(
-					requestedVersion ?? exportVersion
-				),
+				HEAD: this.getDownloadHeader(exportVersion),
 			});
 		}
 

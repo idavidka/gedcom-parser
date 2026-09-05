@@ -47,7 +47,7 @@ import { getFamilyWith } from "../utils/get-family-with";
 import { PlaceType, getPlaces } from "../utils/get-places";
 import type { Place } from "../utils/get-places";
 import { implemented } from "../utils/logger";
-import { getFileExtension, isImageFormat } from "../utils/media-utils";
+import { getFileExtension, isImageFormat, resolveObjeForm } from "../utils/media-utils";
 import type {
 	AttachMultimediaOptions,
 	CreateMultimediaInput,
@@ -1022,13 +1022,22 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					let url = obje?.get("FILE")?.toValue() as
 						string | undefined;
 					const title =
+						(obje?.get("FILE.TITL")?.toValue() as
+							| string
+							| undefined) ??
 						(obje?.get("TITL")?.toValue() as string | undefined) ??
 						"";
 					const type =
-						(obje?.get("FORM")?.toValue() as string | undefined) ??
+						resolveObjeForm(obje) ??
+						(url ? getFileExtension(url) : undefined) ??
 						"raw";
 
-					const imgId = clone || mser;
+					let imgId = clone || mser;
+					const hasEmbeddedOrLocalFile =
+						!!url &&
+						(url.startsWith("data:") ||
+							url.startsWith("blob:") ||
+							!/^https?:\/\//i.test(url));
 
 					if (!www || !tree || !this.id) {
 						return;
@@ -1053,6 +1062,12 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 						url =
 							url ||
 							`https://${www}/mediaui-viewer/tree/${tree}/media/${media}`;
+					}
+
+					if (!imgId && hasEmbeddedOrLocalFile && url) {
+						imgId =
+							(typeof media === "string" && media) ||
+							`local-${String(key).replace(/[@]/g, "")}-${getFileExtension(url) || "bin"}`;
 					}
 
 					if (url && imgId) {
@@ -1142,12 +1157,26 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			const isPrimary = obje?.get("_PRIM")?.toValue() === "Y";
 			const url = obje?.get("FILE")?.toValue() as string | undefined;
 			const title =
-				(obje?.get("NOTE")?.toValue() as string | undefined) ?? "";
+				(obje?.get("FILE.NOTE")?.toValue() as string | undefined) ??
+				(obje?.get("NOTE")?.toValue() as string | undefined) ??
+				"";
 			const type =
-				(obje?.get("FORM")?.toValue() as string | undefined) ?? "raw";
+				resolveObjeForm(obje) ??
+				(url ? getFileExtension(url) : undefined) ??
+				"raw";
 
-			const imgId = obje?.get("_PHOTO_RIN")?.toValue() as
+			const photoRin = obje?.get("_PHOTO_RIN")?.toValue() as
 				string | undefined;
+			const hasEmbeddedOrLocalFile =
+				!!url &&
+				(url.startsWith("data:") ||
+					url.startsWith("blob:") ||
+					!/^https?:\/\//i.test(url));
+			const imgId =
+				photoRin ||
+				(hasEmbeddedOrLocalFile && url
+					? `local-${String(key).replace(/[@]/g, "")}-${getFileExtension(url) || "bin"}`
+					: undefined);
 
 			if (url && imgId) {
 				const id = `${tree}-${this.id}-${imgId}`;
@@ -1338,14 +1367,19 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			const title =
 				(obje?.get("TITL")?.toValue() as string | undefined) ?? "";
 			const type =
-				(obje?.get("FORM")?.toValue() as string | undefined) ?? "raw";
+				resolveObjeForm(obje) ??
+				(url ? getFileExtension(url) : undefined) ??
+				"raw";
 
 			if (url) {
 				// Extract imgId from URL (hash parameter or filename)
 				// Example: https://media.geni.com/p13/cb/0e/10/8a/53444844bdae63e7/czec0004d_150-1_m_00227_original.jpg?hash=ca325164...
 				const urlMatch = url.match(/\/([^/]+)\?hash=/);
 				const imgId =
-					urlMatch?.[1] || `img-${index}-${Date.now().toString(36)}`;
+					urlMatch?.[1] ||
+					(url.startsWith("data:")
+						? `data-${index}-${getFileExtension(url) || "bin"}`
+						: `img-${index}-${Date.now().toString(36)}`);
 
 				const id = `geni-${geniId}-${imgId}`;
 				list[id] = {
@@ -1402,15 +1436,21 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			const isPrimary = obje?.get("_PRIM")?.toValue() === "Y";
 			const url = obje?.get("FILE")?.toValue() as string | undefined;
 			const title =
-				(obje?.get("TITL")?.toValue() as string | undefined) ?? "";
+				(obje?.get("FILE.TITL")?.toValue() as string | undefined) ??
+				(obje?.get("TITL")?.toValue() as string | undefined) ??
+				"";
 			const type =
-				(obje?.get("FORM")?.toValue() as string | undefined) ?? "raw";
+				resolveObjeForm(obje) ??
+				(url ? getFileExtension(url) : undefined) ??
+				"raw";
 
 			if (url) {
 				// Generate a unique imgId from the URL or index
 				const imgId = `media-${index}-${
-					url.split("/").pop()?.split("?")[0]?.substring(0, 20) ||
-					Date.now().toString(36)
+					url.startsWith("data:")
+						? getFileExtension(url) || "bin"
+						: url.split("/").pop()?.split("?")[0]?.substring(0, 20) ||
+							Date.now().toString(36)
 				}`;
 
 				const id = `${treeId}-${this.id}-${imgId}`;
@@ -1492,7 +1532,9 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		const primaryMedia = mediaArray.find(
 			(media) =>
 				media.isPrimary &&
-				isImageFormat(media.contentType || getFileExtension(media.url))
+				isImageFormat(
+					media.contentType || media.url || getFileExtension(media.url)
+				)
 		);
 
 		if (primaryMedia) {
@@ -1519,7 +1561,9 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 		// If no primary image found, return the first image
 		const secondaryMedia = mediaArray.find((media) =>
-			isImageFormat(media.contentType || getFileExtension(media.url))
+			isImageFormat(
+				media.contentType || media.url || getFileExtension(media.url)
+			)
 		);
 
 		if (secondaryMedia) {
