@@ -2781,14 +2781,8 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 	getRelativesOnLevel(level = 0, filter?: Filter) {
 		this.id = this.id || `@I${Math.random()}@`;
-		const familyKey = (level <= 0 ? "FAMS" : "FAMC") as MultiTag;
 		const cache = relativesOnLevelCache(this._gedcom, this.id, level);
-		// Trust non-empty hits. Trust empty hits only when there is no family
-		// pointer — otherwise an earlier miss can hide spouses/children forever.
-		if (
-			cache &&
-			(cache.length > 0 || !this.get(familyKey)?.toValueList()?.length)
-		) {
+		if (cache) {
 			return cache;
 		}
 
@@ -2797,9 +2791,9 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		const config = {
 			isAscendant: level < 0,
 			direction: level < 0 ? -1 : 1,
-			key: familyKey,
+			key: level <= 0 ? "FAMS" : "FAMC",
 		};
-		let families = this.get(config.key)?.toValueList();
+		let families = this.get(config.key as MultiTag)?.toValueList();
 
 		if (!families) {
 			return relativesOnLevelCache(this._gedcom, this.id, level, persons);
