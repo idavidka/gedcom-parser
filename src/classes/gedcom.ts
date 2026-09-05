@@ -507,6 +507,15 @@ export class GedCom extends Common implements IGedcom {
 		);
 	}
 
+	/** Rewrite HEAD.GEDC (and CHAR/FORM) for the requested export version. */
+	applyExportVersion(version?: string | null) {
+		const head = this.get("HEAD");
+		if (!head) {
+			return;
+		}
+		this.applyGedcomSpecToHead(head, normalizeGedcomVersion(version));
+	}
+
 	private applyGedcomSpecToHead(
 		head: Required<IGedComStructure>["HEAD"],
 		version: GedcomExportVersion

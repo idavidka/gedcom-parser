@@ -49,6 +49,15 @@ describe("GEDCOM version", () => {
 	it("exports HEAD.GEDC.VERS 5.5.1 with FORM and CHAR", () => {
 		const { gedcom } = GedcomTree.parse(sample("7.0"));
 		const raw = gedcom.toGedcom(undefined, 0, { gedcomVersion: "5.5.1" });
+		expect(raw).toContain("2 VERS 7.0");
+		expect(raw).not.toContain("2 FORM LINEAGE-LINKED");
+		expect(raw).not.toMatch(/\n1 CHAR /);
+	});
+
+	it("exports HEAD.GEDC.VERS 5.5.1 with FORM and CHAR via applyExportVersion", () => {
+		const { gedcom } = GedcomTree.parse(sample("7.0"));
+		gedcom.applyExportVersion("5.5.1");
+		const raw = gedcom.toGedcom(undefined, 0, { original: true });
 		expect(raw).toContain("2 VERS 5.5.1");
 		expect(raw).toContain("2 FORM LINEAGE-LINKED");
 		expect(raw).toContain("1 CHAR UTF-8");
