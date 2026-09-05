@@ -49,7 +49,8 @@ const CALENDAR_PREFIX =
 
 /** GEDCOM DateValue period / range / approx forms kept as opaque payloads. */
 const isGedcomDateValueForm = (value: string) =>
-	/^(FROM|TO|BET|AFT|BEF|ABT|CAL|EST|INT)\b/i.test(value) ||
+	// Require space/end after the token so display forms like "Abt." are not opaque.
+	/^(FROM|TO|BET|AFT|BEF|ABT|CAL|EST|INT)(\s|$)/i.test(value) ||
 	/\bAND\b/i.test(value);
 
 const NOTE_MARKER = "####";
@@ -324,7 +325,12 @@ export class CommonDate extends Common<string> {
 		if (typeof this._value === "string") {
 			const withoutCalendar = this._value.replace(CALENDAR_PREFIX, "");
 			if (isGedcomDateValueForm(withoutCalendar.trim())) {
-				return this._value;
+				// Normalize qualifier casing for standard DateValue tokens.
+				return this._value.replace(
+					/^((?:GREGORIAN|JULIAN|FRENCH_R|HEBREW)\s+)?(FROM|TO|BET|AFT|BEF|ABT|CAL|EST|INT)\b/i,
+					(_m, cal: string | undefined, q: string) =>
+						`${cal || ""}${q.toUpperCase()}`
+				);
 			}
 		}
 

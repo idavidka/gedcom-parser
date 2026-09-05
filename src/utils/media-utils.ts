@@ -1,6 +1,8 @@
 /**
  * Get file extension from a filename, URL, or data URL.
  */
+import type { MultiTag } from "../types/types";
+
 export const getFileExtension = (filename: string): string => {
 	if (!filename) {
 		return "";
@@ -51,7 +53,7 @@ export const isImageFormat = (format: string): boolean => {
 
 /** Resolve FORM / media type from flat (5.5.1) or nested (GEDCOM 7) OBJE. */
 export const resolveObjeForm = (obje?: {
-	get?: (path: string) => { toValue?: () => unknown } | undefined;
+	get?: (path: MultiTag) => { toValue?: () => unknown } | undefined;
 }): string | undefined => {
 	const value =
 		obje?.get?.("FILE.FORM")?.toValue?.() ??

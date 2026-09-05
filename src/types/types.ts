@@ -232,11 +232,16 @@ interface Tags {
 	CHAN?: Common; // Change metadata (GEDCOM 7)
 	SCHMA?: Common; // Schema metadata (GEDCOM 7)
 	TAG?: Common; // Tag metadata (GEDCOM 7)
+	ASSO?: Common; // Association (GEDCOM 7)
+	MEDI?: Common; // Media type (GEDCOM 5.5.1 sibling of FORM)
+	CHAR?: Common; // Character set (GEDCOM 5.x HEAD)
+	SDATE?: Common; // Sort date (GEDCOM 7)
 }
 
 export type Tag = keyof Tags | keyof NonStandard;
 export type ListTag = `@@${keyof Tags}`;
-export type MultiTag = ListTag | Tag | `${Tag}.${Tag}`;
+/** Dot paths may nest deeper than two levels (e.g. FILE.FORM.TYPE). */
+export type MultiTag = ListTag | Tag | `${Tag}.${string}`;
 
 export type FilterIterator<T, K> = (
 	item: T,

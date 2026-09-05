@@ -143,15 +143,6 @@ export const applyGedcom7Enumerations = (gedcom: GedComType): RestoreFn => {
 					restores
 				);
 			});
-		const singleAsso = indi.get("ASSO");
-		if (singleAsso && !singleAsso.toList) {
-			normalizeEnum(
-				singleAsso.get("ROLE"),
-				GEDCOM7_ROLE_VALUES,
-				"upper",
-				restores
-			);
-		}
 	});
 
 	gedcom.fams()?.forEach((fam) => {

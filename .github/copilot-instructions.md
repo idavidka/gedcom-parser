@@ -1,235 +1,203 @@
-# GitHub Copilot Instructions - GEDCOM Parser
+# GitHub Copilot Instructions — @treeviz/gedcom-parser
+
+Short standing policy also lives in the monorepo Cursor rules
+(`.cursor/rules/*.mdc`) and `AGENTS.md`. This file is package-specific detail
+for Copilot when working under `packages/gedcom-parser/`.
 
 ---
 
-## ⚠️ MANDATORY BEHAVIORAL RULES — READ FIRST, ALWAYS APPLY
+## Mandatory behavioral rules
 
-These rules are **non-negotiable** and apply to **every single response**, without exception.
-
-### 1. 🌐 Response Language
-
-> **ALWAYS respond in the same language the user used in their question.**
-> - User writes in Hungarian → respond in Hungarian
-> - User writes in English → respond in English
-> - **NEVER** switch languages mid-response unless the user explicitly asks
-> - This rule overrides all other language rules in this document
-
-### 2. 🧪 Never run unit or E2E tests
-
-> **NEVER run unit tests or E2E tests** (`npm test`, Vitest, Playwright). The developer runs them manually.
-
-### 3. 📝 Suggested Commit Message — ALWAYS Required After Changes
-
-> **EVERY response where any file, code, or configuration was modified MUST end with a suggested commit message.**
-> This is automatic and unconditional — never skip it, never ask if needed.
-
-**Required format at the end of every modifying response:**
+1. **Language** — Reply in the same language the user used. Code, comments,
+   commit messages, and docs stay in English.
+2. **Tests** — Do **not** run unit/E2E tests by default (`npm test`, Vitest,
+   Playwright). Write or update tests when needed; the developer runs them.
+   **Exception:** run package tests only when the user explicitly asks.
+3. **Commit message** — After any file change, end the response with:
 
 ```
 ---
-
-## 🎯 Suggested Commit Message
-
+## Suggested Commit Message
 type(scope): brief description
 ```
 
-**Rules:**
-- Use **Conventional Commits** format: `type(scope): subject`
-- Keep it **under 72 characters**
-- Use **imperative mood** ("add feature", not "added feature")
-- **Valid types:** `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`
+Keep the subject under 72 characters (Conventional Commits).
 
 ---
 
-## Project Overview
+## Package overview
 
-**GEDCOM Parser** (@treeviz/gedcom-parser) is a TypeScript library for parsing and manipulating GEDCOM (GEnealogical Data COMmunication) files. It provides a robust API for reading genealogy data, navigating family relationships, and exporting data in various formats.
+Pluggable TypeScript GEDCOM library used by TreeViz. Parses and exports
+**GEDCOM 5.5 / 5.5.1** and **GEDCOM 7**, including FamilySearch **GEDZIP**
+(`.gdz`).
 
-### Tech Stack
+| | |
+| --- | --- |
+| Package | `@treeviz/gedcom-parser` |
+| Build | **tsup** (`npm run build`) + `tsc` declarations |
+| Tests | Vitest (`npm test`) — developer-run unless asked |
+| Node | **≥ 20** |
+| Deps | `lodash-es`, `date-fns`, `jszip`; CLI also uses `commander`, `chalk` |
 
-- **Language**: TypeScript
-- **Build Tool**: Vite
-- **Testing**: Vitest
-- **Package Manager**: npm
-- **Module Format**: ES Modules
+Canonical API docs: **`README.md`** (keep it in sync when changing public APIs).
+Extension tags in `HEAD.SCHMA`: [treeviz.com/gedcom](https://treeviz.com/gedcom).
 
-### Project Structure
+### Layout
 
 ```
-gedcom-parser/
-├── src/                    # Source code
-│   ├── classes/           # Core classes (Gedcom, Indi, Fam, etc.)
-│   ├── utils/             # Utility functions
-│   ├── types/             # TypeScript type definitions
-│   ├── __tests__/         # Unit tests
-│   └── index.ts           # Main entry point
-├── docs/                  # Documentation
-└── examples/              # Usage examples
+src/
+  classes/           # GedCom, Indi, Fam, Obje, Date, Note, List, …
+  factories/         # i18n, date locale, places, cache, kinship injectors
+  utils/             # parser, gedzip, local-media, gedcom7-*, multimedia, …
+  kinship-translator/
+  structures/ interfaces/ types/ constants/
+  cli/               # gedcom-parser CLI
+  __tests__/
 ```
 
-### Key Features
+---
 
-1. **GEDCOM Parsing**: Parse GEDCOM files (.ged) into structured JavaScript objects
-2. **Family Relationships**: Navigate parent-child, spouse, sibling relationships
-3. **Kinship Calculation**: Calculate relationship degrees (cousin, removed, etc.)
-4. **Date Handling**: Parse and format GEDCOM date formats
-5. **Export**: Convert parsed data back to GEDCOM or JSON format
-6. **Type Safety**: Full TypeScript support with comprehensive type definitions
+## Export version priority
 
-### Code Style & Conventions
+When serializing:
 
-1. **Language**: All code, comments, and documentation should be in **English**
-   - **Code**: Variable names, function names, class names must be in English
-   - **Comments**: All inline comments and documentation comments must be in English
-   - **Documentation**: All `.md` files must be in English
-   - **Commit Messages**: Write commit messages in English
-   - **Copilot Responses**: Always respond in the **same language as the user's question**
-2. **TypeScript**: Strict mode enabled, avoid `any` types
-3. **File Naming**: 
-   - Classes: `PascalCase.ts`
-   - Utils: `kebab-case.ts`
-   - Constants: `UPPER_SNAKE_CASE`
-4. **Import Order**: External libraries → Internal modules → Types
-5. **Testing**: Write unit tests for all public APIs
-6. **Documentation**: JSDoc comments for exported functions and classes
+1. `toGedcom(..., { gedcomVersion: "7.0" | "5.5.1" })` if set  
+2. else source `HEAD.GEDC.VERS`  
+3. else **5.5.1**
 
-### Commit Message Convention
+GEDCOM 7-only transforms (PHRASE, SCHMA, UID/CREA/CHAN backfill, CONC skip, …)
+run **only** when the resolved export version is `7.0`.
 
-Follow **Conventional Commits** specification:
+`original: true` keeps the live HEAD (and `_ORIGHEAD`) instead of the download
+TreeViz header.
 
-**Format:** `<type>(<scope>): <subject>`
+---
 
-**Types:**
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style changes
-- `refactor`: Code refactoring
-- `perf`: Performance improvements
-- `test`: Adding or updating tests
-- `build`: Build system changes
-- `chore`: Other changes
+## Key APIs (current names)
 
-**Examples:**
-```
-feat(parser): add support for custom tags
-fix(date): handle malformed date strings
-docs: update API reference
-test(indi): add kinship calculation tests
-perf(parser): optimize large file parsing
-```
-
-### Common Tasks
-
-#### Running Tests
-```bash
-npm test              # Run all tests
-npm run test:watch   # Watch mode
-npm run test:ui      # Vitest UI
-```
-
-#### Building
-```bash
-npm run build        # Build for production
-npm run dev          # Development mode with watch
-```
-
-#### Publishing to NPM
-```bash
-npm version patch|minor|major
-npm run build
-npm publish
-```
-
-### API Structure
-
-#### Main Classes
-
-1. **Gedcom**: Root class representing the entire GEDCOM file
-   - Methods: `getIndis()`, `getFams()`, `getIndi(id)`, `toGedcom()`, `toJson()`
-
-2. **Indi**: Individual person record
-   - Methods: `getName()`, `getBirthDate()`, `getDeathDate()`, `getParents()`, `getSpouses()`, `getChildren()`
-
-3. **Fam**: Family record
-   - Methods: `getHusband()`, `getWife()`, `getChildren()`, `getMarriageDate()`
-
-4. **Date**: GEDCOM date handling
-   - Methods: `format()`, `toISO()`, `compare()`
-
-### Testing Best Practices
-
-1. **Coverage**: Aim for >80% code coverage
-2. **Test Structure**: Arrange-Act-Assert pattern
-3. **Mock Data**: Use realistic GEDCOM samples in `__tests__/mocks/`
-4. **Edge Cases**: Test malformed data, missing fields, invalid dates
-5. **Performance**: Test parsing speed with large files
-
-### Performance Optimization
-
-- **Lazy Loading**: Parse data on-demand when possible
-- **Caching**: Cache frequently accessed relationships
-- **Memory**: Avoid loading entire large files into memory
-- **Indexing**: Build lookup maps for O(1) ID searches
-
-### Common Issues & Solutions
-
-#### Large File Performance
-- Use streaming parser for files >10MB
-- Implement pagination for large individual lists
-- Consider web worker for browser usage
-
-#### Date Format Variations
-- GEDCOM supports multiple date formats (exact, approximate, ranges)
-- Use the Date class for consistent handling
-- Test with various date formats
-
-#### Encoding Issues
-- GEDCOM files may use different encodings (UTF-8, ANSI, etc.)
-- Handle BOM (Byte Order Mark) correctly
-- Validate encoding in header
-
-### Documentation
-
-All public APIs should have JSDoc comments:
+Use these — do **not** invent legacy names like `getIndis` / `getName`.
 
 ```typescript
-/**
- * Parse a GEDCOM file and return a Gedcom object
- * @param content - GEDCOM file content as string
- * @returns Parsed Gedcom object
- * @throws Error if file format is invalid
- */
-export function parseGedcom(content: string): Gedcom {
-  // ...
-}
+import GedcomTree from "@treeviz/gedcom-parser";
+
+const { gedcom } = GedcomTree.parse(content);
+
+gedcom.indis();
+gedcom.indi("@I1@");
+gedcom.fams();
+gedcom.objes();
+gedcom.snotes();
+
+gedcom.toGedcom(undefined, 0, { gedcomVersion: "7.0" });
+gedcom.toGedzip({ media });
+gedcom.collectMultimedia({ namespace });
+gedcom.createMultimediaRecord({ file, title, mediType, gedcomVersion });
+gedcom.createSharedNote("text");
+gedcom.getOriginalHeadRecord(); // _ORIGHEAD
+gedcom.getSourceHeads();        // original head first, then live HEAD
+gedcom.isAncestry(); / isMyHeritage(); / …
+
+indi.toName();
+indi.getBirthDate();
+indi.multimedia(namespace);
+indi.getProfilePicture(namespace);
+indi.attachMultimedia(obje);
+indi.attachMediaFromUrl(url, options);
 ```
 
-### Contact & Resources
+### GEDZIP / media hooks
 
-- **NPM Package**: @treeviz/gedcom-parser
-- **Repository**: https://github.com/idavidka/gedcom-parser
-- **Documentation**: README.md and API.md
-- **Parent Project**: TreeViz Monorepo
+```typescript
+import {
+  extractGedzip,
+  buildGedzipBlob,
+  downloadGedzipMedia,
+  setLocalMediaResolver,
+  setMediaContentResolver,
+} from "@treeviz/gedcom-parser";
+
+// Host (TreeViz) injects IndexedDB / cache — parser stays storage-agnostic
+setLocalMediaResolver(async (path) => /* data:/blob:/https: URL */);
+setMediaContentResolver(async (media) => /* { content, contentType? } */);
+```
+
+After GEDZIP import, `FILE` paths are often `media/<uuid>.jpg`. Resolvers turn
+those into displayable / packable payloads. Do **not** embed all media as data
+URLs into the GEDCOM text for large trees (breaks remount/parse).
+
+### Factories
+
+Set **before** parse when the host needs them:
+
+- `setI18nProvider`
+- `setDateLocaleProvider` — `() => Locale | undefined` (no lang arg)
+- `setPlaceParserProvider` / `setPlaceTranslatorProvider`
+- `setCacheManagerFactory` — returns `{ getItem(), setItem() }` (whole-object cache, not key/value)
+- `setKinshipTranslatorClass`
+- `setLocalMediaResolver` / `setMediaContentResolver`
+
+Defaults are SSR-safe no-ops / in-memory.
 
 ---
 
-**When working on this project:**
-1. Always write in English (code, comments, docs)
-2. Add tests for new features
-3. Update documentation when changing APIs
-4. Follow TypeScript best practices
-5. Optimize for performance with large GEDCOM files
-6. Maintain backward compatibility when possible
-7. **After completing changes, ALWAYS suggest a commit message** following Conventional Commits format
+## GEDCOM 7 notes for implementers
 
-**Commit Message Reminder:**
-After making any changes, ALWAYS provide a suggested commit message at the end of your response:
+- Multimedia: nested `FILE → FORM [→ TYPE]`; flat `FORM` / `MEDI` are 5.5.1.
+  When standardizing to 7.0, remove leftover flat siblings.
+- Shared notes: top-level `0 @Nn@ SNOTE <text>`; links via `1 NOTE @Nn@`.
+- Non-events: `1 NO MARR` (+ optional DATE).
+- Non-enum SEX / PEDI / ROLE → empty parent + `PHRASE` on G7 export only.
+- `_ORIGHEAD` preserves pre-TreeViz HEAD for vendor detection after re-export.
+- `TRLR` is a file terminator only — not a stored record / not in `toJson()`.
+- Date export: display forms `Abt.` / `Bef.` / `Aft.` must become `ABT` / `BEF` /
+  `AFT` in GEDCOM text.
 
-```
 ---
 
-## 🎯 Suggested Commit Message
+## Code conventions
 
-type(scope): brief description
+- TypeScript strict; avoid `any` in production code
+- Classes: `PascalCase.ts`; utils: `kebab-case.ts`
+- Public exports: keep `README.md` and this file aligned
+- Add/adjust Vitest coverage for public API changes under `src/__tests__/`
+- Prefer small, focused diffs; no drive-by refactors
+
+### Commands (developer / explicit ask)
+
+```bash
+npm test                 # Vitest
+npm run test:watch
+npm run build            # tsup + dts
+npm run dev              # tsup --watch
 ```
+
+### Commits
+
+`feat|fix|docs|refactor|test|chore(scope): subject`
+
+Examples:
+
+```
+feat(gedzip): extract media entries without data-URL remount
+fix(date): export Abt. as ABT
+docs: refresh README for GEDCOM 7 APIs
+```
+
+---
+
+## Host integration (TreeViz)
+
+The visualiser wires factories in `src/utils/init-gedcom-parser.ts` (cache bridge,
+place/i18n providers, local media → IndexedDB). GEDZIP import seeding lives in
+the app worker; the parser only provides extract/build/download helpers.
+
+When changing parser media/export behavior, check:
+
+- `src/utils/init-gedcom-parser.ts`
+- `src/workers/app.worker.ts`
+- stage / profile GEDCOM 7 download paths
+
+---
+
+**After changes:** update tests if the public contract moved, update `README.md`
+when APIs change, and always end with a Suggested Commit Message.

@@ -9,6 +9,8 @@
 
 import JSZip from "jszip";
 
+import { resolveMediaContent } from "./local-media";
+
 export const GEDZIP_MIME = "application/vnd.familysearch.gedcom+zip";
 export const GEDZIP_EXTENSION = "gdz";
 export const GEDZIP_GEDCOM_ENTRY = "gedcom.ged";
@@ -18,8 +20,9 @@ export type GedzipMediaInput = {
 	url: string;
 	/**
 	 * Media bytes as a data URL (`data:...;base64,...`), raw base64, or binary string.
+	 * Optional until resolved by `downloadGedzipMedia` / host cache.
 	 */
-	content: string;
+	content?: string;
 	contentType?: string;
 	id?: string;
 	imgId?: string;
@@ -281,4 +284,64 @@ export const isGedzipContainer = (file: {
 		type === "application/zip" ||
 		type === "application/x-zip-compressed"
 	);
+};
+
+export type DownloadableGedzipMedia = GedzipMediaInput & {
+	key?: string;
+	downloaded?: boolean;
+	tree?: string;
+	person?: string;
+	downloadName?: string;
+};
+
+/**
+ * Resolve media payloads via injected host cache / local paths / fetch.
+ * Failures are skipped so GEDZIP remains valid with `gedcom.ged` only.
+ */
+export const downloadGedzipMedia = async (
+	media: Record<string, DownloadableGedzipMedia | GedzipMediaInput>,
+	onProgress?: (done: number, total: number) => void
+): Promise<GedzipMediaInput[]> => {
+	const entries = Object.values(media).filter((item) => !!item.url);
+	const total = entries.length;
+	let done = 0;
+	const downloaded: GedzipMediaInput[] = [];
+
+	await Promise.all(
+		entries.map(async (item) => {
+			try {
+				const resolved = await resolveMediaContent({
+					url: item.url,
+					id: item.id,
+					imgId: item.imgId,
+					key: "key" in item ? item.key : undefined,
+					contentType: item.contentType,
+				});
+				if (!resolved?.content) {
+					return;
+				}
+				downloaded.push({
+					...item,
+					content: resolved.content,
+					contentType: resolved.contentType || item.contentType,
+				});
+			} catch {
+				// Skip unreachable media.
+			} finally {
+				done += 1;
+				onProgress?.(done, total);
+			}
+		})
+	);
+
+	return downloaded;
+};
+
+/** Pack GEDCOM text + media into a GEDZIP Blob. */
+export const buildGedzipBlob = async (
+	gedcomText: string,
+	mediaFiles: GedzipMediaInput[] = []
+): Promise<Blob> => {
+	const bytes = await buildGedzip(gedcomText, mediaFiles);
+	return new Blob([bytes], { type: GEDZIP_MIME });
 };

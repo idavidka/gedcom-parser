@@ -592,13 +592,21 @@ export class List<
 
 		(this.entries() as Array<[K, T]>).forEach(([_, item]) => {
 			const validTag = getValidTag(tag);
-			const validKey = item.id;
-			const validValue = validKey ? validTag : item.exportValue();
-			gedcom.push(
-				`${level} ${validKey || validTag}${
-					validValue ? ` ${validValue}` : ""
-				}`
-			);
+			const xref = item.id;
+			const payload = item.exportValue?.() as string | undefined;
+			// Cross-referenced records: `0 @N1@ SNOTE text` (payload optional).
+			// Inline list items: `1 NOTE text`.
+			if (xref) {
+				gedcom.push(
+					`${level} ${xref} ${validTag}${
+						payload ? ` ${payload}` : ""
+					}`
+				);
+			} else {
+				gedcom.push(
+					`${level} ${validTag}${payload ? ` ${payload}` : ""}`
+				);
+			}
 			gedcom.push(
 				...item.toGedcomLines(
 					validTag as MultiTag | undefined,

@@ -705,7 +705,9 @@ export class GedCom extends Common implements IGedcom {
 
 	/** Rewrite HEAD.GEDC (and CHAR/FORM) for the requested export version. */
 	applyExportVersion(version?: string | null) {
-		const head = this.get("HEAD");
+		const head = this.get("HEAD") as
+			| Required<IGedComStructure>["HEAD"]
+			| undefined;
 		if (!head) {
 			return;
 		}
@@ -721,7 +723,7 @@ export class GedCom extends Common implements IGedcom {
 		const previousChar = head.get("CHAR")?.toValue();
 
 		head.remove("GEDC");
-		const gedc = head.set("GEDC", "");
+		const gedc = head.set("GEDC", "") as Common | undefined;
 		if (!gedc) {
 			return;
 		}

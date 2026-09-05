@@ -133,6 +133,13 @@ export class Obje extends Common<string, ObjeKey> implements IObje {
 		}
 
 		if (override) {
+			// Drop flat 5.5.1 siblings so G7 nested FILE/FORM does not leave
+			// leftover FORM/MEDI/TITL/NOTE on the same OBJE.
+			this.remove("FILE");
+			this.remove("FORM");
+			this.remove("MEDI");
+			this.remove("TITL");
+			this.remove("NOTE");
 			Object.assign(this, newObject);
 
 			return this;

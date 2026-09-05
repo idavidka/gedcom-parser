@@ -154,7 +154,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		delete this._value;
 	}
 
-	set<T extends Common | List = Common | List>(
+	set<T extends Common | List = Common>(
 		name: MultiTag,
 		value: T | string
 	) {
@@ -173,7 +173,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		return get(this, name) as T | undefined;
 	}
 
-	assign<T extends Common | List = Common | List>(
+	assign<T extends Common | List = Common>(
 		name: MultiTag,
 		value: T,
 		unique = false
@@ -207,7 +207,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		return get(this, name) as T | undefined;
 	}
 
-	get<T extends Common | List = Common | List>(name: MultiTag) {
+	get<T extends Common | List = Common>(name: MultiTag) {
 		if (!name.includes(".")) {
 			return get(this, name) as T | undefined;
 		}
@@ -270,7 +270,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		return this._gedcom;
 	}
 
-	getIf<T extends Common | List = Common | List>(
+	getIf<T extends Common | List = Common>(
 		name: MultiTag,
 		condition: string,
 		name2: MultiTag
@@ -397,11 +397,11 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 				json.value = this._value as string;
 			} else {
 				const validKey = key as MultiTag;
-				const prop = this.get(validKey);
+				const prop = this.get<Common | List>(validKey);
 				if (typeof prop?.toObject === "function") {
 					if (prop instanceof Common) {
 						json[validKey] = prop.toObject(validKey, options);
-					} else {
+					} else if (prop instanceof List) {
 						json = {
 							...json,
 							...prop.toObject(validKey, options),
@@ -426,8 +426,8 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 				return;
 			}
 
-			const current = this.get(validKey as MultiTag);
-			const mergeValue = other.get(validKey as MultiTag);
+			const current = this.get<Common | List>(validKey as MultiTag);
+			const mergeValue = other.get<Common | List>(validKey as MultiTag);
 			if (mergeValue) {
 				if (current instanceof Common || current instanceof List) {
 					this.assign(validKey as MultiTag, mergeValue, true);
@@ -492,7 +492,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 			if (isGedcom7Export && validKey === "CONC") {
 				return;
 			}
-			const prop = this.get(validKey);
+			const prop = this.get<Common | List>(validKey);
 			if (typeof prop?.toGedcomLines === "function") {
 				if (prop instanceof Common) {
 					const value = prop.exportValue() as string | undefined;
@@ -502,7 +502,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 					gedcom.push(
 						...prop.toGedcomLines(validKey, level + 1, options)
 					);
-				} else {
+				} else if (prop instanceof List) {
 					gedcom.push(
 						...prop.toGedcomLines(validKey, level, options)
 					);

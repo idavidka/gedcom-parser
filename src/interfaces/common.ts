@@ -27,24 +27,24 @@ interface ICommon<P = string, I extends IdType = IdType> {
 
 	removeValue: () => void;
 
-	set: <T extends Common | List = Common | List>(
+	set: <T extends Common | List = Common>(
 		name: MultiTag,
-		value: T
+		value: T | string
 	) => T | undefined;
 
-	get: <T extends Common | List = Common | List>(
+	get: <T extends Common | List = Common>(
 		name: MultiTag
 	) => T | undefined;
 
 	remove: (name: MultiTag) => void;
 
-	getIf: <T extends Common | List = Common | List>(
+	getIf: <T extends Common | List = Common>(
 		name: MultiTag,
 		condition: string,
 		name2: MultiTag
 	) => T | undefined;
 
-	assign: <T extends Common | List = Common | List>(
+	assign: <T extends Common | List = Common>(
 		name: MultiTag,
 		value: T
 	) => T | undefined;

@@ -70,7 +70,7 @@ export const applyGedcom7DatePhrases = (gedcom: GedComType): RestoreFn => {
 		const { calendar, rest } = parseGedcom7CalendarPrefix(raw.trim());
 		const looksStructured =
 			hasComponents ||
-			/^(ABT|CAL|EST|BEF|AFT|FROM|TO|BET|INT)\b/i.test(rest) ||
+			/^(ABT|CAL|EST|BEF|AFT|FROM|TO|BET|INT)(\s|$)/i.test(rest) ||
 			/\bAND\b/i.test(rest) ||
 			/^\d{1,2}\s+[A-Z]{3}\s+\d{1,4}/i.test(rest) ||
 			/^[A-Z]{3}\s+\d{1,4}/i.test(rest) ||
@@ -122,57 +122,37 @@ export const applyGedcom7DatePhrases = (gedcom: GedComType): RestoreFn => {
 
 	const walk = (node: Common | undefined) => {
 		if (!node) return;
-		const date = node.get?.("DATE");
-		date?.toList?.()?.forEach((item) => visitDate(item));
-		if (date && !date.toList) {
-			visitDate(date);
-		}
-		const sdate = node.get?.("SDATE");
-		sdate?.toList?.()?.forEach((item) => visitDate(item));
-		if (sdate && !sdate.toList) {
-			visitDate(sdate);
-		}
+		node.get("DATE")?.toList()?.forEach((item) => visitDate(item));
+		node.get("SDATE")?.toList()?.forEach((item) => visitDate(item));
 	};
 
 	gedcom.indis()?.forEach((indi) => {
 		if (!indi) return;
 		walk(indi);
 		// Common event tags
-		[
-			"BIRT",
-			"DEAT",
-			"CHR",
-			"BAPM",
-			"BURI",
-			"CREM",
-			"ADOP",
-			"EVEN",
-			"RESI",
-			"OCCU",
-			"MARR",
-		].forEach((tag) => {
-			indi
-				.get(tag as never)
-				?.toList()
-				?.forEach((event) => walk(event));
-			const single = indi.get(tag as never);
-			if (single && !single.toList) {
-				walk(single);
-			}
+		(
+			[
+				"BIRT",
+				"DEAT",
+				"CHR",
+				"BAPM",
+				"BURI",
+				"CREM",
+				"ADOP",
+				"EVEN",
+				"RESI",
+				"OCCU",
+				"MARR",
+			] as const
+		).forEach((tag) => {
+			indi.get(tag)?.toList()?.forEach((event) => walk(event));
 		});
 	});
 
 	gedcom.fams()?.forEach((fam) => {
 		if (!fam) return;
-		["MARR", "DIV", "ENGA", "ANUL", "EVEN"].forEach((tag) => {
-			fam
-				.get(tag as never)
-				?.toList()
-				?.forEach((event) => walk(event));
-			const single = fam.get(tag as never);
-			if (single && !single.toList) {
-				walk(single);
-			}
+		(["MARR", "DIV", "ENGA", "ANUL", "EVEN"] as const).forEach((tag) => {
+			fam.get(tag)?.toList()?.forEach((event) => walk(event));
 		});
 	});
 
