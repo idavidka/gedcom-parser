@@ -343,5 +343,8 @@ export const buildGedzipBlob = async (
 	mediaFiles: GedzipMediaInput[] = []
 ): Promise<Blob> => {
 	const bytes = await buildGedzip(gedcomText, mediaFiles);
-	return new Blob([bytes], { type: GEDZIP_MIME });
+	// Copy into a fresh ArrayBuffer-backed view for BlobPart (TS 5.x BufferSource).
+	const part = new Uint8Array(bytes.byteLength);
+	part.set(bytes);
+	return new Blob([part], { type: GEDZIP_MIME });
 };

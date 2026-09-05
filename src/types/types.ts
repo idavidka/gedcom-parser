@@ -180,6 +180,7 @@ interface Tags {
 	PEDT?: Common; // GEDCOM 7 pedigree (treated as PEDI)
 	PART?: Common; // Partner
 	PHON?: Common; // Phone number
+	FAX?: Common; // Fax number
 	PHRASE?: Common; // Free-text for non-enum payloads (GEDCOM 7)
 	PLAC?: Common; // Place
 	POST?: Common; // Postal code
