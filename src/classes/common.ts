@@ -26,7 +26,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 	protected _refs?: List;
 
 	isListable = true;
-	refType?: ListTag;
+	refType?: MultiTag;
 	cloneOf?: string;
 	clonedBy?: string;
 

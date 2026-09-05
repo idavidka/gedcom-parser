@@ -199,6 +199,9 @@ interface Tags {
 	BAPT?: Common;
 	CHRI?: Common;
 	BURI?: Common;
+	CREM?: Common;
+	BLES?: Common;
+	PROP?: Common;
 	GEDC?: Common;
 	RFN?: Common;
 }
