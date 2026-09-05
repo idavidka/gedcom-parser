@@ -23,6 +23,7 @@ interface IGedComStructure
 	"@@REPO"?: Repositories;
 	"@@SOUR"?: Sources;
 	"@@SUBM"?: Submitters;
+	_ORIGHEAD?: Common;
 	HEAD?: Common & {
 		GEDC?: Common & {
 			VERS?: Common;

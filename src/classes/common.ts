@@ -1,6 +1,6 @@
 import { get, set, uniqBy, unset } from "lodash-es";
 
-import { ID_GETTER_REG, ID_REG } from "../constants/constants";
+import { ID_GETTER_REG, ID_REG, ORIG_HEAD_TAG } from "../constants/constants";
 import type { ConvertOptions } from "../interfaces/common";
 import type ICommon from "../interfaces/common";
 import type IObje from "../interfaces/obje";
@@ -495,39 +495,62 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		return gedcom;
 	}
 
-	isGenoPro() {
-		const head = get(this, "HEAD") || get(this.getGedcom(), "HEAD");
-		const sour = get(head, "SOUR.value") as string | undefined;
+	getHeadRecord() {
+		return (get(this, "HEAD") || get(this.getGedcom(), "HEAD")) as
+			| Common
+			| undefined;
+	}
 
-		return !!sour?.toLowerCase()?.startsWith("genopro");
+	getOriginalHeadRecord() {
+		return (
+			get(this, ORIG_HEAD_TAG) ||
+			get(this.getGedcom(), ORIG_HEAD_TAG) ||
+			get(this.getHeadRecord(), ORIG_HEAD_TAG)
+		) as Common | undefined;
+	}
+
+	getSourceHeads() {
+		const heads = [this.getOriginalHeadRecord(), this.getHeadRecord()];
+		return heads.filter((head, index): head is Common => {
+			return Boolean(head && heads.indexOf(head) === index);
+		});
+	}
+
+	getFromSourceHeads<T = unknown>(path: string): T | undefined {
+		for (const head of this.getSourceHeads()) {
+			const value = get(head, path) as T | undefined;
+			if (value !== undefined && value !== null && value !== "") {
+				return value;
+			}
+		}
+		return undefined;
+	}
+
+	private sourStartsWith(prefix: string) {
+		return this.getSourceHeads().some((head) => {
+			const sour = get(head, "SOUR.value") as string | undefined;
+			return !!sour?.toLowerCase()?.startsWith(prefix);
+		});
+	}
+
+	isGenoPro() {
+		return this.sourStartsWith("genopro");
 	}
 
 	isAhnenblatt() {
-		const head = get(this, "HEAD") || get(this.getGedcom(), "HEAD");
-		const sour = get(head, "SOUR.value") as string | undefined;
-
-		return !!sour?.toLowerCase()?.startsWith("ahnenblatt");
+		return this.sourStartsWith("ahnenblatt");
 	}
 
 	isGeni() {
-		const head = get(this, "HEAD") || get(this.getGedcom(), "HEAD");
-		const sour = get(head, "SOUR.value") as string | undefined;
-
-		return !!sour?.toLowerCase()?.startsWith("geni");
+		return this.sourStartsWith("geni");
 	}
 
 	isAncestry() {
-		const head = get(this, "HEAD") || get(this.getGedcom(), "HEAD");
-		const sour = get(head, "SOUR.value") as string | undefined;
-
-		return !!sour?.toLowerCase()?.startsWith("ancestry");
+		return this.sourStartsWith("ancestry");
 	}
 
 	isMyHeritage() {
-		const head = get(this, "HEAD") || get(this.getGedcom(), "HEAD");
-		const sour = get(head, "SOUR.value") as string | undefined;
-
-		return !!sour?.toLowerCase()?.startsWith("myheritage");
+		return this.sourStartsWith("myheritage");
 	}
 
 	/**
@@ -546,31 +569,37 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 	}
 
 	isFamilySearch() {
-		const head = get(this, "HEAD") || get(this.getGedcom(), "HEAD");
-		const sourName = get(head, "SOUR.NAME.value") as string | undefined;
-
-		return sourName === "FamilySearch API";
+		return this.getSourceHeads().some((head) => {
+			const sourName = get(head, "SOUR.NAME.value") as string | undefined;
+			return sourName === "FamilySearch API";
+		});
 	}
 
 	isGNO2GED() {
-		const head = get(this, "HEAD") || get(this.getGedcom(), "HEAD");
-		const sour = get(head, "SOUR.value") as string | undefined;
-
-		return sour === "GNO2GED";
+		return this.getSourceHeads().some((head) => {
+			const sour = get(head, "SOUR.value") as string | undefined;
+			return sour === "GNO2GED";
+		});
 	}
 
 	getAncestryTreeId() {
-		const path = "HEAD.SOUR._TREE.RIN.value";
-		return (get(this, path) || get(this.getGedcom(), path)) as
-			| string
-			| undefined;
+		return (
+			this.getFromSourceHeads<string>("SOUR._TREE.RIN.value") ||
+			((get(this, "HEAD.SOUR._TREE.RIN.value") ||
+				get(this.getGedcom(), "HEAD.SOUR._TREE.RIN.value")) as
+				| string
+				| undefined)
+		);
 	}
 
 	getMyHeritageTreeId() {
-		const path = "HEAD._EXPORTED_FROM_SITE_ID.value";
-		return (get(this, path) || get(this.getGedcom(), path)) as
-			| string
-			| undefined;
+		return (
+			this.getFromSourceHeads<string>("_EXPORTED_FROM_SITE_ID.value") ||
+			((get(this, "HEAD._EXPORTED_FROM_SITE_ID.value") ||
+				get(this.getGedcom(), "HEAD._EXPORTED_FROM_SITE_ID.value")) as
+				| string
+				| undefined)
+		);
 	}
 
 	getTreeId() {
@@ -614,10 +643,13 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 	}
 
 	getAncestryTreeName() {
-		const path = "HEAD.SOUR._TREE.value";
-		return (get(this, path) || get(this.getGedcom(), path)) as
-			| string
-			| undefined;
+		return (
+			this.getFromSourceHeads<string>("SOUR._TREE.value") ||
+			((get(this, "HEAD.SOUR._TREE.value") ||
+				get(this.getGedcom(), "HEAD.SOUR._TREE.value")) as
+				| string
+				| undefined)
+		);
 	}
 
 	getMyHeritageTreeName() {
@@ -634,7 +666,8 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 
 	getFamilySearchTreeId() {
 		// Try to get RIN from _TREE (similar to Ancestry format)
-		const rin = (get(this, "HEAD.SOUR._TREE.RIN.value") ||
+		const rin = (this.getFromSourceHeads<string>("SOUR._TREE.RIN.value") ||
+			get(this, "HEAD.SOUR._TREE.RIN.value") ||
 			get(this.getGedcom(), "HEAD.SOUR._TREE.RIN.value")) as
 			| string
 			| undefined;
@@ -649,7 +682,8 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 
 	getFamilySearchTreeName() {
 		// Try _TREE first (custom FamilySearch field)
-		const treeName = (get(this, "HEAD.SOUR._TREE.value") ||
+		const treeName = (this.getFromSourceHeads<string>("SOUR._TREE.value") ||
+			get(this, "HEAD.SOUR._TREE.value") ||
 			get(this.getGedcom(), "HEAD.SOUR._TREE.value")) as
 			| string
 			| undefined;
@@ -809,7 +843,8 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		}
 
 		// Fallback to SOUR.NAME or SOUR value
-		const sourName = (get(this, "HEAD.SOUR.NAME.value") ||
+		const sourName = (this.getFromSourceHeads<string>("SOUR.NAME.value") ||
+			get(this, "HEAD.SOUR.NAME.value") ||
 			get(this.getGedcom(), "HEAD.SOUR.NAME.value")) as
 			| string
 			| undefined;
@@ -818,7 +853,8 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 			return `${prefix}${sourName}`;
 		}
 
-		const sourValue = (get(this, "HEAD.SOUR.value") ||
+		const sourValue = (this.getFromSourceHeads<string>("SOUR.value") ||
+			get(this, "HEAD.SOUR.value") ||
 			get(this.getGedcom(), "HEAD.SOUR.value")) as string | undefined;
 
 		if (sourValue) {
