@@ -30,6 +30,8 @@ const STANDARD_QUALIFIERS: Record<string, keyof typeof LONG_NOTES> = {
 	BEFORE: "Bef.",
 	AFT: "Aft.",
 	AFTER: "Aft.",
+	CAL: "Abt.", // calculated ≈ about for display
+	EST: "Abt.", // estimated ≈ about for display
 };
 
 /** Reverse mapping for standard-compliant GEDCOM export. */
@@ -41,6 +43,14 @@ const EXPORT_QUALIFIERS: Record<string, string> = {
 
 const GEDCOM_MONTHS =
 	/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/g;
+
+const CALENDAR_PREFIX =
+	/^(?<calendar>GREGORIAN|JULIAN|FRENCH_R|HEBREW)\b\s+/i;
+
+/** GEDCOM DateValue period / range / approx forms kept as opaque payloads. */
+const isGedcomDateValueForm = (value: string) =>
+	/^(FROM|TO|BET|AFT|BEF|ABT|CAL|EST|INT)\b/i.test(value) ||
+	/\bAND\b/i.test(value);
 
 const NOTE_MARKER = "####";
 /**
@@ -88,6 +98,7 @@ const formatDateWithComponents = (
 
 export class CommonDate extends Common<string> {
 	private _date?: Date;
+	private _calendar?: string;
 
 	DAY?: Common;
 	MONTH?: Common;
@@ -105,23 +116,34 @@ export class CommonDate extends Common<string> {
 		delete this.id;
 	}
 
+	get calendar() {
+		return this._calendar;
+	}
+
 	set value(value: string | undefined) {
 		if (value) {
-			const noteRegExp = /^(?<note>[a-zA-Z]+\.)/;
-			const noteMatch = value.match(noteRegExp)?.groups;
 			let validValue = value;
+			const calendarMatch = validValue.match(CALENDAR_PREFIX);
+			if (calendarMatch?.groups?.calendar) {
+				this._calendar = calendarMatch.groups.calendar.toUpperCase();
+				validValue = validValue.slice(calendarMatch[0].length);
+			} else {
+				this._calendar = undefined;
+			}
+
+			const noteRegExp = /^(?<note>[a-zA-Z]+\.)/;
+			const noteMatch = validValue.match(noteRegExp)?.groups;
 			if (noteMatch?.note) {
 				this.NOTE =
 					this.NOTE ||
 					createCommon(this._gedcom, undefined, this.main);
 				this.NOTE.value = noteMatch?.note;
 
-				validValue = value.replace(noteRegExp, "");
+				validValue = validValue.replace(noteRegExp, "");
 			} else {
-				// Standard GEDCOM qualifiers (ABT, BEF, AFT, ...) carry no
-				// trailing dot; normalize them to the internal dotted form.
-				const qualifierMatch = value.match(
-					/^(?<qualifier>ABT|ABOUT|BEF|BEFORE|AFT|AFTER)\b\s*/i
+				// Standard GEDCOM qualifiers (ABT, BEF, AFT, CAL, EST, ...)
+				const qualifierMatch = validValue.match(
+					/^(?<qualifier>ABT|ABOUT|BEF|BEFORE|AFT|AFTER|CAL|EST)\b\s*/i
 				);
 				const qualifier =
 					qualifierMatch?.groups?.qualifier?.toUpperCase();
@@ -134,12 +156,19 @@ export class CommonDate extends Common<string> {
 						createCommon(this._gedcom, undefined, this.main);
 					this.NOTE.value = note;
 
-					validValue = value.slice(qualifierMatch![0].length);
+					validValue = validValue.slice(qualifierMatch![0].length);
 				}
 			}
 
 			const acceptedDate = this.isValidDateFormat(validValue);
-			if (acceptedDate) {
+			if (isGedcomDateValueForm(validValue.trim())) {
+				// Keep BET/AND, FROM/TO, etc. as opaque DateValue payloads.
+				delete this.DAY;
+				delete this.MONTH;
+				delete this.YEAR;
+				this._date = undefined;
+				this._value = value;
+			} else if (acceptedDate) {
 				this.DAY =
 					this.DAY ||
 					createCommon(this._gedcom, undefined, this.main);
@@ -291,6 +320,14 @@ export class CommonDate extends Common<string> {
 	}
 
 	exportValue() {
+		// Opaque DateValue forms (BET/AND, FROM/TO, …) export as stored.
+		if (typeof this._value === "string") {
+			const withoutCalendar = this._value.replace(CALENDAR_PREFIX, "");
+			if (isGedcomDateValueForm(withoutCalendar.trim())) {
+				return this._value;
+			}
+		}
+
 		const formatted = this.toValue("NOTE dd MMM yyyy", null);
 		if (!formatted) {
 			return formatted;
@@ -304,9 +341,16 @@ export class CommonDate extends Common<string> {
 			? formatted.replace(note!, qualifier)
 			: formatted;
 
-		return standardized.replace(GEDCOM_MONTHS, (month) =>
+		const withMonths = standardized.replace(GEDCOM_MONTHS, (month) =>
 			month.toUpperCase()
 		);
+
+		// GEDCOM 7 non-Gregorian calendars keep an explicit calendar token.
+		if (this._calendar && this._calendar !== "GREGORIAN") {
+			return `${this._calendar} ${withMonths}`;
+		}
+
+		return withMonths;
 	}
 
 	toGedcomLines(tag?: MultiTag, level = 0, options?: ConvertOptions) {

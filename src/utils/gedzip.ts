@@ -128,3 +128,157 @@ export const buildGedzip = async (
 
 	return zip.generateAsync({ type: "uint8array" });
 };
+
+export type ExtractedGedzipMedia = {
+	path: string;
+	content: Uint8Array;
+};
+
+export type ExtractedGedzip = {
+	/** GEDCOM text (prefers `gedcom.ged`, else first `.ged`). */
+	gedcomText: string;
+	/** Archive entry name of the chosen GEDCOM file. */
+	entryName: string;
+	/** Non-GEDCOM zip entries (typically under `media/`). */
+	mediaEntries: ExtractedGedzipMedia[];
+};
+
+const normalizeZipPath = (name: string) =>
+	name.replace(/\\/g, "/").replace(/^\.\//, "");
+
+const MIME_BY_EXT: Record<string, string> = {
+	jpg: "image/jpeg",
+	jpeg: "image/jpeg",
+	png: "image/png",
+	gif: "image/gif",
+	webp: "image/webp",
+	bmp: "image/bmp",
+	tif: "image/tiff",
+	tiff: "image/tiff",
+	svg: "image/svg+xml",
+	pdf: "application/pdf",
+};
+
+const mimeForPath = (path: string) => {
+	const ext = (path.split(".").pop() || "").toLowerCase();
+	return MIME_BY_EXT[ext] || "application/octet-stream";
+};
+
+const bytesToBase64 = (bytes: Uint8Array) => {
+	if (typeof Buffer !== "undefined") {
+		return Buffer.from(bytes).toString("base64");
+	}
+	let binary = "";
+	const chunk = 0x8000;
+	for (let i = 0; i < bytes.length; i += chunk) {
+		binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+	}
+	return btoa(binary);
+};
+
+export const bytesToDataUrl = (bytes: Uint8Array, mime: string) =>
+	`data:${mime};base64,${bytesToBase64(bytes)}`;
+
+/**
+ * Rewrite local FILE paths from a GEDZIP (`media/...`) to embedded data URLs
+ * so the dataset is self-contained after import.
+ */
+export const remountGedzipMediaAsDataUrls = (
+	extracted: ExtractedGedzip
+): string => {
+	if (!extracted.mediaEntries.length) {
+		return extracted.gedcomText;
+	}
+
+	const pathToDataUrl = new Map<string, string>();
+	for (const media of extracted.mediaEntries) {
+		const path = normalizeZipPath(media.path);
+		const dataUrl = bytesToDataUrl(media.content, mimeForPath(path));
+		pathToDataUrl.set(path, dataUrl);
+		pathToDataUrl.set(`./${path}`, dataUrl);
+		const base = path.split("/").pop();
+		if (base) {
+			pathToDataUrl.set(base, dataUrl);
+			pathToDataUrl.set(`media/${base}`, dataUrl);
+		}
+	}
+
+	return rewriteGedcomFilePaths(extracted.gedcomText, pathToDataUrl);
+};
+
+/**
+ * Extract GEDCOM text (and optional media bytes) from a ZIP / GEDZIP archive.
+ */
+export const extractGedzip = async (
+	data: ArrayBuffer | Uint8Array | Blob
+): Promise<ExtractedGedzip> => {
+	const zip = await JSZip.loadAsync(data);
+	const entries = Object.values(zip.files).filter((entry) => !entry.dir);
+
+	const preferred =
+		entries.find(
+			(entry) =>
+				normalizeZipPath(entry.name).toLowerCase() ===
+				GEDZIP_GEDCOM_ENTRY
+		) ??
+		entries.find((entry) =>
+			normalizeZipPath(entry.name).toLowerCase().endsWith(".ged")
+		);
+
+	if (!preferred) {
+		throw new Error("No .ged file found in the archive.");
+	}
+
+	const gedcomText = await preferred.async("string");
+	const mediaEntries: ExtractedGedzipMedia[] = [];
+
+	for (const entry of entries) {
+		const path = normalizeZipPath(entry.name);
+		if (path === normalizeZipPath(preferred.name)) {
+			continue;
+		}
+		if (path.toLowerCase().endsWith(".ged")) {
+			continue;
+		}
+		mediaEntries.push({
+			path,
+			content: await entry.async("uint8array"),
+		});
+	}
+
+	return {
+		gedcomText,
+		entryName: normalizeZipPath(preferred.name),
+		mediaEntries,
+	};
+};
+
+/**
+ * Extract a GEDZIP and optionally embed `media/` files as data-URL FILE payloads.
+ */
+export const extractGedzipGedcom = async (
+	data: ArrayBuffer | Uint8Array | Blob,
+	options?: { embedMediaAsDataUrls?: boolean }
+): Promise<string> => {
+	const extracted = await extractGedzip(data);
+	if (options?.embedMediaAsDataUrls === false) {
+		return extracted.gedcomText;
+	}
+	return remountGedzipMediaAsDataUrls(extracted);
+};
+
+/** True for `.gdz` / FamilySearch GEDZIP MIME / generic zip containers. */
+export const isGedzipContainer = (file: {
+	name?: string;
+	type?: string;
+}) => {
+	const name = (file.name || "").toLowerCase();
+	const type = (file.type || "").toLowerCase();
+	return (
+		name.endsWith(`.${GEDZIP_EXTENSION}`) ||
+		name.endsWith(".zip") ||
+		type === GEDZIP_MIME ||
+		type === "application/zip" ||
+		type === "application/x-zip-compressed"
+	);
+};

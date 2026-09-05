@@ -8,7 +8,8 @@ import {
 	familyHasChild,
 	familyHasParent,
 } from "../utils/family-edit";
-import { addFamilyFact, type AddFactInput } from "../utils/fact-edit";
+import { addFamilyFact, addNonEvent } from "../utils/fact-edit";
+import type { AddFactInput, AddNonEventInput } from "../utils/fact-edit";
 
 import { Common, createProxy } from "./common";
 import type { ProxyOriginal } from "./common";
@@ -82,6 +83,10 @@ export class Fam extends Common<string, FamKey> implements IFam {
 
 	addFact(input: AddFactInput) {
 		return addFamilyFact(this as unknown as FamType, input);
+	}
+
+	addNonEvent(input: AddNonEventInput) {
+		return addNonEvent(this as unknown as FamType, input);
 	}
 
 	toList() {

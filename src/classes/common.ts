@@ -343,19 +343,24 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 	private standardizeObject(tag?: MultiTag, options?: ConvertOptions) {
 		if (
 			tag === "OBJE" &&
-			!options?.original &&
 			options?.obje?.standardize &&
-			options?.obje?.namespace &&
 			"standardizeMedia" in this
 		) {
 			const standardize = this.standardizeMedia as (
-				n: string | number,
-				o?: boolean
+				n?: string | number,
+				o?: boolean,
+				urlGetter?: (
+					namespace?: string | number,
+					imgId?: string
+				) => string | undefined,
+				gedcomVersion?: string
 			) => Common<string, ObjeKey> & IObje;
 			return standardize.call(
 				this,
 				options.obje.namespace,
-				options.obje.override
+				options.obje.override,
+				undefined,
+				options.gedcomVersion
 			);
 		}
 	}
@@ -479,9 +484,14 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		this.standardizeObject(tag, options);
 		const validKeys = getValidKeys(this);
 		const gedcom: string[] = [];
+		const isGedcom7Export = options?.gedcomVersion === "7.0";
 
 		validKeys.forEach((key) => {
 			const validKey = key as MultiTag;
+			// GEDCOM 7 dropped CONC; payloads must already be folded / use CONT.
+			if (isGedcom7Export && validKey === "CONC") {
+				return;
+			}
 			const prop = this.get(validKey);
 			if (typeof prop?.toGedcomLines === "function") {
 				if (prop instanceof Common) {

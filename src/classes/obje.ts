@@ -1,10 +1,15 @@
 import type IObje from "../interfaces/obje";
 import type IMultimediaLinkStructure from "../structures/multimedia-link";
-import type {ObjeKey} from "../types/types";
+import type { ObjeKey } from "../types/types";
+import {
+	normalizeGedcomVersion,
+	type GedcomExportVersion,
+} from "../utils/gedcom-version";
+import { inferMediaForm } from "../utils/multimedia";
 
 import { Common, createCommon, createProxy } from "./common";
 import type { ProxyOriginal } from "./common";
-import type {GedComType} from "./gedcom";
+import type { GedComType } from "./gedcom";
 
 export class Obje extends Common<string, ObjeKey> implements IObje {
 	standardizeMedia(
@@ -13,7 +18,8 @@ export class Obje extends Common<string, ObjeKey> implements IObje {
 		urlGetter?: (
 			namespace?: string | number,
 			imgId?: string
-		) => string | undefined
+		) => string | undefined,
+		gedcomVersion?: GedcomExportVersion | string
 	) {
 		if (!this._gedcom) {
 			return this;
@@ -30,7 +36,13 @@ export class Obje extends Common<string, ObjeKey> implements IObje {
 			this?.get("FILE.NOTE")?.toValue() ??
 			this?.get("NOTE")?.toValue() ??
 			"";
-		const form = this?.get("FILE.FORM")?.toValue() as string | undefined;
+		const formRaw =
+			(this?.get("FILE.FORM")?.toValue() as string | undefined) ??
+			(this?.get("FORM")?.toValue() as string | undefined);
+		const mediType =
+			(this?.get("FILE.FORM.TYPE")?.toValue() as string | undefined) ??
+			(this?.get("FORM.TYPE")?.toValue() as string | undefined) ??
+			(this?.get("MEDI")?.toValue() as string | undefined);
 		const file = this?.get("FILE")?.toValue() as string | undefined;
 
 		const imgId = rin || clone || mser;
@@ -41,71 +53,58 @@ export class Obje extends Common<string, ObjeKey> implements IObje {
 			return this;
 		}
 
+		const version = normalizeGedcomVersion(
+			gedcomVersion ?? this._gedcom.getGedcomVersion?.()
+		);
+		const form = formRaw || inferMediaForm(String(url));
+
 		const newObject = createObje(this._gedcom, this.id, this.main);
 
 		if (!override) {
 			Object.assign(newObject, this);
 		}
 
-		if (form) {
-			if (typeof form === "string") {
-				const newForm = createCommon(
-					this._gedcom,
-					undefined,
-					this.main
-				);
-				newForm.value = form;
-				newObject.set("FORM", newForm);
-			} else {
-				newObject.set("FORM", form);
+		const fileNode = createCommon(this._gedcom, undefined, this.main);
+		fileNode.value = url;
+
+		if (version === "7.0") {
+			const formNode = createCommon(this._gedcom, undefined, fileNode);
+			formNode.value = form;
+			if (mediType) {
+				formNode.set("TYPE", String(mediType));
 			}
-		}
-
-		if (title) {
-			if (typeof title === "string") {
-				const newTitle = createCommon(
-					this._gedcom,
-					undefined,
-					this.main
-				);
-				newTitle.value = title;
-				newObject.set("TITL", newTitle);
-
+			fileNode.set("FORM", formNode);
+			if (title) {
+				fileNode.set("TITL", String(title));
+			}
+			if (note) {
+				fileNode.set("NOTE", String(note));
+			}
+			newObject.set("FILE", fileNode);
+		} else {
+			newObject.set("FILE", fileNode);
+			newObject.set("FORM", form);
+			if (mediType) {
+				newObject.set("MEDI", String(mediType));
+			}
+			if (title) {
+				newObject.set("TITL", String(title));
 				if (!note) {
-					newObject.set("NOTE", newTitle);
+					newObject.set("NOTE", String(title));
 				}
-			} else {
-				newObject.set("TITL", title);
-				if (!note) {
-					newObject.set("NOTE", title);
+			}
+			if (note) {
+				newObject.set("NOTE", String(note));
+				if (!title) {
+					newObject.set("TITL", String(note));
 				}
 			}
 		}
 
-		if (note) {
-			if (typeof note === "string") {
-				const newNote = createCommon(
-					this._gedcom,
-					undefined,
-					this.main
-				);
-				newNote.value = note;
-				newObject.set("NOTE", newNote);
-
-				if (!title) {
-					newObject.set("TITL", newNote);
-				}
-			} else {
-				newObject.set("NOTE", note);
-				if (!title) {
-					newObject.set("TITL", note);
-				}
-			}
+		const prim = this.get("_PRIM")?.toValue();
+		if (prim === "Y" || prim === "N") {
+			newObject.set("_PRIM", prim);
 		}
-
-		const newUrl = createCommon(this._gedcom, undefined, this.main);
-		newUrl.value = url;
-		newObject.set("FILE", newUrl);
 
 		if (override) {
 			Object.assign(this, newObject);

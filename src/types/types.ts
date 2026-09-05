@@ -2,7 +2,15 @@ import type { Common } from "../classes/common";
 import type { Individuals } from "../classes/indis";
 
 export type ConvertType =
-	"FAM" | "INDI" | "_INDI" | "OBJE" | "SOUR" | "REPO" | "SUBM";
+	| "FAM"
+	| "INDI"
+	| "_INDI"
+	| "OBJE"
+	| "SOUR"
+	| "REPO"
+	| "SUBM"
+	| "SNOTE"
+	| "NOTE";
 
 export type IndiKey = `@${"I" | "P" | "XI" | "XXI"}${number}@`;
 export type FamKey = `@${"F" | "XF" | "XXF"}${number}@`;
@@ -10,10 +18,18 @@ export type ObjeKey = `@O${number}@`;
 export type RepoKey = `@R${number}@`;
 export type SourKey = `@S${number}@`;
 export type SubmKey = `@SUBM${number}@`;
+export type SnoteKey = `@N${number}@`;
 export type TagKey = `@T${number}@`;
 export type UnknownKey = `@U${number}@`;
 export type IdType =
-	IndiKey | FamKey | ObjeKey | SourKey | RepoKey | SubmKey | UnknownKey;
+	| IndiKey
+	| FamKey
+	| ObjeKey
+	| SourKey
+	| RepoKey
+	| SubmKey
+	| SnoteKey
+	| UnknownKey;
 
 export enum RelationType {
 	BIOLOGICAL = "biological",
@@ -149,6 +165,8 @@ interface Tags {
 	NATI?: Common; // Nationality
 	NATU?: Common; // Naturalization
 	NICK?: Common; // Nickname
+	NMR?: Common; // Number of marriages
+	NO?: Common; // Did not happen (GEDCOM 7 non-event)
 	NOTE?: Common; // Additional information
 	NPFX?: Common; // Name prefix
 	NSFX?: Common; // Name suffix (Jr. or Sr. etc.)
@@ -162,6 +180,7 @@ interface Tags {
 	PEDT?: Common; // GEDCOM 7 pedigree (treated as PEDI)
 	PART?: Common; // Partner
 	PHON?: Common; // Phone number
+	PHRASE?: Common; // Free-text for non-enum payloads (GEDCOM 7)
 	PLAC?: Common; // Place
 	POST?: Common; // Postal code
 	PRIV?: Common; // Private
@@ -169,10 +188,13 @@ interface Tags {
 	RACE?: Common; // Race
 	RELI?: Common; // Religion (denomination)
 	RESI?: Common; // Residence
+	RESN?: Common; // Restriction notice (GEDCOM 7)
 	RETI?: Common; // Retirement
-	SEX?: Common<"F" | "M">; // Sex (male or female)
+	ROLE?: Common; // Role in association/event (GEDCOM 7)
+	SEX?: Common<"F" | "M" | "U" | "X" | "N">; // Sex
 	SLGC?: Common; // Sealing of a child (LDS)
 	SLGS?: Common; // Sealing of a spouse (LDS)
+	SNOTE?: Common; // Shared note (GEDCOM 7)
 	SOUR?: Common; // Source
 	SPFX?: Common; // Surname prefix
 	SSN?: Common; // Social Security number
@@ -186,6 +208,7 @@ interface Tags {
 	TEMP?: Common; // Temple (LDS)
 	TIME?: Common; // Time
 	TITL?: Common; // Title
+	UID?: Common; // Unique identifier (GEDCOM 7)
 	WIFE?: Common; // Wife
 	WILL?: Common; // Will,
 	RIN?: Common;
@@ -205,6 +228,8 @@ interface Tags {
 	PROP?: Common;
 	GEDC?: Common;
 	RFN?: Common;
+	CREA?: Common; // Creation metadata (GEDCOM 7)
+	CHAN?: Common; // Change metadata (GEDCOM 7)
 }
 
 export type Tag = keyof Tags | keyof NonStandard;

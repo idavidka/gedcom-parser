@@ -39,7 +39,9 @@ describe("GEDCOM version", () => {
 	});
 
 	it("exports HEAD.GEDC.VERS 7.0 without FORM or CHAR", () => {
-		const { gedcom } = GedcomTree.parse(sample("5.5.1", "2 FORM LINEAGE-LINKED"));
+		const { gedcom } = GedcomTree.parse(
+			sample("5.5.1", "2 FORM LINEAGE-LINKED")
+		);
 		const raw = gedcom.toGedcom(undefined, 0, { gedcomVersion: "7.0" });
 		expect(raw).toContain("2 VERS 7.0");
 		expect(raw).not.toContain("2 FORM LINEAGE-LINKED");
@@ -49,9 +51,9 @@ describe("GEDCOM version", () => {
 	it("exports HEAD.GEDC.VERS 5.5.1 with FORM and CHAR", () => {
 		const { gedcom } = GedcomTree.parse(sample("7.0"));
 		const raw = gedcom.toGedcom(undefined, 0, { gedcomVersion: "5.5.1" });
-		expect(raw).toContain("2 VERS 7.0");
-		expect(raw).not.toContain("2 FORM LINEAGE-LINKED");
-		expect(raw).not.toMatch(/\n1 CHAR /);
+		expect(raw).toContain("2 VERS 5.5.1");
+		expect(raw).toContain("2 FORM LINEAGE-LINKED");
+		expect(raw).toMatch(/\n1 CHAR UTF-8/);
 	});
 
 	it("exports HEAD.GEDC.VERS 5.5.1 with FORM and CHAR via applyExportVersion", () => {
@@ -61,5 +63,35 @@ describe("GEDCOM version", () => {
 		expect(raw).toContain("2 VERS 5.5.1");
 		expect(raw).toContain("2 FORM LINEAGE-LINKED");
 		expect(raw).toContain("1 CHAR UTF-8");
+	});
+
+	it("keeps 5.5.1 export free of G7-only transforms", () => {
+		const { gedcom } = GedcomTree.parse(
+			sample("5.5.1", "2 FORM LINEAGE-LINKED")
+		);
+		const indi = gedcom.indi("@I1@");
+		indi?.set("SEX", "nonbinary");
+
+		const raw = gedcom.toGedcom(undefined, 0, { gedcomVersion: "5.5.1" });
+		expect(raw).toContain("2 VERS 5.5.1");
+		expect(raw).toContain("2 FORM LINEAGE-LINKED");
+		expect(raw).toMatch(/\n1 CHAR UTF-8/);
+		expect(raw).toContain("1 SEX nonbinary");
+		expect(raw).not.toMatch(/2 PHRASE nonbinary/);
+		expect(raw).not.toContain("1 SCHMA");
+		expect(raw).not.toMatch(/\n1 CREA\b/);
+		expect(raw).not.toMatch(/\n1 UID /);
+	});
+
+	it("applies G7 transforms only for 7.0 export", () => {
+		const { gedcom } = GedcomTree.parse(sample("5.5.1", "2 FORM LINEAGE-LINKED"));
+		gedcom.indi("@I1@")?.set("SEX", "nonbinary");
+
+		const raw = gedcom.toGedcom(undefined, 0, { gedcomVersion: "7.0" });
+		expect(raw).toContain("2 VERS 7.0");
+		expect(raw).toMatch(/1 SEX\s*\n2 PHRASE nonbinary/);
+		expect(raw).toContain("1 SCHMA");
+		expect(raw).toMatch(/\n1 UID /);
+		expect(raw).not.toMatch(/\n\d+ CONC /);
 	});
 });

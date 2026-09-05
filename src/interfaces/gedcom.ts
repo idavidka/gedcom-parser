@@ -5,6 +5,8 @@ import type { IndiType } from "../classes/indi";
 import type { Individuals } from "../classes/indis";
 import type { ObjeType } from "../classes/obje";
 import type { Objects } from "../classes/objes";
+import type { CommonNote } from "../classes/note";
+import type { List } from "../classes/list";
 import type { RepoType } from "../classes/repo";
 import type { Repositories } from "../classes/repos";
 import type { SourType } from "../classes/sour";
@@ -20,6 +22,7 @@ import type {
 	RepoKey,
 	SourKey,
 	SubmKey,
+	SnoteKey,
 } from "../types/types";
 import type { GedzipMediaInput } from "../utils/gedzip";
 import type {
@@ -70,6 +73,20 @@ interface IGedcom extends Common {
 	collectMultimedia: (
 		options?: CollectMultimediaOptions
 	) => Promise<MediaList>;
+
+	nextSnoteKey: () => SnoteKey;
+
+	snotes: () => List | undefined;
+
+	snote: (index: number | SnoteKey) => CommonNote | undefined;
+
+	createSharedNote: (text: string) => CommonNote;
+
+	registerExtensionTag: (tag: string, uri: string) => Common | undefined;
+
+	getExtensionSchema: () => Map<string, string>;
+
+	ensureExtensionSchema: (extraTags?: string[]) => Map<string, string>;
 
 	toGedzip: (
 		options?: ConvertOptions & {

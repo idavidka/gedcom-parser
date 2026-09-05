@@ -14,7 +14,10 @@ export class CommonNote extends Common<string> {
 	) {
 		super(gedcom, id, main, parent);
 
-		delete this.id;
+		// Inline notes are anonymous; shared NOTE/SNOTE records keep their xref.
+		if (!id) {
+			delete this.id;
+		}
 	}
 
 	set value(value: string | undefined) {

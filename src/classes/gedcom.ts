@@ -12,6 +12,7 @@ import type {
 	SourKey,
 	RepoKey,
 	SubmKey,
+	SnoteKey,
 	MultiTag,
 } from "../types/types";
 import { nextRecordId } from "../utils/family-edit";
@@ -23,6 +24,14 @@ import {
 import type { GedcomExportVersion } from "../utils/gedcom-version";
 import { buildGedzip } from "../utils/gedzip";
 import type { GedzipMediaInput } from "../utils/gedzip";
+import { applyGedcom7Enumerations } from "../utils/gedcom7-enumerations";
+import { applyGedcom7DatePhrases } from "../utils/gedcom7-dates";
+import { applyGedcom7RecordMetadata } from "../utils/gedcom7-metadata";
+import {
+	ensureExtensionSchema,
+	getExtensionSchema,
+	registerExtensionTag,
+} from "../utils/gedcom7-schema";
 import { getVersion } from "../utils/get-product-details";
 import {
 	inferMediaForm,
@@ -32,6 +41,8 @@ import type {
 	CollectMultimediaOptions,
 	CreateMultimediaInput,
 } from "../utils/multimedia";
+import { createGedcomUid } from "../utils/uid";
+import type { MediaList } from "../interfaces/indi";
 
 import { Common, createCommon } from "./common";
 import { createFam } from "./fam";
@@ -41,6 +52,8 @@ import { CustomTags, createIndi } from "./indi";
 import type { IndiType } from "./indi";
 import { Individuals } from "./indis";
 import { List } from "./list";
+import { createCommonNote } from "./note";
+import type { CommonNote } from "./note";
 import { createObje } from "./obje";
 import type { ObjeType } from "./obje";
 import { Objects } from "./objes";
@@ -50,7 +63,6 @@ import type { SourType } from "./sour";
 import type { Sources } from "./sours";
 import type { SubmType } from "./subm";
 import type { Submitters } from "./subms";
-import type { MediaList } from "../interfaces/indi";
 
 type GedcomObjectPrimitive = string | number | boolean;
 export interface GedcomObjectPatch {
@@ -378,6 +390,9 @@ export class GedCom extends Common implements IGedcom {
 		const id = this.nextIndiKey();
 		const indi = createIndi(this as unknown as GedComType, id);
 		indi.type = "INDI";
+		if (this.getGedcomVersion() === "7.0") {
+			indi.set("UID", createGedcomUid());
+		}
 		indis.item(id, indi);
 		return indi;
 	}
@@ -392,6 +407,9 @@ export class GedCom extends Common implements IGedcom {
 		const id = this.nextFamKey();
 		const fam = createFam(this as unknown as GedComType, id);
 		fam.type = "FAM";
+		if (this.getGedcomVersion() === "7.0") {
+			fam.set("UID", createGedcomUid());
+		}
 		fams.item(id, fam);
 		return fam;
 	}
@@ -445,6 +463,9 @@ export class GedCom extends Common implements IGedcom {
 		} else {
 			obje.set("FILE", fileNode);
 			obje.set("FORM", form);
+			if (input.mediType) {
+				obje.set("MEDI", input.mediType);
+			}
 			if (input.title) {
 				obje.set("TITL", input.title);
 			}
@@ -454,7 +475,65 @@ export class GedCom extends Common implements IGedcom {
 			obje.set("_PRIM", "Y");
 		}
 
+		if (
+			normalizeGedcomVersion(
+				input.gedcomVersion ?? this.getGedcomVersion()
+			) === "7.0"
+		) {
+			obje.set("UID", createGedcomUid());
+		}
+
 		return obje;
+	}
+
+	nextSnoteKey() {
+		const ids: string[] = [];
+		this.snotes()?.forEach((_note, id) => {
+			ids.push(String(id));
+		});
+		return nextRecordId(ids, "N") as SnoteKey;
+	}
+
+	snotes() {
+		return this.getList<List>("@@SNOTE");
+	}
+
+	snote(index: number | SnoteKey) {
+		return this.getMain<List, CommonNote>(this.snotes(), index);
+	}
+
+	/**
+	 * Create a top-level shared note record (`0 @Nn@ SNOTE` for GEDCOM 7).
+	 */
+	createSharedNote(text: string) {
+		const existing = this.snotes();
+		const notes = existing ?? new List();
+		if (!existing) {
+			this.set("@@SNOTE" as MultiTag, notes);
+		}
+
+		const id = this.nextSnoteKey();
+		const note = createCommonNote(this as unknown as GedComType, id);
+		note.type = "SNOTE";
+		note.value = text;
+		if (this.getGedcomVersion() === "7.0") {
+			note.set("UID", createGedcomUid());
+		}
+		notes.item(id, note);
+		return note;
+	}
+
+	registerExtensionTag(tag: string, uri: string) {
+		return registerExtensionTag(this as unknown as GedComType, tag, uri);
+	}
+
+	getExtensionSchema() {
+		return getExtensionSchema(this as unknown as GedComType);
+	}
+
+	ensureExtensionSchema(extraTags?: string[]) {
+		ensureExtensionSchema(this as unknown as GedComType, extraTags);
+		return getExtensionSchema(this as unknown as GedComType);
 	}
 
 	/**
@@ -765,23 +844,71 @@ export class GedCom extends Common implements IGedcom {
 			return appendGedcomTrailer(super.toGedcom(tag, level, options));
 		}
 
+		const requestedVersion = options?.gedcomVersion;
+		const exportVersion = normalizeGedcomVersion(
+			requestedVersion ??
+				(!options?.original ? this.getGedcomVersion() : undefined)
+		);
+
+		// Standardize OBJE for the target version (G7 nesting vs 5.5.1 flat)
+		// whenever we rewrite for download or an explicit version is set.
+		const exportOptions: ConvertOptions & { indis?: IndiKey[] } = {
+			...options,
+			obje: {
+				standardize:
+					options?.obje?.standardize ??
+					(requestedVersion !== undefined || !options?.original),
+				override: options?.obje?.override,
+				namespace: options?.obje?.namespace,
+			},
+		};
+
 		const newGedcom = createGedCom();
 
 		Object.assign(newGedcom, this);
 
-		if (!options?.original) {
+		if (!exportOptions.original) {
 			Object.assign(newGedcom, {
-				HEAD: this.getDownloadHeader(options?.gedcomVersion),
+				HEAD: this.getDownloadHeader(
+					requestedVersion ?? exportVersion
+				),
 			});
 		}
 
-		if (options?.indis?.length) {
-			const newContent = this.getIndiRelatedLists(options.indis);
+		if (exportOptions.indis?.length) {
+			const newContent = this.getIndiRelatedLists(exportOptions.indis);
 
 			Object.assign(newGedcom, newContent);
 		}
+		const restoreEnums =
+			exportVersion === "7.0"
+				? applyGedcom7Enumerations(newGedcom)
+				: undefined;
+		const restoreDates =
+			exportVersion === "7.0"
+				? applyGedcom7DatePhrases(newGedcom)
+				: undefined;
+		const restoreMetadata =
+			exportVersion === "7.0"
+				? applyGedcom7RecordMetadata(newGedcom)
+				: undefined;
+		const restoreSchema =
+			exportVersion === "7.0"
+				? ensureExtensionSchema(newGedcom)
+				: undefined;
 
-		return newGedcom.toGedcom(tag, level, { ...options, super: true });
+		try {
+			return newGedcom.toGedcom(tag, level, {
+				...exportOptions,
+				gedcomVersion: exportVersion,
+				super: true,
+			});
+		} finally {
+			restoreSchema?.();
+			restoreMetadata?.();
+			restoreDates?.();
+			restoreEnums?.();
+		}
 	}
 
 	hasTag(tag?: string | Common) {

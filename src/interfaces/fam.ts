@@ -1,7 +1,8 @@
-import type {Common} from "../classes/common";
-import type {IndiType} from "../classes/indi";
-import type {Individuals} from "../classes/indis";
-import type {FamKey, IndiKey, RelationType} from "../types/types";
+import type { Common } from "../classes/common";
+import type { IndiType } from "../classes/indi";
+import type { Individuals } from "../classes/indis";
+import type { FamKey, IndiKey, RelationType } from "../types/types";
+import type { AddFactInput, AddNonEventInput } from "../utils/fact-edit";
 
 interface IFam extends Common<string, FamKey> {
 	_IS_ORPHAN_FAMILY?: Common<"Y" | "N">;
@@ -25,6 +26,10 @@ interface IFam extends Common<string, FamKey> {
 		pedigree?: string | RelationType,
 		parent?: IndiType
 	) => boolean;
+
+	addFact: (input: AddFactInput) => Common | undefined;
+
+	addNonEvent: (input: AddNonEventInput) => Common | undefined;
 }
 
 export default IFam;

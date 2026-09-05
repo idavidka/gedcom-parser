@@ -21,6 +21,7 @@ import type {
 	ObjeKey,
 	IndiKey,
 	FamKey,
+	SnoteKey,
 } from "../types/types";
 
 export const create = (
@@ -52,6 +53,8 @@ export const create = (
 			prevNode = createIndi(gedcom, id as IndiKey);
 		} else if (convertType === "FAM") {
 			prevNode = createFam(gedcom, id as FamKey);
+		} else if (convertType === "SNOTE" || convertType === "NOTE") {
+			prevNode = createCommonNote(gedcom, id as SnoteKey);
 		} else {
 			prevNode = createCommon(gedcom, id as IdType);
 		}
@@ -67,7 +70,7 @@ export const create = (
 			prevNode = createObje(gedcom, undefined, mainNode, curNode);
 		} else if (type === "DATE") {
 			prevNode = createCommonDate(gedcom, undefined, mainNode, curNode);
-		} else if (type === "NOTE") {
+		} else if (type === "NOTE" || type === "SNOTE") {
 			prevNode = createCommonNote(gedcom, undefined, mainNode, curNode);
 		} else if (type === "NAME" && mainNode instanceof Indi) {
 			prevNode = createCommonName(gedcom, undefined, mainNode, curNode);

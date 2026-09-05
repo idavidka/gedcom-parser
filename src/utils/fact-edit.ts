@@ -16,6 +16,14 @@ export type AddFactInput = {
 	value?: string;
 };
 
+export type AddNonEventInput = {
+	/** Event type that did not happen (e.g. MARR, BIRT). */
+	event: string;
+	/** Optional GEDCOM 7 DatePeriod (e.g. `TO 24 MAR 1880`). */
+	date?: string;
+	note?: string;
+};
+
 const SINGLETON_TAGS = new Set<string>(["BIRT", "DEAT", "SSN", "SEX", "DSCR"]);
 
 const firstRecord = (node?: Common | List): Common | undefined => {
@@ -214,4 +222,33 @@ export const setDeceased = (indi: IndiType, deceased: boolean) => {
 	}
 
 	addIndividualFact(indi, { tag: "DEAT", value: "Y" });
+};
+
+/**
+ * GEDCOM 7 non-event: asserts that an event type did not happen
+ * (optionally within a DatePeriod).
+ */
+export const addNonEvent = (
+	owner: IndiType | FamType,
+	input: AddNonEventInput
+) => {
+	const gedcom = owner.getGedcom();
+	const eventType = input.event?.trim().toUpperCase();
+	if (!gedcom || !eventType) {
+		return undefined;
+	}
+
+	const no = createCommon(gedcom, undefined, owner as unknown as Common);
+	no.type = "NO";
+	no.value = eventType;
+
+	if (input.date?.trim()) {
+		setDateOn(gedcom, owner as unknown as Common, no, input.date);
+	}
+	if (input.note?.trim()) {
+		no.set("NOTE", input.note.trim());
+	}
+
+	(owner as unknown as Common).assign("NO", no);
+	return no;
 };

@@ -6,8 +6,11 @@ A lightweight, pluggable GEDCOM parser library for JavaScript/TypeScript applica
 
 ## Features
 
-- 🚀 **Parse GEDCOM files** - GEDCOM 5.5 / 5.5.1 and GEDCOM 7 import
-- 📤 **Export** - serialize as GEDCOM 5.5.1 or 7.0 (`toGedcom(..., { gedcomVersion })`)
+- 🚀 **Parse GEDCOM files** - GEDCOM 5.5 / 5.5.1 and GEDCOM 7 import (legacy `CONC` is folded)
+- 📤 **Export** - serialize as GEDCOM **5.5.1** (default) or **7.0** via `toGedcom(..., { gedcomVersion })`
+- 📦 **GEDZIP** - build/extract FamilySearch `.gdz` (`toGedzip`, `extractGedzip`, `buildGedzip`)
+- 🖼️ **Multimedia** - create/attach OBJE records; G7 uses nested `FILE → FORM [→ TYPE]`
+- 📝 **GEDCOM 7 extras** - `SNOTE`, `NO` (non-event), `SCHMA`, `UID`/`CREA`/`CHAN`, `PHRASE` for non-enum values, calendars / DateValue periods
 - 🖥️ **Command-Line Interface** - CLI tools for common GEDCOM operations
 - 🔌 **Pluggable Architecture** - Zero dependencies on browser-specific APIs
 - 💾 **Optional Caching** - Provide your own cache implementation (IndexedDB, localStorage, Redis, etc.)
@@ -15,6 +18,8 @@ A lightweight, pluggable GEDCOM parser library for JavaScript/TypeScript applica
 - 🏗️ **TypeScript** - Full type definitions included
 - 🪶 **Lightweight** - Core package has minimal dependencies
 - 🔒 **SSR-Safe** - No-op defaults for server-side rendering
+
+> **5.5.1 support is unchanged.** GEDCOM 7 transforms (PHRASE, SCHMA, UID/CREA/CHAN backfill, CONC omission, etc.) run **only** when exporting with `gedcomVersion: "7.0"`. Exporting `5.5.1` keeps FORM/CHAR and does not apply those transforms.
 
 ## Installation
 

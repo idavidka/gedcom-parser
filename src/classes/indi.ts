@@ -27,6 +27,7 @@ import type {
 	ObjeKey,
 	MultiTag,
 	IdType,
+	SnoteKey,
 } from "../types/types";
 import {
 	pathCache,
@@ -35,8 +36,8 @@ import {
 	cacheDiscoveredPath,
 } from "../utils/cache";
 import { dateFormatter } from "../utils/date-formatter";
-import { addIndividualFact } from "../utils/fact-edit";
-import type { AddFactInput } from "../utils/fact-edit";
+import { addIndividualFact, addNonEvent } from "../utils/fact-edit";
+import type { AddFactInput, AddNonEventInput } from "../utils/fact-edit";
 import {
 	findReusableParentChildFamily,
 	makePointer,
@@ -62,6 +63,7 @@ import { List } from "./list";
 import { CommonName, createCommonName } from "./name";
 import type { ObjeType } from "./obje";
 import type { Objects } from "./objes";
+import type { CommonNote } from "./note";
 import type { Sources } from "./sours";
 
 export enum Existed {
@@ -2047,8 +2049,42 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		return this.attachMultimedia(obje, { primary: options?.primary });
 	}
 
+	/**
+	 * Link a shared SNOTE record via `1 NOTE @Nn@` (GEDCOM 7).
+	 */
+	attachSharedNote(noteOrKey: CommonNote | SnoteKey) {
+		if (!this._gedcom || !this.id) {
+			return undefined;
+		}
+		const note =
+			typeof noteOrKey === "string"
+				? this._gedcom.snote(noteOrKey)
+				: noteOrKey;
+		if (!note?.id) {
+			return undefined;
+		}
+		const already = this.get("NOTE")
+			?.toList()
+			?.values()
+			?.some((item) => item?.toValue?.() === note.id);
+		if (!already) {
+			const pointer = makePointer(
+				this._gedcom,
+				this as unknown as Common,
+				note.id,
+				"SNOTE"
+			);
+			this.assign("NOTE", pointer);
+		}
+		return note;
+	}
+
 	addFact(input: AddFactInput) {
 		return addIndividualFact(this as unknown as IndiType, input);
+	}
+
+	addNonEvent(input: AddNonEventInput) {
+		return addNonEvent(this as unknown as IndiType, input);
 	}
 
 	getParentType(id: IndiType | IndiKey) {

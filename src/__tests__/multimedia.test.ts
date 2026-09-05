@@ -39,6 +39,32 @@ describe("multimedia attach / GEDZIP", () => {
 		expect(text).toContain(`1 OBJE ${obje?.id}`);
 	});
 
+	it("maps MEDI to FORM.TYPE on GEDCOM 7 standardize and back on 5.5.1", () => {
+		const gedcom = createEmptyGedcom();
+		const indi = gedcom.createIndividual();
+		const obje = gedcom.createMultimediaRecord({
+			file: "https://example.com/scan.png",
+			title: "Scan",
+			mediType: "photo",
+			gedcomVersion: "5.5.1",
+		});
+		indi.attachMultimedia(obje!);
+
+		expect(obje?.get("MEDI")?.toValue()).toBe("photo");
+
+		const as7 = gedcom.toGedcom(undefined, 0, { gedcomVersion: "7.0" });
+		expect(as7).toContain("2 FORM png");
+		expect(as7).toContain("3 TYPE photo");
+		expect(as7).not.toMatch(/\n1 MEDI /);
+
+		const as551 = gedcom.toGedcom(undefined, 0, {
+			gedcomVersion: "5.5.1",
+		});
+		expect(as551).toContain("1 FORM png");
+		expect(as551).toContain("1 MEDI photo");
+		expect(as551).not.toContain("3 TYPE photo");
+	});
+
 	it("collects multimedia and packs GEDZIP via toGedzip", async () => {
 		const gedcom = createEmptyGedcom();
 		gedcom.applyExportVersion("7.0");
