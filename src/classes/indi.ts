@@ -46,12 +46,16 @@ import {
 import { getFamilyWith } from "../utils/get-family-with";
 import { PlaceType, getPlaces } from "../utils/get-places";
 import type { Place } from "../utils/get-places";
-import { implemented } from "../utils/logger";
-import { getFileExtension, isImageFormat, resolveObjeForm } from "../utils/media-utils";
 import {
 	isRemoteOrEmbeddedMediaUrl,
 	resolveLocalMediaUrl,
 } from "../utils/local-media";
+import { implemented } from "../utils/logger";
+import {
+	getFileExtension,
+	isImageFormat,
+	resolveObjeForm,
+} from "../utils/media-utils";
 import type {
 	AttachMultimediaOptions,
 	CreateMultimediaInput,
@@ -65,9 +69,9 @@ import type { GedComType } from "./gedcom";
 import { Individuals } from "./indis";
 import { List } from "./list";
 import { CommonName, createCommonName } from "./name";
+import type { CommonNote } from "./note";
 import type { ObjeType } from "./obje";
 import type { Objects } from "./objes";
-import type { CommonNote } from "./note";
 import type { Sources } from "./sours";
 
 export enum Existed {
@@ -1027,8 +1031,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 						string | undefined;
 					const title =
 						(obje?.get("FILE.TITL")?.toValue() as
-							| string
-							| undefined) ??
+							string | undefined) ??
 						(obje?.get("TITL")?.toValue() as string | undefined) ??
 						"";
 					const type =
@@ -1044,7 +1047,10 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 							!/^https?:\/\//i.test(url));
 
 					// Remote Ancestry URLs need tree/www; embedded/local FILE does not.
-					if (!hasEmbeddedOrLocalFile && (!www || !tree || !this.id)) {
+					if (
+						!hasEmbeddedOrLocalFile &&
+						(!www || !tree || !this.id)
+					) {
 						return;
 					}
 
@@ -1458,8 +1464,11 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				const imgId = `media-${index}-${
 					url.startsWith("data:")
 						? getFileExtension(url) || "bin"
-						: url.split("/").pop()?.split("?")[0]?.substring(0, 20) ||
-							Date.now().toString(36)
+						: url
+								.split("/")
+								.pop()
+								?.split("?")[0]
+								?.substring(0, 20) || Date.now().toString(36)
 				}`;
 
 				const id = `${treeId}-${this.id}-${imgId}`;
@@ -1520,10 +1529,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 		if (cached !== undefined) {
 			// Re-resolve stale `media/...` cache entries after GEDZIP import.
-			if (
-				cached?.file &&
-				!isRemoteOrEmbeddedMediaUrl(cached.file)
-			) {
+			if (cached?.file && !isRemoteOrEmbeddedMediaUrl(cached.file)) {
 				const resolvedCached = await resolveLocalMediaUrl(cached.file);
 				if (
 					resolvedCached &&
@@ -1562,10 +1568,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			isPrimary: boolean
 		): Promise<ProfilePicture | undefined> => {
 			const resolvedFile = await resolveLocalMediaUrl(media.url);
-			if (
-				!resolvedFile ||
-				!isRemoteOrEmbeddedMediaUrl(resolvedFile)
-			) {
+			if (!resolvedFile || !isRemoteOrEmbeddedMediaUrl(resolvedFile)) {
 				return undefined;
 			}
 			return {
@@ -1591,10 +1594,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			if (onlyPrimary && !media.isPrimary) {
 				break;
 			}
-			const result = await toDisplayableProfile(
-				media,
-				!!media.isPrimary
-			);
+			const result = await toDisplayableProfile(media, !!media.isPrimary);
 			if (result) {
 				profilePictureCache<ProfilePicture>(
 					this._gedcom,
@@ -2061,7 +2061,9 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				?.forEach((item) => {
 					const target =
 						item?.refType === "OBJE"
-							? this._gedcom?.obje(String(item.toValue()) as ObjeKey)
+							? this._gedcom?.obje(
+									String(item.toValue()) as ObjeKey
+								)
 							: item;
 					if (!target) {
 						return;
@@ -2086,8 +2088,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		const toRemove = list
 			.values()
 			.filter(
-				(item) =>
-					item?.toValue?.() === objeKey || item?.id === objeKey
+				(item) => item?.toValue?.() === objeKey || item?.id === objeKey
 			);
 		toRemove.forEach((item) => {
 			if (item) {
@@ -2224,8 +2225,9 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					.index(0);
 
 				childType =
-					((childState?.get("PEDI") ?? childState?.get("PEDT"))?.toValue() as string) ||
-					RelationType.BIOLOGICAL;
+					((
+						childState?.get("PEDI") ?? childState?.get("PEDT")
+					)?.toValue() as string) || RelationType.BIOLOGICAL;
 			} else {
 				childType =
 					(famChild.get(usedRel)?.toValue() as string) ||
@@ -2779,8 +2781,14 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 	getRelativesOnLevel(level = 0, filter?: Filter) {
 		this.id = this.id || `@I${Math.random()}@`;
+		const familyKey = (level <= 0 ? "FAMS" : "FAMC") as MultiTag;
 		const cache = relativesOnLevelCache(this._gedcom, this.id, level);
-		if (cache) {
+		// Trust non-empty hits. Trust empty hits only when there is no family
+		// pointer — otherwise an earlier miss can hide spouses/children forever.
+		if (
+			cache &&
+			(cache.length > 0 || !this.get(familyKey)?.toValueList()?.length)
+		) {
 			return cache;
 		}
 
@@ -2789,9 +2797,9 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		const config = {
 			isAscendant: level < 0,
 			direction: level < 0 ? -1 : 1,
-			key: level <= 0 ? "FAMS" : "FAMC",
+			key: familyKey,
 		};
-		let families = this.get(config.key as MultiTag)?.toValueList();
+		let families = this.get(config.key)?.toValueList();
 
 		if (!families) {
 			return relativesOnLevelCache(this._gedcom, this.id, level, persons);
@@ -3068,8 +3076,9 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 						.index(0);
 
 					const childType =
-						((childState?.get("PEDI") ?? childState?.get("PEDT"))?.toValue() as string) ||
-						RelationType.BIOLOGICAL;
+						((
+							childState?.get("PEDI") ?? childState?.get("PEDT")
+						)?.toValue() as string) || RelationType.BIOLOGICAL;
 					if (
 						(!childType &&
 							filter.PEDI === RelationType.BIOLOGICAL) ||
@@ -3215,8 +3224,9 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					.index(0);
 
 				const parentType =
-					((childState?.get("PEDI") ?? childState?.get("PEDT"))?.toValue() as string) ||
-					RelationType.BIOLOGICAL;
+					((
+						childState?.get("PEDI") ?? childState?.get("PEDT")
+					)?.toValue() as string) || RelationType.BIOLOGICAL;
 				if (
 					(!parentType && filter.PEDI === RelationType.BIOLOGICAL) ||
 					parentType?.toLowerCase() === filter.PEDI.toLowerCase()

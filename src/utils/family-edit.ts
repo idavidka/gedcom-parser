@@ -7,6 +7,8 @@ import { List } from "../classes/list";
 import { RelationType } from "../types/types";
 import type { FamKey, IndiKey, MultiTag } from "../types/types";
 
+import { resetRelativesCache } from "./cache";
+
 export const PEDIGREE_VALUES = [
 	RelationType.BIRTH,
 	RelationType.ADOPTED,
@@ -181,6 +183,7 @@ export const attachSpouseToFamily = (fam: FamType, indi: IndiType) => {
 	}
 
 	indi.assign("FAMS", makePointer(gedcom, indi, fam.id, "FAM"), true);
+	resetRelativesCache();
 	return true;
 };
 
@@ -205,6 +208,7 @@ export const attachChildToFamily = (
 	}
 
 	setChildPedigree(fam, child, pedigree, parent);
+	resetRelativesCache();
 	return true;
 };
 
