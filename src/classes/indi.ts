@@ -39,6 +39,7 @@ import { addIndividualFact } from "../utils/fact-edit";
 import type { AddFactInput } from "../utils/fact-edit";
 import {
 	findReusableParentChildFamily,
+	makePointer,
 	setChildPedigree,
 } from "../utils/family-edit";
 import { getFamilyWith } from "../utils/get-family-with";
@@ -46,6 +47,10 @@ import { PlaceType, getPlaces } from "../utils/get-places";
 import type { Place } from "../utils/get-places";
 import { implemented } from "../utils/logger";
 import { getFileExtension, isImageFormat } from "../utils/media-utils";
+import type {
+	AttachMultimediaOptions,
+	CreateMultimediaInput,
+} from "../utils/multimedia";
 
 import { Common, createCommon, createProxy } from "./common";
 import type { ProxyOriginal } from "./common";
@@ -1942,6 +1947,104 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 	addParent(parent: IndiType, pedigree?: string | RelationType) {
 		return parent.addChild(this as unknown as IndiType, pedigree);
+	}
+
+	/**
+	 * Link an existing top-level OBJE record to this individual (`1 OBJE @On@`).
+	 */
+	attachMultimedia(
+		objeOrKey: ObjeType | ObjeKey,
+		options?: AttachMultimediaOptions
+	) {
+		if (!this._gedcom || !this.id) {
+			return undefined;
+		}
+
+		const obje =
+			typeof objeOrKey === "string"
+				? this._gedcom.obje(objeOrKey)
+				: objeOrKey;
+		if (!obje?.id) {
+			return undefined;
+		}
+
+		const already = this.get("OBJE")
+			?.toList()
+			?.values()
+			?.some((item) => item?.toValue?.() === obje.id);
+		if (!already) {
+			const pointer = makePointer(
+				this._gedcom,
+				this as unknown as Common,
+				obje.id,
+				"OBJE"
+			);
+			this.assign("OBJE", pointer);
+		}
+
+		if (options?.primary) {
+			this.get("OBJE")
+				?.toList()
+				?.forEach((item) => {
+					const target =
+						item?.refType === "OBJE"
+							? this._gedcom?.obje(String(item.toValue()) as ObjeKey)
+							: item;
+					if (!target) {
+						return;
+					}
+					if (target.id === obje.id) {
+						target.set("_PRIM", "Y");
+					} else if (target.get("_PRIM")?.toValue() === "Y") {
+						target.set("_PRIM", "N");
+					}
+				});
+			obje.set("_PRIM", "Y");
+		}
+
+		return obje;
+	}
+
+	detachMultimedia(objeKey: ObjeKey) {
+		const list = this.get("OBJE")?.toList();
+		if (!list) {
+			return;
+		}
+		const toRemove = list
+			.values()
+			.filter(
+				(item) =>
+					item?.toValue?.() === objeKey || item?.id === objeKey
+			);
+		toRemove.forEach((item) => {
+			if (item) {
+				list.delete(item);
+			}
+		});
+		if (list.length === 0) {
+			this.remove("OBJE");
+		}
+	}
+
+	/**
+	 * Create a multimedia record and attach it to this person.
+	 */
+	attachMediaFromUrl(
+		url: string,
+		options?: CreateMultimediaInput & AttachMultimediaOptions
+	) {
+		if (!this._gedcom || !url) {
+			return undefined;
+		}
+		const obje = this._gedcom.createMultimediaRecord({
+			file: url,
+			form: options?.form,
+			title: options?.title,
+			mediType: options?.mediType,
+			primary: options?.primary,
+			gedcomVersion: options?.gedcomVersion,
+		});
+		return this.attachMultimedia(obje, { primary: options?.primary });
 	}
 
 	addFact(input: AddFactInput) {

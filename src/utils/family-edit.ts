@@ -51,7 +51,7 @@ export const makePointer = (
 	gedcom: GedComType,
 	parent: Common,
 	value: string,
-	refType: "INDI" | "FAM"
+	refType: "INDI" | "FAM" | "OBJE"
 ) => {
 	const pointer = createCommon(gedcom, undefined, parent);
 	pointer.value = value;
@@ -61,7 +61,7 @@ export const makePointer = (
 
 export const nextRecordId = (
 	ids: Array<string | undefined>,
-	prefix: "I" | "F"
+	prefix: "I" | "F" | "O"
 ) => {
 	let max = 0;
 	ids.forEach((id) => {

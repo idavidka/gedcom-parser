@@ -4,7 +4,12 @@ import type { Families } from "../classes/fams";
 import type { IndiType } from "../classes/indi";
 import type { Individuals } from "../classes/indis";
 import type { List } from "../classes/list";
-import type { IndiKey, RelationType } from "../types/types";
+import type { ObjeType } from "../classes/obje";
+import type { IndiKey, ObjeKey, RelationType } from "../types/types";
+import type {
+	AttachMultimediaOptions,
+	CreateMultimediaInput,
+} from "../utils/multimedia";
 
 export type GeneratorKey = `${"2nd" | "3rd" | `${4 | 5 | 6 | 7 | 8 | 9}th`}`;
 export type GeneratorType =
@@ -77,6 +82,18 @@ interface IIndi extends Common<string, IndiKey> {
 		parent: IndiType,
 		pedigree?: string | RelationType
 	) => FamType | undefined;
+
+	attachMultimedia: (
+		objeOrKey: ObjeType | ObjeKey,
+		options?: AttachMultimediaOptions
+	) => ObjeType | undefined;
+
+	detachMultimedia: (objeKey: ObjeKey) => void;
+
+	attachMediaFromUrl: (
+		url: string,
+		options?: CreateMultimediaInput & AttachMultimediaOptions
+	) => ObjeType | undefined;
 
 	getAscendants: () => Individuals;
 

@@ -11,6 +11,8 @@ import type { SourType } from "../classes/sour";
 import type { Sources } from "../classes/sours";
 import type { SubmType } from "../classes/subm";
 import type { Submitters } from "../classes/subms";
+import type { ConvertOptions } from "./common";
+import type { MediaList } from "./indi";
 import type {
 	FamKey,
 	IndiKey,
@@ -19,6 +21,11 @@ import type {
 	SourKey,
 	SubmKey,
 } from "../types/types";
+import type { GedzipMediaInput } from "../utils/gedzip";
+import type {
+	CollectMultimediaOptions,
+	CreateMultimediaInput,
+} from "../utils/multimedia";
 
 type GedcomObjectPrimitive = string | number | boolean;
 export interface GedcomObjectPatch {
@@ -55,6 +62,21 @@ interface IGedcom extends Common {
 	createIndividual: () => IndiType;
 
 	createFamily: () => FamType;
+
+	nextObjeKey: () => ObjeKey;
+
+	createMultimediaRecord: (input: CreateMultimediaInput) => ObjeType;
+
+	collectMultimedia: (
+		options?: CollectMultimediaOptions
+	) => Promise<MediaList>;
+
+	toGedzip: (
+		options?: ConvertOptions & {
+			indis?: IndiKey[];
+			media?: GedzipMediaInput[];
+		}
+	) => Promise<Uint8Array>;
 
 	obje: (index: number | ObjeKey) => ObjeType | undefined;
 

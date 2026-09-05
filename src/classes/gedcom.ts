@@ -21,7 +21,17 @@ import {
 	normalizeGedcomVersion,
 } from "../utils/gedcom-version";
 import type { GedcomExportVersion } from "../utils/gedcom-version";
+import { buildGedzip } from "../utils/gedzip";
+import type { GedzipMediaInput } from "../utils/gedzip";
 import { getVersion } from "../utils/get-product-details";
+import {
+	inferMediaForm,
+	mergeMediaLists,
+} from "../utils/multimedia";
+import type {
+	CollectMultimediaOptions,
+	CreateMultimediaInput,
+} from "../utils/multimedia";
 
 import { Common, createCommon } from "./common";
 import { createFam } from "./fam";
@@ -31,14 +41,16 @@ import { CustomTags, createIndi } from "./indi";
 import type { IndiType } from "./indi";
 import { Individuals } from "./indis";
 import { List } from "./list";
+import { createObje } from "./obje";
 import type { ObjeType } from "./obje";
-import type { Objects } from "./objes";
+import { Objects } from "./objes";
 import type { RepoType } from "./repo";
 import type { Repositories } from "./repos";
 import type { SourType } from "./sour";
 import type { Sources } from "./sours";
 import type { SubmType } from "./subm";
 import type { Submitters } from "./subms";
+import type { MediaList } from "../interfaces/indi";
 
 type GedcomObjectPrimitive = string | number | boolean;
 export interface GedcomObjectPatch {
@@ -382,6 +394,112 @@ export class GedCom extends Common implements IGedcom {
 		fam.type = "FAM";
 		fams.item(id, fam);
 		return fam;
+	}
+
+	nextObjeKey() {
+		const ids: string[] = [];
+		this.objes()?.forEach((_obje, id) => {
+			ids.push(String(id));
+		});
+		return nextRecordId(ids, "O") as ObjeKey;
+	}
+
+	/**
+	 * Create a top-level multimedia record (`0 @On@ OBJE`) with FILE/FORM/TITL.
+	 * GEDCOM 7 uses nested `FILE → FORM [→ TYPE]`; 5.5.1 uses sibling FORM/TITL.
+	 */
+	createMultimediaRecord(input: CreateMultimediaInput): ObjeType {
+		const existing = this.objes();
+		const objes = existing ?? new Objects();
+		if (!existing) {
+			this.set("@@OBJE" as MultiTag, objes);
+		}
+
+		const id = this.nextObjeKey();
+		const obje = createObje(this as unknown as GedComType, id);
+		obje.type = "OBJE";
+		objes.item(id, obje);
+
+		const version = normalizeGedcomVersion(
+			input.gedcomVersion ?? this.getGedcomVersion()
+		);
+		const form = input.form || inferMediaForm(input.file);
+		const fileNode = createCommon(this as unknown as GedComType, undefined, obje);
+		fileNode.value = input.file;
+
+		if (version === "7.0") {
+			const formNode = createCommon(
+				this as unknown as GedComType,
+				undefined,
+				fileNode
+			);
+			formNode.value = form;
+			if (input.mediType) {
+				formNode.set("TYPE", input.mediType);
+			}
+			fileNode.set("FORM", formNode);
+			if (input.title) {
+				fileNode.set("TITL", input.title);
+			}
+			obje.set("FILE", fileNode);
+		} else {
+			obje.set("FILE", fileNode);
+			obje.set("FORM", form);
+			if (input.title) {
+				obje.set("TITL", input.title);
+			}
+		}
+
+		if (input.primary) {
+			obje.set("_PRIM", "Y");
+		}
+
+		return obje;
+	}
+
+	/**
+	 * Collect multimedia descriptors via each individual's `multimedia()`.
+	 */
+	async collectMultimedia(
+		options?: CollectMultimediaOptions
+	): Promise<MediaList> {
+		const people: IndiType[] = [];
+		if (options?.indiIds?.length) {
+			options.indiIds.forEach((id) => {
+				const indi = this.indi(id);
+				if (indi) {
+					people.push(indi);
+				}
+			});
+		} else {
+			this.indis()?.forEach((indi) => {
+				if (indi) {
+					people.push(indi);
+				}
+			});
+		}
+
+		const lists = await Promise.all(
+			people.map((indi) => indi.multimedia(options?.namespace))
+		);
+		return mergeMediaLists(...lists);
+	}
+
+	/**
+	 * Serialize as GEDCOM 7 and pack a FamilySearch GEDZIP (`.gdz`).
+	 * Media bytes must be supplied by the caller (cache/fetch outside the parser).
+	 */
+	async toGedzip(
+		options?: ConvertOptions & {
+			indis?: IndiKey[];
+			media?: GedzipMediaInput[];
+		}
+	): Promise<Uint8Array> {
+		const text = this.toGedcom(undefined, 0, {
+			...options,
+			gedcomVersion: "7.0",
+		});
+		return buildGedzip(text, options?.media ?? []);
 	}
 
 	objes() {
