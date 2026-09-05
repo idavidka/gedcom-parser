@@ -56,6 +56,7 @@ interface Tags {
 	_MILT?: Common;
 	_MILTID?: Common;
 	_ORIG?: Common;
+	_ORIGHEAD?: Common;
 	_LABEL?: Common;
 	_WLNK?: Common;
 	_MARNM?: Common;

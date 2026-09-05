@@ -968,7 +968,9 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	}
 
 	ancestryLink() {
-		const www = this._gedcom?.HEAD?.SOUR?.CORP?.WWW?.value;
+		const www =
+			this.getFromSourceHeads<string>("SOUR.CORP.WWW.value") ||
+			this._gedcom?.HEAD?.SOUR?.CORP?.WWW?.value;
 		const tree = this.getAncestryTreeId();
 
 		if (this.id) {
@@ -982,8 +984,11 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	async ancestryMedia(namespace?: string | number): Promise<MediaList> {
 		const list: MediaList = {};
 		const objeList = this.get("OBJE")?.toList().copy() as
-			Objects | undefined;
-		const www = this._gedcom?.HEAD?.SOUR?.CORP?.WWW?.value;
+			| Objects
+			| undefined;
+		const www =
+			this.getFromSourceHeads<string>("SOUR.CORP.WWW.value") ||
+			this._gedcom?.HEAD?.SOUR?.CORP?.WWW?.value;
 		const tree = this.getAncestryTreeId();
 
 		if (objeList) {
@@ -1071,7 +1076,10 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	}
 
 	myheritageLink(poolId = 0) {
-		const www = this._gedcom?.HEAD?.SOUR?.CORP?.value
+		const www = (
+			this.getFromSourceHeads<string>("SOUR.CORP.value") ||
+			this._gedcom?.HEAD?.SOUR?.CORP?.value
+		)
 			?.toLowerCase()
 			.replace(/^www\./gi, "");
 		const site = this.getMyHeritageTreeId();

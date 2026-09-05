@@ -17,6 +17,9 @@ export const ID_REG = /^@[_a-zA-Z0-9]+@/;
 export const ID_GETTER_REG = /^(?<at>@)?(?<letter>[A-Z])?/i;
 export const ID_SPLIT_REG = /^@[_a-zA-Z0-9]+@:/;
 
+/** Snapshot of the pre-TreeViz HEAD, kept so platform links still resolve. */
+export const ORIG_HEAD_TAG = "_ORIGHEAD";
+
 /**
  * File size limits
  */
