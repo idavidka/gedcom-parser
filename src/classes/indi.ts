@@ -35,7 +35,8 @@ import {
 	cacheDiscoveredPath,
 } from "../utils/cache";
 import { dateFormatter } from "../utils/date-formatter";
-import { addIndividualFact, type AddFactInput } from "../utils/fact-edit";
+import { addIndividualFact } from "../utils/fact-edit";
+import type { AddFactInput } from "../utils/fact-edit";
 import {
 	findReusableParentChildFamily,
 	setChildPedigree,
@@ -984,8 +985,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	async ancestryMedia(namespace?: string | number): Promise<MediaList> {
 		const list: MediaList = {};
 		const objeList = this.get("OBJE")?.toList().copy() as
-			| Objects
-			| undefined;
+			Objects | undefined;
 		const www =
 			this.getFromSourceHeads<string>("SOUR.CORP.WWW.value") ||
 			this._gedcom?.HEAD?.SOUR?.CORP?.WWW?.value;
