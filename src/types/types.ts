@@ -230,6 +230,8 @@ interface Tags {
 	RFN?: Common;
 	CREA?: Common; // Creation metadata (GEDCOM 7)
 	CHAN?: Common; // Change metadata (GEDCOM 7)
+	SCHMA?: Common; // Schema metadata (GEDCOM 7)
+	TAG?: Common; // Tag metadata (GEDCOM 7)
 }
 
 export type Tag = keyof Tags | keyof NonStandard;

@@ -62,6 +62,7 @@ export * from "./utils/gedcom7-metadata";
 export * from "./utils/gedcom7-schema";
 export * from "./utils/gedzip";
 export * from "./utils/fact-edit";
+export * from "./utils/local-media";
 export * from "./utils/media-utils";
 export * from "./utils/multimedia";
 export * from "./utils/uid";

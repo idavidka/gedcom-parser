@@ -48,6 +48,10 @@ import { PlaceType, getPlaces } from "../utils/get-places";
 import type { Place } from "../utils/get-places";
 import { implemented } from "../utils/logger";
 import { getFileExtension, isImageFormat, resolveObjeForm } from "../utils/media-utils";
+import {
+	isRemoteOrEmbeddedMediaUrl,
+	resolveLocalMediaUrl,
+} from "../utils/local-media";
 import type {
 	AttachMultimediaOptions,
 	CreateMultimediaInput,
@@ -1039,7 +1043,12 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 							url.startsWith("blob:") ||
 							!/^https?:\/\//i.test(url));
 
-					if (!www || !tree || !this.id) {
+					// Remote Ancestry URLs need tree/www; embedded/local FILE does not.
+					if (!hasEmbeddedOrLocalFile && (!www || !tree || !this.id)) {
+						return;
+					}
+
+					if (!this.id) {
 						return;
 					}
 
@@ -1071,12 +1080,12 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					}
 
 					if (url && imgId) {
-						const id = `${tree}-${this.id}-${imgId}`;
+						const id = `${tree || "gedzip"}-${this.id}-${imgId}`;
 						list[id] = {
 							key,
 							isPrimary,
 							id,
-							tree,
+							tree: tree || "gedzip",
 							imgId,
 							person: this.id!,
 							title: title as string,
@@ -1510,7 +1519,27 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		);
 
 		if (cached !== undefined) {
-			return cached;
+			// Re-resolve stale `media/...` cache entries after GEDZIP import.
+			if (
+				cached?.file &&
+				!isRemoteOrEmbeddedMediaUrl(cached.file)
+			) {
+				const resolvedCached = await resolveLocalMediaUrl(cached.file);
+				if (
+					resolvedCached &&
+					isRemoteOrEmbeddedMediaUrl(resolvedCached)
+				) {
+					const refreshed = { ...cached, file: resolvedCached };
+					profilePictureCache<ProfilePicture>(
+						this._gedcom,
+						cacheKey,
+						refreshed
+					);
+					return refreshed;
+				}
+			} else {
+				return cached;
+			}
 		}
 
 		const mediaList = await this.multimedia(namespace);
@@ -1528,54 +1557,52 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		// Convert mediaList to array and sort by isPrimary
 		const mediaArray = Object.values(mediaList);
 
-		// First, try to find a primary image
-		const primaryMedia = mediaArray.find(
-			(media) =>
-				media.isPrimary &&
-				isImageFormat(
-					media.contentType || media.url || getFileExtension(media.url)
-				)
-		);
-
-		if (primaryMedia) {
-			const result: ProfilePicture = {
-				file: primaryMedia.url,
-				form: primaryMedia.contentType,
-				title: primaryMedia.title,
-				isPrimary: true,
+		const toDisplayableProfile = async (
+			media: (typeof mediaArray)[number],
+			isPrimary: boolean
+		): Promise<ProfilePicture | undefined> => {
+			const resolvedFile = await resolveLocalMediaUrl(media.url);
+			if (
+				!resolvedFile ||
+				!isRemoteOrEmbeddedMediaUrl(resolvedFile)
+			) {
+				return undefined;
+			}
+			return {
+				file: resolvedFile,
+				form: media.contentType,
+				title: media.title,
+				isPrimary,
 			};
-			// Cache the result
-			profilePictureCache<ProfilePicture>(this._gedcom, cacheKey, result);
-			return result;
-		}
+		};
 
-		if (onlyPrimary) {
-			// Cache the undefined result
-			profilePictureCache<ProfilePicture | undefined>(
-				this._gedcom,
-				cacheKey,
-				undefined
-			);
-			return undefined;
-		}
-
-		// If no primary image found, return the first image
-		const secondaryMedia = mediaArray.find((media) =>
+		// Prefer primary, then any other displayable image.
+		const candidates = mediaArray.filter((media) =>
 			isImageFormat(
 				media.contentType || media.url || getFileExtension(media.url)
 			)
 		);
+		const ordered = [
+			...candidates.filter((media) => media.isPrimary),
+			...candidates.filter((media) => !media.isPrimary),
+		];
 
-		if (secondaryMedia) {
-			const result: ProfilePicture = {
-				file: secondaryMedia.url,
-				form: secondaryMedia.contentType,
-				title: secondaryMedia.title,
-				isPrimary: false,
-			};
-			// Cache the result
-			profilePictureCache<ProfilePicture>(this._gedcom, cacheKey, result);
-			return result;
+		for (const media of ordered) {
+			if (onlyPrimary && !media.isPrimary) {
+				break;
+			}
+			const result = await toDisplayableProfile(
+				media,
+				!!media.isPrimary
+			);
+			if (result) {
+				profilePictureCache<ProfilePicture>(
+					this._gedcom,
+					cacheKey,
+					result
+				);
+				return result;
+			}
 		}
 
 		// Cache the undefined result

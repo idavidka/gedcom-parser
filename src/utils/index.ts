@@ -11,6 +11,7 @@ export * from "./gedcom7-enumerations";
 export * from "./gedcom7-metadata";
 export * from "./gedcom7-schema";
 export * from "./gedzip";
+export * from "./local-media";
 export * from "./get-all-prop";
 export * from "./get-family-with";
 export * from "./get-places";
