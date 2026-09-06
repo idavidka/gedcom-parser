@@ -1980,7 +1980,10 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	addChild(
 		child: IndiType,
 		pedigree?: string | RelationType,
-		options?: { reuseParentFamilies?: boolean }
+		options?: {
+			reuseParentFamilies?: boolean;
+			targetFamilyId?: FamKey;
+		}
 	) {
 		if (!this.id || !child?.id || this.id === child.id || !this._gedcom) {
 			return undefined;
@@ -1989,7 +1992,10 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		const existing = findReusableParentChildFamily(
 			this as unknown as IndiType,
 			child,
-			{ reuseParentFamilies: options?.reuseParentFamilies }
+			{
+				reuseParentFamilies: options?.reuseParentFamilies,
+				targetFamilyId: options?.targetFamilyId,
+			}
 		);
 		if (existing === "already") {
 			const fam = child
@@ -2023,11 +2029,16 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		return fam;
 	}
 
-	addParent(parent: IndiType, pedigree?: string | RelationType) {
-		// Only reuse the child's FAMC if this parent can join it; never put the
-		// child into an unrelated spouse family of the new parent.
+	addParent(
+		parent: IndiType,
+		pedigree?: string | RelationType,
+		options?: { targetFamilyId?: FamKey }
+	) {
+		// Prefer filling the child's FAMC; only use a spouse family of the new
+		// parent when the caller passes an explicit targetFamilyId.
 		return parent.addChild(this as unknown as IndiType, pedigree, {
 			reuseParentFamilies: false,
+			targetFamilyId: options?.targetFamilyId,
 		});
 	}
 

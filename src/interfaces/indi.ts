@@ -6,7 +6,7 @@ import type { Individuals } from "../classes/indis";
 import type { List } from "../classes/list";
 import type { ObjeType } from "../classes/obje";
 import type { CommonNote } from "../classes/note";
-import type { IndiKey, ObjeKey, RelationType, SnoteKey } from "../types/types";
+import type { IndiKey, FamKey, ObjeKey, RelationType, SnoteKey } from "../types/types";
 import type {
 	AttachMultimediaOptions,
 	CreateMultimediaInput,
@@ -78,12 +78,16 @@ interface IIndi extends Common<string, IndiKey> {
 	addChild: (
 		child: IndiType,
 		pedigree?: string | RelationType,
-		options?: { reuseParentFamilies?: boolean }
+		options?: {
+			reuseParentFamilies?: boolean;
+			targetFamilyId?: FamKey;
+		}
 	) => FamType | undefined;
 
 	addParent: (
 		parent: IndiType,
-		pedigree?: string | RelationType
+		pedigree?: string | RelationType,
+		options?: { targetFamilyId?: FamKey }
 	) => FamType | undefined;
 
 	attachMultimedia: (

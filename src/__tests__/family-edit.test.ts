@@ -210,6 +210,81 @@ describe("family graph writes", () => {
 		expect(parentIds.sort()).toEqual(["@I2@", "@I3@"]);
 	});
 
+	it("unlinks a parent without removing the child from the family", () => {
+		const gedcom = parse(`0 HEAD
+1 GEDC
+2 VERS 5.5.1
+0 @I1@ INDI
+1 NAME Father /Test/
+1 SEX M
+1 FAMS @F1@
+0 @I2@ INDI
+1 NAME Mother /Test/
+1 SEX F
+1 FAMS @F1@
+0 @I3@ INDI
+1 NAME Child /Test/
+1 SEX M
+1 FAMC @F1@
+0 @F1@ FAM
+1 HUSB @I1@
+1 WIFE @I2@
+1 CHIL @I3@
+0 TRLR`);
+
+		const child = gedcom.indi("@I3@")!;
+		const father = gedcom.indi("@I1@")!;
+		expect(unlinkRelative(child, father, "parent")).toBe(true);
+		expect(gedcom.fam("@F1@")?.get("HUSB")?.toValue()).toBeUndefined();
+		expect(gedcom.fam("@F1@")?.get("WIFE")?.toValue()).toBe("@I2@");
+		expect(gedcom.fam("@F1@")?.get("CHIL")?.toValue()).toBe("@I3@");
+		expect(gedcom.indi("@I3@")?.get("FAMC")?.toValue()).toBe("@F1@");
+		expect(gedcom.indi("@I1@")?.get("FAMS")?.toValue()).toBeUndefined();
+	});
+
+	it("attaches a child to an explicit spouse family of a new parent", () => {
+		const gedcom = parse(`0 HEAD
+1 GEDC
+2 VERS 5.5.1
+0 @I1@ INDI
+1 NAME Child /Test/
+1 SEX M
+0 @I2@ INDI
+1 NAME Father /Test/
+1 SEX M
+1 FAMS @F1@
+1 FAMS @F2@
+0 @I3@ INDI
+1 NAME First /Wife/
+1 SEX F
+1 FAMS @F1@
+0 @I4@ INDI
+1 NAME Second /Wife/
+1 SEX F
+1 FAMS @F2@
+0 @F1@ FAM
+1 HUSB @I2@
+1 WIFE @I3@
+1 MARR
+2 DATE 1880
+0 @F2@ FAM
+1 HUSB @I2@
+1 WIFE @I4@
+1 MARR
+2 DATE 1901
+0 TRLR`);
+
+		const child = gedcom.indi("@I1@")!;
+		const father = gedcom.indi("@I2@")!;
+		const fam = child.addParent(father, undefined, {
+			targetFamilyId: "@F2@",
+		});
+		expect(fam?.id).toBe("@F2@");
+		expect(gedcom.fam("@F2@")?.get("CHIL")?.toValue()).toBe("@I1@");
+		expect(gedcom.indi("@I1@")?.get("FAMC")?.toValue()).toBe("@F2@");
+		expect(gedcom.fams()?.length).toBe(2);
+	});
+
 	it("unlinks a child from a family without deleting the person", () => {
 		const gedcom = parse(`0 HEAD
 1 GEDC

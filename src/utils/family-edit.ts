@@ -353,16 +353,22 @@ export const unlinkRelative = (
 				removePointerByValue(relative, "FAMS", fam.id) || changed;
 		});
 	} else if (kind === "parent") {
-		// `relative` is a parent of `anchor`
+		// `relative` is a parent of `anchor` — remove parent from HUSB/WIFE +
+		// FAMS; keep the child's CHIL/FAMC unless the family is later pruned.
 		anchor.getFamilies("FAMC")?.forEach((fam) => {
 			if (!fam?.id || !familyHasParent(fam, relative.id as IndiKey)) {
 				return;
 			}
+			if (firstPointerId(fam.get("HUSB")) === relative.id) {
+				fam.remove("HUSB");
+				changed = true;
+			}
+			if (firstPointerId(fam.get("WIFE")) === relative.id) {
+				fam.remove("WIFE");
+				changed = true;
+			}
 			changed =
-				removePointerByValue(fam, "CHIL", anchor.id as string) ||
-				changed;
-			changed =
-				removePointerByValue(anchor, "FAMC", fam.id) || changed;
+				removePointerByValue(relative, "FAMS", fam.id) || changed;
 		});
 	} else if (kind === "sibling") {
 		// Remove `relative` from a shared childhood family of `anchor`.
@@ -462,15 +468,22 @@ export type FindReusableParentChildFamilyOptions = {
 	 * When true (default), a parent with exactly one FAMS may receive the
 	 * child there (normal "add child to my marriage").
 	 * When false (add-parent flows), only the child's existing FAMC families
-	 * are considered — never an unrelated spouse family of the new parent.
+	 * are considered — never an unrelated spouse family of the new parent
+	 * unless `targetFamilyId` is set.
 	 */
 	reuseParentFamilies?: boolean;
+	/**
+	 * Explicit FAM to use (e.g. user picked a spouse family of the new
+	 * parent). Takes priority after "already linked" / fillable FAMC checks.
+	 */
+	targetFamilyId?: FamKey;
 };
 
 /**
  * Prefer an existing family for a parent↔child link.
  * - Always reuse a child's FAMC if the parent is already there, or can join
  *   as the missing spouse.
+ * - If `targetFamilyId` is set, use that FAM when the parent can attach.
  * - Optionally reuse the parent's sole FAMS (add-child). Skip that for
  *   add-parent so an extra parent gets a new family when they are not already
  *   in the child's family.
@@ -485,6 +498,7 @@ export const findReusableParentChildFamily = (
 	}
 
 	const reuseParentFamilies = options?.reuseParentFamilies !== false;
+	const gedcom = parent.getGedcom() ?? child.getGedcom();
 
 	let reusableFamc: FamType | undefined;
 	let already = false;
@@ -513,6 +527,17 @@ export const findReusableParentChildFamily = (
 
 	if (reusableFamc) {
 		return reusableFamc;
+	}
+
+	if (options?.targetFamilyId && gedcom) {
+		const target = gedcom.fam(options.targetFamilyId);
+		if (
+			target &&
+			(familyHasParent(target, parent.id as IndiKey) ||
+				canAttachAsSpouse(target, parent))
+		) {
+			return target;
+		}
 	}
 
 	if (!reuseParentFamilies) {
