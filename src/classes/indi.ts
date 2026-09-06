@@ -1977,14 +1977,19 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		return fam;
 	}
 
-	addChild(child: IndiType, pedigree?: string | RelationType) {
+	addChild(
+		child: IndiType,
+		pedigree?: string | RelationType,
+		options?: { reuseParentFamilies?: boolean }
+	) {
 		if (!this.id || !child?.id || this.id === child.id || !this._gedcom) {
 			return undefined;
 		}
 
 		const existing = findReusableParentChildFamily(
 			this as unknown as IndiType,
-			child
+			child,
+			{ reuseParentFamilies: options?.reuseParentFamilies }
 		);
 		if (existing === "already") {
 			const fam = child
@@ -2019,7 +2024,11 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	}
 
 	addParent(parent: IndiType, pedigree?: string | RelationType) {
-		return parent.addChild(this as unknown as IndiType, pedigree);
+		// Only reuse the child's FAMC if this parent can join it; never put the
+		// child into an unrelated spouse family of the new parent.
+		return parent.addChild(this as unknown as IndiType, pedigree, {
+			reuseParentFamilies: false,
+		});
 	}
 
 	/**

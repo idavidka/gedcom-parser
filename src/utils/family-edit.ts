@@ -7,6 +7,8 @@ import { List } from "../classes/list";
 import { RelationType } from "../types/types";
 import type { FamKey, IndiKey, MultiTag } from "../types/types";
 
+import { resetRelativesCache } from "./cache";
+
 export const PEDIGREE_VALUES = [
 	RelationType.BIRTH,
 	RelationType.ADOPTED,
@@ -181,6 +183,7 @@ export const attachSpouseToFamily = (fam: FamType, indi: IndiType) => {
 	}
 
 	indi.assign("FAMS", makePointer(gedcom, indi, fam.id, "FAM"), true);
+	resetRelativesCache();
 	return true;
 };
 
@@ -205,16 +208,283 @@ export const attachChildToFamily = (
 	}
 
 	setChildPedigree(fam, child, pedigree, parent);
+	resetRelativesCache();
 	return true;
 };
 
+/**
+ * Remove a pointer (`FAMC` / `FAMS` / `CHIL` / …) whose value equals `targetId`.
+ */
+export const removePointerByValue = (
+	owner: Common,
+	tag: MultiTag,
+	targetId: string
+): boolean => {
+	const node = owner.get(tag);
+	if (!node) {
+		return false;
+	}
+
+	if (node instanceof List) {
+		const keysToRemove: Array<string | number> = [];
+		node.entries().forEach(([key, item]) => {
+			if (
+				item?.toValue?.() === targetId ||
+				item?.id === targetId ||
+				String(key) === targetId
+			) {
+				keysToRemove.push(key as string | number);
+			}
+		});
+		keysToRemove.forEach((key) => {
+			node.removeItem(key as never);
+		});
+		if (node.length === 0) {
+			owner.remove(tag);
+		}
+		return keysToRemove.length > 0;
+	}
+
+	if (node.toValue?.() === targetId) {
+		owner.remove(tag);
+		return true;
+	}
+
+	const asList = node.toList?.();
+	if (asList && asList.length > 0) {
+		const keysToRemove: Array<string | number> = [];
+		asList.entries().forEach(([key, item]) => {
+			if (item?.toValue?.() === targetId || item?.id === targetId) {
+				keysToRemove.push(key as string | number);
+			}
+		});
+		if (keysToRemove.length === asList.length) {
+			owner.remove(tag);
+			return true;
+		}
+		if (keysToRemove.length > 0) {
+			// Promote remaining entries into a List on the owner
+			const remaining = asList
+				.values()
+				.filter((item) => item?.toValue?.() !== targetId);
+			if (remaining.length === 1 && remaining[0]) {
+				owner.set(tag, remaining[0]);
+			} else {
+				owner.set(tag, new List(remaining as Common[]));
+			}
+			return true;
+		}
+	}
+
+	return false;
+};
+
+const familyMemberCount = (fam: FamType) => {
+	let count = 0;
+	if (firstPointerId(fam.get("HUSB"))) {
+		count += 1;
+	}
+	if (firstPointerId(fam.get("WIFE"))) {
+		count += 1;
+	}
+	count += pointerIds(fam.get("CHIL")).length;
+	return count;
+};
+
+/** Drop families with no husband, wife, or children; clear dangling FAMS/FAMC. */
+export const pruneEmptyFamilies = (gedcom: GedComType) => {
+	const emptyIds: FamKey[] = [];
+	gedcom.fams()?.forEach((fam, id) => {
+		if (fam && familyMemberCount(fam) === 0 && id) {
+			emptyIds.push(id);
+		}
+	});
+
+	if (emptyIds.length === 0) {
+		return;
+	}
+
+	gedcom.indis()?.forEach((indi) => {
+		if (!indi) {
+			return;
+		}
+		emptyIds.forEach((famId) => {
+			removePointerByValue(indi, "FAMS", famId);
+			removePointerByValue(indi, "FAMC", famId);
+		});
+	});
+
+	emptyIds.forEach((famId) => {
+		gedcom.fams()?.removeItem(famId);
+	});
+};
+
+export type UnlinkRelativeKind = "parent" | "spouse" | "child" | "sibling";
+
+/**
+ * Unlink `relative` from `anchor` for the given role. Does not delete either
+ * INDI record — only family pointers. Creates no new families.
+ */
+export const unlinkRelative = (
+	anchor: IndiType,
+	relative: IndiType,
+	kind: UnlinkRelativeKind
+): boolean => {
+	if (!anchor.id || !relative.id || anchor.id === relative.id) {
+		return false;
+	}
+
+	let changed = false;
+
+	if (kind === "spouse") {
+		anchor.getFamilies("FAMS")?.forEach((fam) => {
+			if (!fam?.id || !familyHasParent(fam, relative.id as IndiKey)) {
+				return;
+			}
+			if (firstPointerId(fam.get("HUSB")) === relative.id) {
+				fam.remove("HUSB");
+				changed = true;
+			}
+			if (firstPointerId(fam.get("WIFE")) === relative.id) {
+				fam.remove("WIFE");
+				changed = true;
+			}
+			changed =
+				removePointerByValue(relative, "FAMS", fam.id) || changed;
+		});
+	} else if (kind === "parent") {
+		// `relative` is a parent of `anchor`
+		anchor.getFamilies("FAMC")?.forEach((fam) => {
+			if (!fam?.id || !familyHasParent(fam, relative.id as IndiKey)) {
+				return;
+			}
+			changed =
+				removePointerByValue(fam, "CHIL", anchor.id as string) ||
+				changed;
+			changed =
+				removePointerByValue(anchor, "FAMC", fam.id) || changed;
+		});
+	} else if (kind === "sibling") {
+		// Remove `relative` from a shared childhood family of `anchor`.
+		anchor.getFamilies("FAMC")?.forEach((fam) => {
+			if (!fam?.id || !familyHasChild(fam, relative.id as IndiKey)) {
+				return;
+			}
+			changed =
+				removePointerByValue(fam, "CHIL", relative.id as string) ||
+				changed;
+			changed =
+				removePointerByValue(relative, "FAMC", fam.id) || changed;
+		});
+	} else {
+		// `relative` is a child of `anchor`
+		anchor.getFamilies("FAMS")?.forEach((fam) => {
+			if (!fam?.id || !familyHasChild(fam, relative.id as IndiKey)) {
+				return;
+			}
+			changed =
+				removePointerByValue(fam, "CHIL", relative.id as string) ||
+				changed;
+			changed =
+				removePointerByValue(relative, "FAMC", fam.id) || changed;
+		});
+	}
+
+	if (changed) {
+		const gedcom = anchor.getGedcom() ?? relative.getGedcom();
+		if (gedcom) {
+			pruneEmptyFamilies(gedcom);
+		}
+		resetRelativesCache();
+	}
+
+	return changed;
+};
+
+/**
+ * Permanently remove an individual from the GEDCOM and clean family links.
+ */
+export const deleteIndividual = (
+	gedcom: GedComType,
+	indiId: IndiKey
+): boolean => {
+	const indi = gedcom.indi(indiId);
+	if (!indi?.id) {
+		return false;
+	}
+
+	const famsIds = pointerIds(indi.get("FAMS"));
+	const famcIds = pointerIds(indi.get("FAMC"));
+
+	famsIds.forEach((famId) => {
+		const fam = gedcom.fam(famId as FamKey);
+		if (!fam) {
+			return;
+		}
+		if (firstPointerId(fam.get("HUSB")) === indiId) {
+			fam.remove("HUSB");
+		}
+		if (firstPointerId(fam.get("WIFE")) === indiId) {
+			fam.remove("WIFE");
+		}
+	});
+
+	famcIds.forEach((famId) => {
+		const fam = gedcom.fam(famId as FamKey);
+		if (fam) {
+			removePointerByValue(fam, "CHIL", indiId);
+		}
+	});
+
+	// Safety: remove CHIL refs from any family that still lists this person
+	gedcom.fams()?.forEach((fam) => {
+		if (fam && familyHasChild(fam, indiId)) {
+			removePointerByValue(fam, "CHIL", indiId);
+		}
+		if (fam && familyHasParent(fam, indiId)) {
+			if (firstPointerId(fam.get("HUSB")) === indiId) {
+				fam.remove("HUSB");
+			}
+			if (firstPointerId(fam.get("WIFE")) === indiId) {
+				fam.remove("WIFE");
+			}
+		}
+	});
+
+	gedcom.indis()?.removeItem(indiId);
+	pruneEmptyFamilies(gedcom);
+	resetRelativesCache();
+	return true;
+};
+
+export type FindReusableParentChildFamilyOptions = {
+	/**
+	 * When true (default), a parent with exactly one FAMS may receive the
+	 * child there (normal "add child to my marriage").
+	 * When false (add-parent flows), only the child's existing FAMC families
+	 * are considered — never an unrelated spouse family of the new parent.
+	 */
+	reuseParentFamilies?: boolean;
+};
+
+/**
+ * Prefer an existing family for a parent↔child link.
+ * - Always reuse a child's FAMC if the parent is already there, or can join
+ *   as the missing spouse.
+ * - Optionally reuse the parent's sole FAMS (add-child). Skip that for
+ *   add-parent so an extra parent gets a new family when they are not already
+ *   in the child's family.
+ */
 export const findReusableParentChildFamily = (
 	parent: IndiType,
-	child: IndiType
+	child: IndiType,
+	options?: FindReusableParentChildFamilyOptions
 ): FamType | "already" | undefined => {
 	if (!parent.id || !child.id) {
 		return undefined;
 	}
+
+	const reuseParentFamilies = options?.reuseParentFamilies !== false;
 
 	let reusableFamc: FamType | undefined;
 	let already = false;
@@ -243,6 +513,10 @@ export const findReusableParentChildFamily = (
 
 	if (reusableFamc) {
 		return reusableFamc;
+	}
+
+	if (!reuseParentFamilies) {
+		return undefined;
 	}
 
 	const parentFams: FamType[] = [];

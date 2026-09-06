@@ -77,7 +77,8 @@ interface IIndi extends Common<string, IndiKey> {
 
 	addChild: (
 		child: IndiType,
-		pedigree?: string | RelationType
+		pedigree?: string | RelationType,
+		options?: { reuseParentFamilies?: boolean }
 	) => FamType | undefined;
 
 	addParent: (
