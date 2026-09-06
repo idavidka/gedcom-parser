@@ -39,6 +39,7 @@ import { dateFormatter } from "../utils/date-formatter";
 import { addIndividualFact, addNonEvent } from "../utils/fact-edit";
 import type { AddFactInput, AddNonEventInput } from "../utils/fact-edit";
 import {
+	consolidateChildIntoFamily,
 	findReusableParentChildFamily,
 	makePointer,
 	setChildPedigree,
@@ -2024,6 +2025,10 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 		if (!fam.addChild(child, pedigree, this as unknown as IndiType)) {
 			return undefined;
+		}
+
+		if (existing) {
+			consolidateChildIntoFamily(child, fam);
 		}
 
 		return fam;

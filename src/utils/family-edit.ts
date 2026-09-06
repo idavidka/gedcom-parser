@@ -291,17 +291,24 @@ const familyMemberCount = (fam: FamType) => {
 	return count;
 };
 
-/** Drop families with no husband, wife, or children; clear dangling FAMS/FAMC. */
-export const pruneEmptyFamilies = (gedcom: GedComType) => {
+/** True when the FAM has fewer than two people (empty or lone individual). */
+export const isDegenerateFamily = (fam: FamType) =>
+	familyMemberCount(fam) <= 1;
+
+/**
+ * Drop families with fewer than two members (not a real family unit);
+ * clear dangling FAMS/FAMC. Returns removed FAM ids.
+ */
+export const pruneEmptyFamilies = (gedcom: GedComType): FamKey[] => {
 	const emptyIds: FamKey[] = [];
 	gedcom.fams()?.forEach((fam, id) => {
-		if (fam && familyMemberCount(fam) === 0 && id) {
+		if (fam && isDegenerateFamily(fam) && id) {
 			emptyIds.push(id);
 		}
 	});
 
 	if (emptyIds.length === 0) {
-		return;
+		return [];
 	}
 
 	gedcom.indis()?.forEach((indi) => {
@@ -317,6 +324,198 @@ export const pruneEmptyFamilies = (gedcom: GedComType) => {
 	emptyIds.forEach((famId) => {
 		gedcom.fams()?.removeItem(famId);
 	});
+
+	return emptyIds;
+};
+
+/** Degenerate FAMs linked to this person via FAMS or FAMC. */
+export const findDegenerateFamiliesForIndi = (indi: IndiType): FamType[] => {
+	const found: FamType[] = [];
+	const seen = new Set<string>();
+
+	(["FAMC", "FAMS"] as const).forEach((pointer) => {
+		indi.getFamilies(pointer)?.forEach((fam) => {
+			if (!fam?.id || seen.has(fam.id) || !isDegenerateFamily(fam)) {
+				return;
+			}
+			seen.add(fam.id);
+			found.push(fam);
+		});
+	});
+
+	return found;
+};
+
+/**
+ * Stable key for a two-parent couple (order-independent). Undefined if the FAM
+ * does not have both HUSB and WIFE.
+ */
+export const coupleKeyForFam = (fam: FamType): string | undefined => {
+	const husb = firstPointerId(fam.get("HUSB"));
+	const wife = firstPointerId(fam.get("WIFE"));
+	if (!husb || !wife) {
+		return undefined;
+	}
+	return husb < wife ? `${husb}|${wife}` : `${wife}|${husb}`;
+};
+
+export type DuplicateCoupleGroup = {
+	key: string;
+	families: FamType[];
+};
+
+/**
+ * FAMs that share the same HUSB+WIFE pair and are relevant to this person
+ * (linked via FAMS/FAMC, or elsewhere in the file with the same couple key).
+ */
+export const findDuplicateCoupleFamiliesForIndi = (
+	indi: IndiType
+): DuplicateCoupleGroup[] => {
+	const gedcom = indi.getGedcom();
+	if (!gedcom) {
+		return [];
+	}
+
+	const relevantKeys = new Set<string>();
+	(["FAMC", "FAMS"] as const).forEach((pointer) => {
+		indi.getFamilies(pointer)?.forEach((fam) => {
+			const key = fam ? coupleKeyForFam(fam) : undefined;
+			if (key) {
+				relevantKeys.add(key);
+			}
+		});
+	});
+
+	if (relevantKeys.size === 0) {
+		return [];
+	}
+
+	const byKey = new Map<string, FamType[]>();
+	gedcom.fams()?.forEach((fam) => {
+		if (!fam?.id) {
+			return;
+		}
+		const key = coupleKeyForFam(fam);
+		if (!key || !relevantKeys.has(key)) {
+			return;
+		}
+		const list = byKey.get(key) ?? [];
+		list.push(fam);
+		byKey.set(key, list);
+	});
+
+	return [...byKey.entries()]
+		.filter(([, families]) => families.length > 1)
+		.map(([key, families]) => ({ key, families }));
+};
+
+/**
+ * Merge FAMs that represent the same couple into one: keep the FAM with the
+ * most children (tie-break by id), move CHILs, drop extras and clear pointers.
+ */
+export const mergeDuplicateCoupleFamilies = (
+	gedcom: GedComType,
+	families: FamType[]
+): FamType | undefined => {
+	const usable = families.filter((fam) => !!fam?.id);
+	if (usable.length === 0) {
+		return undefined;
+	}
+	if (usable.length === 1) {
+		return usable[0];
+	}
+
+	const sorted = [...usable].sort((a, b) => {
+		const childDiff =
+			pointerIds(b.get("CHIL")).length - pointerIds(a.get("CHIL")).length;
+		if (childDiff !== 0) {
+			return childDiff;
+		}
+		return String(a.id).localeCompare(String(b.id));
+	});
+
+	const keep = sorted[0];
+	const drops = sorted.slice(1);
+	if (!keep?.id) {
+		return undefined;
+	}
+
+	drops.forEach((drop) => {
+		if (!drop?.id || drop.id === keep.id) {
+			return;
+		}
+
+		pointerIds(drop.get("CHIL")).forEach((childId) => {
+			const child = gedcom.indi(childId as IndiKey);
+			if (!child) {
+				return;
+			}
+			attachChildToFamily(keep, child);
+			removePointerByValue(drop, "CHIL", childId);
+			removePointerByValue(child, "FAMC", drop.id as string);
+		});
+
+		const husbId = firstPointerId(drop.get("HUSB"));
+		const wifeId = firstPointerId(drop.get("WIFE"));
+		[husbId, wifeId].forEach((parentId) => {
+			if (!parentId) {
+				return;
+			}
+			const parent = gedcom.indi(parentId as IndiKey);
+			if (parent) {
+				removePointerByValue(parent, "FAMS", drop.id as string);
+			}
+		});
+
+		gedcom.fams()?.removeItem(drop.id);
+	});
+
+	resetRelativesCache();
+	return keep;
+};
+
+/**
+ * Remove specific degenerate families (and clear INDI pointers). Returns
+ * how many were removed.
+ */
+export const pruneFamiliesByIds = (
+	gedcom: GedComType,
+	famIds: FamKey[]
+): number => {
+	const unique = [...new Set(famIds.filter(Boolean))];
+	if (unique.length === 0) {
+		return 0;
+	}
+
+	gedcom.indis()?.forEach((indi) => {
+		if (!indi) {
+			return;
+		}
+		unique.forEach((famId) => {
+			removePointerByValue(indi, "FAMS", famId);
+			removePointerByValue(indi, "FAMC", famId);
+		});
+	});
+
+	unique.forEach((famId) => {
+		gedcom.fams()?.removeItem(famId);
+	});
+
+	return unique.length;
+};
+
+/** FAMS of `parent` that already lists `coParentId` as the other spouse. */
+const findSharedSpouseFamily = (
+	parent: IndiType,
+	coParentId: IndiKey
+): FamType | undefined => {
+	let found: FamType | undefined;
+	parent.getFamilies("FAMS")?.forEach((fam) => {
+		if (!found && fam && familyHasParent(fam, coParentId)) {
+			found = fam;
+		}
+	});
+	return found;
 };
 
 export type UnlinkRelativeKind = "parent" | "spouse" | "child" | "sibling";
@@ -483,6 +682,8 @@ export type FindReusableParentChildFamilyOptions = {
  * Prefer an existing family for a parent↔child link.
  * - Always reuse a child's FAMC if the parent is already there, or can join
  *   as the missing spouse.
+ * - Prefer an existing FAMS the parent already shares with a co-parent of the
+ *   child (same couple must not get a second FAM).
  * - If `targetFamilyId` is set, use that FAM when the parent can attach.
  * - Optionally reuse the parent's sole FAMS (add-child). Skip that for
  *   add-parent so an extra parent gets a new family when they are not already
@@ -501,7 +702,23 @@ export const findReusableParentChildFamily = (
 	const gedcom = parent.getGedcom() ?? child.getGedcom();
 
 	let reusableFamc: FamType | undefined;
+	let coupleFam: FamType | undefined;
 	let already = false;
+
+	const noteCoupleWith = (coParentId?: string) => {
+		if (
+			!coParentId ||
+			coParentId === parent.id ||
+			coupleFam ||
+			!parent.id
+		) {
+			return;
+		}
+		const shared = findSharedSpouseFamily(parent, coParentId as IndiKey);
+		if (shared) {
+			coupleFam = shared;
+		}
+	};
 
 	child.getFamilies("FAMC")?.forEach((fam) => {
 		if (!fam) {
@@ -516,6 +733,9 @@ export const findReusableParentChildFamily = (
 			return;
 		}
 
+		pointerIds(fam.get("HUSB")).forEach(noteCoupleWith);
+		pointerIds(fam.get("WIFE")).forEach(noteCoupleWith);
+
 		if (!reusableFamc && canAttachAsSpouse(fam, parent)) {
 			reusableFamc = fam;
 		}
@@ -523,6 +743,12 @@ export const findReusableParentChildFamily = (
 
 	if (already) {
 		return "already";
+	}
+
+	// Same HUSB+WIFE pair must stay one FAM — attach here instead of filling a
+	// separate single-parent FAMC for another sibling.
+	if (coupleFam) {
+		return coupleFam;
 	}
 
 	if (reusableFamc) {
@@ -556,4 +782,56 @@ export const findReusableParentChildFamily = (
 	}
 
 	return undefined;
+};
+
+/**
+ * After attaching a child to `keep`, drop redundant FAMC links whose parents
+ * are already covered by `keep` (e.g. father-only FAMC once mother joined the
+ * couple family). Prunes families left with ≤1 member.
+ */
+export const consolidateChildIntoFamily = (
+	child: IndiType,
+	keep: FamType
+): FamKey[] => {
+	if (!child.id || !keep.id) {
+		return [];
+	}
+
+	const keepParentIds = new Set([
+		...pointerIds(keep.get("HUSB")),
+		...pointerIds(keep.get("WIFE")),
+	]);
+	const removed: FamKey[] = [];
+
+	child.getFamilies("FAMC")?.forEach((fam) => {
+		if (!fam?.id || fam.id === keep.id) {
+			return;
+		}
+
+		const famParentIds = [
+			...pointerIds(fam.get("HUSB")),
+			...pointerIds(fam.get("WIFE")),
+		];
+		if (
+			famParentIds.length === 0 ||
+			!famParentIds.every((id) => keepParentIds.has(id))
+		) {
+			return;
+		}
+
+		removePointerByValue(fam, "CHIL", child.id as string);
+		removePointerByValue(child, "FAMC", fam.id);
+		removed.push(fam.id);
+	});
+
+	const gedcom = child.getGedcom() ?? keep.getGedcom();
+	if (gedcom && removed.length > 0) {
+		pruneEmptyFamilies(gedcom);
+	}
+
+	if (removed.length > 0) {
+		resetRelativesCache();
+	}
+
+	return removed;
 };

@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import GedcomTree from "..";
 import { RelationType } from "../types/types";
-import { deleteIndividual, unlinkRelative } from "../utils/family-edit";
+import {
+	deleteIndividual,
+	findDuplicateCoupleFamiliesForIndi,
+	mergeDuplicateCoupleFamilies,
+	unlinkRelative,
+} from "../utils/family-edit";
 
 const parse = (raw: string) => {
 	const { gedcom } = GedcomTree.parse(raw);
@@ -285,6 +290,31 @@ describe("family graph writes", () => {
 		expect(gedcom.fams()?.length).toBe(2);
 	});
 
+	it("prunes a family left with a single member after unlinking a spouse", () => {
+		const gedcom = parse(`0 HEAD
+1 GEDC
+2 VERS 5.5.1
+0 @I1@ INDI
+1 NAME Alone /Parent/
+1 SEX M
+1 FAMS @F1@
+0 @I2@ INDI
+1 NAME Leaving /Spouse/
+1 SEX F
+1 FAMS @F1@
+0 @F1@ FAM
+1 HUSB @I1@
+1 WIFE @I2@
+0 TRLR`);
+
+		const a = gedcom.indi("@I1@")!;
+		const b = gedcom.indi("@I2@")!;
+		expect(unlinkRelative(a, b, "spouse")).toBe(true);
+		expect(gedcom.fam("@F1@")).toBeUndefined();
+		expect(gedcom.indi("@I1@")?.get("FAMS")?.toValue()).toBeUndefined();
+		expect(gedcom.indi("@I2@")?.get("FAMS")?.toValue()).toBeUndefined();
+	});
+
 	it("unlinks a child from a family without deleting the person", () => {
 		const gedcom = parse(`0 HEAD
 1 GEDC
@@ -374,5 +404,106 @@ describe("family graph writes", () => {
 		expect(gedcom.indi("@I3@")).toBeUndefined();
 		expect(gedcom.fam("@F1@")?.get("CHIL")?.toValue()).toBeUndefined();
 		expect(gedcom.indi("@I1@")).toBeDefined();
+	});
+
+	it("reuses the existing couple FAMS when adding the same parent to a sibling", () => {
+		const gedcom = parse(`0 HEAD
+1 GEDC
+2 VERS 5.5.1
+0 @I1@ INDI
+1 NAME Father /Test/
+1 SEX M
+1 FAMS @F1@
+1 FAMS @F2@
+0 @I2@ INDI
+1 NAME ChildA /Test/
+1 SEX F
+1 FAMC @F1@
+0 @I3@ INDI
+1 NAME ChildB /Test/
+1 SEX M
+1 FAMC @F2@
+0 @I4@ INDI
+1 NAME Mother /Test/
+1 SEX F
+0 @F1@ FAM
+1 HUSB @I1@
+1 CHIL @I2@
+0 @F2@ FAM
+1 HUSB @I1@
+1 CHIL @I3@
+0 TRLR`);
+
+		const mother = gedcom.indi("@I4@")!;
+		const childA = gedcom.indi("@I2@")!;
+		const childB = gedcom.indi("@I3@")!;
+
+		const famA = childA.addParent(mother);
+		expect(famA?.id).toBe("@F1@");
+		expect(gedcom.fam("@F1@")?.get("WIFE")?.toValue()).toBe("@I4@");
+
+		const famB = childB.addParent(mother);
+		expect(famB?.id).toBe("@F1@");
+		expect(gedcom.fams()?.length).toBe(1);
+		expect(gedcom.fam("@F2@")).toBeUndefined();
+
+		const childIds: string[] = [];
+		gedcom.fam("@F1@")
+			?.get("CHIL")
+			?.toList()
+			?.values()
+			?.forEach((item) => {
+				const value = item?.toValue?.();
+				if (value) {
+					childIds.push(value);
+				}
+			});
+		expect(childIds.sort()).toEqual(["@I2@", "@I3@"]);
+		expect(childB.get("FAMC")?.toValue()).toBe("@F1@");
+	});
+
+	it("finds and merges duplicate couple families for a person", () => {
+		const gedcom = parse(`0 HEAD
+1 GEDC
+2 VERS 5.5.1
+0 @I1@ INDI
+1 NAME Father /Test/
+1 SEX M
+1 FAMS @F1@
+1 FAMS @F2@
+0 @I2@ INDI
+1 NAME Mother /Test/
+1 SEX F
+1 FAMS @F1@
+1 FAMS @F2@
+0 @I3@ INDI
+1 NAME ChildA /Test/
+1 SEX F
+1 FAMC @F1@
+0 @I4@ INDI
+1 NAME ChildB /Test/
+1 SEX M
+1 FAMC @F2@
+0 @F1@ FAM
+1 HUSB @I1@
+1 WIFE @I2@
+1 CHIL @I3@
+0 @F2@ FAM
+1 HUSB @I1@
+1 WIFE @I2@
+1 CHIL @I4@
+0 TRLR`);
+
+		const mother = gedcom.indi("@I2@")!;
+		const groups = findDuplicateCoupleFamiliesForIndi(mother);
+		expect(groups).toHaveLength(1);
+		expect(groups[0].families).toHaveLength(2);
+
+		const kept = mergeDuplicateCoupleFamilies(gedcom, groups[0].families);
+		expect(kept?.id).toBeTruthy();
+		expect(gedcom.fams()?.length).toBe(1);
+		expect(gedcom.indi("@I3@")?.get("FAMC")?.toValue()).toBe(kept?.id);
+		expect(gedcom.indi("@I4@")?.get("FAMC")?.toValue()).toBe(kept?.id);
+		expect(findDuplicateCoupleFamiliesForIndi(mother)).toHaveLength(0);
 	});
 });
