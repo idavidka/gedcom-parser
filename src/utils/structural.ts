@@ -64,11 +64,12 @@ const clearNodeChildren = (node: Common) => {
 		}
 		node.remove(key as MultiTag);
 	}
-	if ("value" in node) {
-		delete (node as { value?: unknown }).value;
+	const mutable = node as unknown as Record<string, unknown>;
+	if ("value" in mutable) {
+		delete mutable.value;
 	}
-	if ("_value" in node) {
-		delete (node as { _value?: unknown })._value;
+	if ("_value" in mutable) {
+		delete mutable._value;
 	}
 };
 
