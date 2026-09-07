@@ -27,6 +27,7 @@ export * from "./ordinalize";
 export { default as GedcomTree, createEmptyGedcom } from "./parser";
 export * from "./place-parser";
 export * from "./place-translator";
+export * from "./structural";
 // Note: place-types is already exported by get-places
 
 // Export range - use wildcard for functions, explicit for types

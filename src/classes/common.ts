@@ -387,6 +387,12 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		> = {};
 
 		validKeys.forEach((key) => {
+			if (
+				options?.persist &&
+				(key === "DAY" || key === "MONTH" || key === "YEAR")
+			) {
+				return;
+			}
 			if (key === "id" && this.id !== undefined) {
 				json.id = this.id as string;
 			} else if (key === "_id" && this._id !== undefined) {
