@@ -9,6 +9,33 @@ import type { FamKey, IndiKey, MultiTag } from "../types/types";
 
 import { resetRelativesCache } from "./cache";
 
+const refTypeForTag = (tag: string) => {
+	if (tag === "FAMS" || tag === "FAMC") return "FAM" as const;
+	return "INDI" as const;
+};
+
+const normalizeSinglePointer = (owner: Common, tag: MultiTag) => {
+	const node = owner.get(tag);
+	if (!node) return;
+
+	// If it's a List with a single entry, promote to a single Common pointer
+	if (node instanceof List && node.length === 1) {
+		const only = node.index(0);
+		if (only) {
+			owner.set(tag, only as unknown as Common);
+			return;
+		}
+		// If the list contains primitive values, wrap into a pointer
+		const raw = node.values()[0] as unknown;
+		if (typeof raw === "string") {
+			const gedcom = owner.getGedcom?.();
+			if (gedcom) {
+				owner.set(tag, makePointer(gedcom, owner, raw, refTypeForTag(tag as string)));
+			}
+		}
+	}
+};
+
 export const PEDIGREE_VALUES = [
 	RelationType.BIRTH,
 	RelationType.ADOPTED,
@@ -183,6 +210,12 @@ export const attachSpouseToFamily = (fam: FamType, indi: IndiType) => {
 	}
 
 	indi.assign("FAMS", makePointer(gedcom, indi, fam.id, "FAM"), true);
+	// Normalize FAMS on individual to a single pointer when appropriate
+	normalizeSinglePointer(indi, "FAMS");
+
+	// Normalize spouse slot on family if it became a single-entry list
+	normalizeSinglePointer(fam, spouseTagFor(indi, fam));
+
 	resetRelativesCache();
 	return true;
 };
@@ -208,6 +241,11 @@ export const attachChildToFamily = (
 	}
 
 	setChildPedigree(fam, child, pedigree, parent);
+
+	// Normalize to simple pointers when a single value remains
+	normalizeSinglePointer(child, "FAMC");
+	normalizeSinglePointer(fam, "CHIL");
+
 	resetRelativesCache();
 	return true;
 };
@@ -451,8 +489,11 @@ export const mergeDuplicateCoupleFamilies = (
 				return;
 			}
 			attachChildToFamily(keep, child);
-			removePointerByValue(drop, "CHIL", childId);
-			removePointerByValue(child, "FAMC", drop.id as string);
+				removePointerByValue(drop, "CHIL", childId);
+				// normalize in case a single-entry List was left behind
+				normalizeSinglePointer(drop, "CHIL");
+				removePointerByValue(child, "FAMC", drop.id as string);
+				normalizeSinglePointer(child, "FAMC");
 		});
 
 		const husbId = firstPointerId(drop.get("HUSB"));
@@ -464,6 +505,8 @@ export const mergeDuplicateCoupleFamilies = (
 			const parent = gedcom.indi(parentId as IndiKey);
 			if (parent) {
 				removePointerByValue(parent, "FAMS", drop.id as string);
+				// normalize parent's FAMS if needed
+				normalizeSinglePointer(parent, "FAMS");
 			}
 		});
 
@@ -820,7 +863,10 @@ export const consolidateChildIntoFamily = (
 		}
 
 		removePointerByValue(fam, "CHIL", child.id as string);
+		// normalize family CHIL and child's FAMC if remove left single-entry Lists
+		normalizeSinglePointer(fam, "CHIL");
 		removePointerByValue(child, "FAMC", fam.id);
+		normalizeSinglePointer(child, "FAMC");
 		removed.push(fam.id);
 	});
 
