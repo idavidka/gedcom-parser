@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import GedcomTree from "@treeviz/gedcom-parser";
+import GedcomTree from "../utils/parser";
 
 describe("getFacts web links", () => {
 	it("exposes WWW payload and _WLNK title/note for the facts list", () => {
