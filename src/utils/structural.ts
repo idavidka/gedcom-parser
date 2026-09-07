@@ -1,5 +1,5 @@
 import type { Common } from "../classes/common";
-import { isId } from "../classes/common";
+import { getValidKeys, isId } from "../classes/common";
 import type { GedComType } from "../classes/gedcom";
 import type { ConvertOptions } from "../interfaces/common";
 import type { MultiTag, IdType } from "../types/types";
@@ -15,17 +15,9 @@ export type StructuralEnvelope = {
 	data: Record<string, unknown>;
 };
 
-const RECORD_TAGS = [
-	"INDI",
-	"FAM",
-	"OBJE",
-	"SOUR",
-	"REPO",
-	"SUBM",
-	"SNOTE",
-] as const;
+const ROOT_SKIP_KEYS = new Set(["HEAD"]);
 
-const SKIP_KEYS = new Set(["id", "DAY", "MONTH", "YEAR"]);
+const SKIP_KEYS = new Set(["id"]);
 
 const asArray = <T>(value: T | T[] | undefined | null): T[] => {
 	if (value === undefined || value === null) {
@@ -36,6 +28,49 @@ const asArray = <T>(value: T | T[] | undefined | null): T[] => {
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
 	typeof value === "object" && value !== null && !Array.isArray(value);
+
+const isRecordItem = (
+	value: unknown
+): value is Record<string, unknown> & { id: string } =>
+	isPlainObject(value) && typeof value.id === "string";
+
+/**
+ * Top-level record collections in persist payload order (same as `toObject`
+ * key order from parse). Includes custom tags e.g. CONTACT / OCCUPATION.
+ * HEAD is handled separately.
+ */
+const topLevelRecordTags = (data: Record<string, unknown>): MultiTag[] => {
+	const found: MultiTag[] = [];
+	for (const key of Object.keys(data)) {
+		if (ROOT_SKIP_KEYS.has(key)) {
+			continue;
+		}
+		if (asArray(data[key]).some(isRecordItem)) {
+			found.push(key as MultiTag);
+		}
+	}
+	return found;
+};
+
+const clearNodeChildren = (node: Common) => {
+	for (const key of getValidKeys(node)) {
+		if (
+			key === "id" ||
+			key === "_id" ||
+			key === "value" ||
+			key === "_value"
+		) {
+			continue;
+		}
+		node.remove(key as MultiTag);
+	}
+	if ("value" in node) {
+		delete (node as { value?: unknown }).value;
+	}
+	if ("_value" in node) {
+		delete (node as { _value?: unknown })._value;
+	}
+};
 
 export const isStructuralEnvelope = (
 	content: string
@@ -88,9 +123,9 @@ export const serializeStructural = (
 
 const buildXrefIndex = (data: Record<string, unknown>) => {
 	const xrefTypes = new Map<string, MultiTag>();
-	for (const tag of RECORD_TAGS) {
+	for (const tag of topLevelRecordTags(data)) {
 		for (const item of asArray(data[tag])) {
-			if (isPlainObject(item) && typeof item.id === "string") {
+			if (isRecordItem(item)) {
 				xrefTypes.set(item.id, tag);
 			}
 		}
@@ -109,13 +144,32 @@ const applyValue = (
 	}
 };
 
+const DERIVED_NAME_PARTS = new Set([
+	"GIVN",
+	"SURN",
+	"NSFX",
+	"NICK",
+	"NPFX",
+	"DISPLAY",
+	"FORMAT",
+]);
+
 const applyProps = (
 	gedcom: GedComType,
 	node: Common,
 	props: Record<string, unknown>,
 	xrefTypes: Map<string, MultiTag>
 ) => {
-	Object.entries(props).forEach(([key, value]) => {
+	// Apply `value` first so NAME/DATE parsers run, then restore explicit
+	// child tags (GIVN/SURN, DAY/MONTH/YEAR, …) so they match parse().
+	const providedKeys = new Set(Object.keys(props));
+	const entries = Object.entries(props);
+	const ordered = [
+		...entries.filter(([key]) => key === "value"),
+		...entries.filter(([key]) => key !== "value"),
+	];
+
+	ordered.forEach(([key, value]) => {
 		if (SKIP_KEYS.has(key)) {
 			return;
 		}
@@ -173,9 +227,45 @@ const applyProps = (
 		}
 
 		if (isPlainObject(value)) {
+			// Replace a single child that the value-setter may have created
+			// (e.g. NAME → GIVN) so explicit persist props win.
+			const existing = node.get(tag);
+			if (existing && !(existing as { length?: number }).length) {
+				node.remove(tag);
+			}
 			addOne(value);
 		}
 	});
+
+	// Drop NAME parts that were not in the persist payload (live edits may
+	// only store NAME.value). Keep DATE DAY/MONTH/YEAR — removing them
+	// reformats DATE.value and breaks toGedcom parity.
+	if (providedKeys.has("value")) {
+		for (const derived of DERIVED_NAME_PARTS) {
+			if (!providedKeys.has(derived) && node.get(derived as MultiTag)) {
+				node.remove(derived as MultiTag);
+			}
+		}
+	}
+};
+
+const applyHead = (
+	gedcom: GedComType,
+	data: Record<string, unknown>,
+	xrefTypes: Map<string, MultiTag>
+) => {
+	const headNode = gedcom.get("HEAD");
+	if (isPlainObject(data.HEAD)) {
+		if (headNode) {
+			clearNodeChildren(headNode);
+			applyProps(gedcom, headNode, data.HEAD, xrefTypes);
+		}
+		return;
+	}
+	// Source had no HEAD — drop the empty-gedcom default so we match parse().
+	if (headNode) {
+		gedcom.remove("HEAD");
+	}
 };
 
 const yieldToMain = () =>
@@ -183,26 +273,14 @@ const yieldToMain = () =>
 		setTimeout(resolve, 0);
 	});
 
-/**
- * Rebuild a live GedCom from `toObject(..., { persist: true })` output.
- * Uses typed `create` + `addToList` (not `applyObject`).
- */
-export const fromObject = (data: Record<string, unknown>): GedComType => {
+const rebuildFromObjectData = (data: Record<string, unknown>): GedComType => {
 	const gedcom = createEmptyGedcom();
 	const xrefTypes = buildXrefIndex(data);
+	applyHead(gedcom, data, xrefTypes);
 
-	const head = data.HEAD;
-	if (isPlainObject(head)) {
-		const headNode = gedcom.get("HEAD");
-		if (headNode) {
-			// Replace default empty HEAD content
-			applyProps(gedcom, headNode, head, xrefTypes);
-		}
-	}
-
-	for (const tag of RECORD_TAGS) {
+	for (const tag of topLevelRecordTags(data)) {
 		for (const item of asArray(data[tag])) {
-			if (!isPlainObject(item) || typeof item.id !== "string") {
+			if (!isRecordItem(item)) {
 				continue;
 			}
 			const id = item.id as IdType;
@@ -216,6 +294,13 @@ export const fromObject = (data: Record<string, unknown>): GedComType => {
 };
 
 /**
+ * Rebuild a live GedCom from `toObject(..., { persist: true })` output.
+ * Uses typed `create` + `addToList` (not `applyObject`).
+ */
+export const fromObject = (data: Record<string, unknown>): GedComType =>
+	rebuildFromObjectData(data);
+
+/**
  * Same as `fromObject`, but yields to the event loop every `yieldEvery` records
  * so cold-start hydrate does not freeze the UI for multi-second stretches.
  */
@@ -227,22 +312,15 @@ export const fromObjectAsync = async (
 	const signal = options?.signal;
 	const gedcom = createEmptyGedcom();
 	const xrefTypes = buildXrefIndex(data);
-
-	const head = data.HEAD;
-	if (isPlainObject(head)) {
-		const headNode = gedcom.get("HEAD");
-		if (headNode) {
-			applyProps(gedcom, headNode, head, xrefTypes);
-		}
-	}
+	applyHead(gedcom, data, xrefTypes);
 
 	let n = 0;
-	for (const tag of RECORD_TAGS) {
+	for (const tag of topLevelRecordTags(data)) {
 		for (const item of asArray(data[tag])) {
 			if (signal?.aborted) {
 				throw new DOMException("Aborted", "AbortError");
 			}
-			if (!isPlainObject(item) || typeof item.id !== "string") {
+			if (!isRecordItem(item)) {
 				continue;
 			}
 			const id = item.id as IdType;

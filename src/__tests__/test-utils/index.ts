@@ -6,3 +6,7 @@ export {
 } from "./snapshot-helpers";
 export { createPersonIdGetter } from "./person-helpers";
 export { findPackageRoot } from "./path-utils";
+export {
+	structuralFingerprint,
+	fingerprintDiff,
+} from "./structural-fingerprint";
