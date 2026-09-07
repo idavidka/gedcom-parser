@@ -8,6 +8,11 @@ export interface ConvertOptions {
 	original?: boolean;
 	/** Target GEDCOM spec when serializing. Ignored when `original` is true. */
 	gedcomVersion?: "5.5.1" | "7.0";
+	/**
+	 * When true, omit derived DATE fields (DAY/MONTH/YEAR) for structural
+	 * persistence (Firebase/IDB). Not for GEDCOM export.
+	 */
+	persist?: boolean;
 	obje?: {
 		standardize?: boolean;
 		override?: boolean;
