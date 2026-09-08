@@ -1,4 +1,4 @@
-export type Language = "en" | "hu" | "de" | "es" | "fr" | "ru";
+export type Language = "en" | "hu" | "de" | "es" | "fr" | "ru" | "ja" | "zh";
 
 export interface Cases {
 	nominativus: string;
