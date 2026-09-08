@@ -2286,14 +2286,50 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		return this.getFacts(limit, "AKA");
 	}
 
-	getFacts(limit?: number, filter?: MultiTag | MultiTag[]) {
-		const filters = (Array.isArray(filter) ? filter : [filter]).filter(
-			Boolean
+	/**
+	 * Collect event/attribute facts.
+	 * @param limit Max records per tag
+	 * @param filter Whitelist tags, or `{ include?, exclude? }`.
+	 *   - string/array: include only these tags (and custom EVEN/FACT TYPE values)
+	 *   - `{ exclude: ["BIRT","DEAT"] }`: all facts except those tags
+	 */
+	getFacts(
+		limit?: number,
+		filter?:
+			| MultiTag
+			| MultiTag[]
+			| {
+					include?: MultiTag | MultiTag[];
+					exclude?: MultiTag | MultiTag[];
+			  }
+	) {
+		const asList = (value?: MultiTag | MultiTag[]) =>
+			(Array.isArray(value) ? value : [value]).filter(Boolean) as MultiTag[];
+
+		const isFilterObject =
+			!!filter &&
+			typeof filter === "object" &&
+			!Array.isArray(filter) &&
+			("include" in filter || "exclude" in filter);
+
+		const filters = asList(
+			isFilterObject
+				? (filter as { include?: MultiTag | MultiTag[] }).include
+				: (filter as MultiTag | MultiTag[] | undefined)
 		);
+		const excludes = asList(
+			isFilterObject
+				? (filter as { exclude?: MultiTag | MultiTag[] }).exclude
+				: undefined
+		);
+
 		const facts = new List();
 		let id = 0;
 		ALLOWED_FACTS.forEach((fact) => {
 			const isCustom = ["EVEN", "FACT"].includes(fact);
+			if (excludes.length && excludes.includes(fact) && !isCustom) {
+				return;
+			}
 			if (filters.length && !filters.includes(fact) && !isCustom) {
 				return;
 			}
@@ -2322,6 +2358,10 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				) as MultiTag | undefined;
 
 				if (!type || DISALLOWED_CUSTOM_FACTS.includes(type)) {
+					return;
+				}
+
+				if (excludes.length && excludes.includes(type)) {
 					return;
 				}
 
