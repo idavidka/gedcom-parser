@@ -77,8 +77,8 @@ const caches: Caches = {
 	profilePictureCache: {},
 };
 
-// NOTE: Only profilePictureCache is actively persisted to IndexedDB
-// The other caches (pathCache, relativesOn*Cache) are kept in memory only for performance
+// NOTE: path / relatives / profile-picture *metadata* stay in memory.
+// Image bytes are one IndexedDB record per photo (visualiser `media-cache.ts`).
 // IMPORTANT: cacheDbs is lazily initialized to ensure getCacheManagerFactory() returns
 // the correct factory (set by initGedcomParser) instead of the default placeholder
 let cacheDbs: CacheDbs | undefined;
@@ -132,11 +132,9 @@ const storeCache: CacheStores = {
 			getCacheDbs().relativesOnDegreeCache.setItem(value);
 		}
 	}, 50),
-	// profilePictureCache IS persisted to IndexedDB
+	// Image bytes are stored as one IndexedDB record per photo.
 	profilePictureCache: debounce((value) => {
 		void value;
-		// Bytes live in per-image IndexedDB records (`Main-images`).
-		// Metadata stays in memory for the session.
 	}, 100),
 };
 
