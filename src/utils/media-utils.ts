@@ -99,10 +99,10 @@ export const ancestryMediaFileUrl = (
 	return `${ANCESTRY_MEDIA_RETRIEVAL_PREFIX}${ancestryMediaPath(namespace, imgId)}`;
 };
 
-/** Xref on a shared `0 @On@ OBJE` record, or the pointer payload, or a list index. */
+/** Xref on a shared `0 @On@ OBJE` record, or the pointer payload, or a list key/index. */
 export const objeXrefKey = (
 	obje?: { id?: string; toValue?: () => unknown },
-	index = 0
+	fallback: string | number = 0
 ): string => {
 	if (typeof obje?.id === "string" && obje.id) {
 		return obje.id;
@@ -111,7 +111,10 @@ export const objeXrefKey = (
 	if (typeof value === "string" && value.trim()) {
 		return value.trim();
 	}
-	return `@O${index}@`;
+	if (typeof fallback === "string" && fallback.trim()) {
+		return fallback.trim();
+	}
+	return `@O${fallback}@`;
 };
 
 export const objeNoteValue = (obje?: ObjeGetter): string =>
