@@ -4,7 +4,8 @@
  */
 
 export type LocalMediaResolver = (
-	path: string
+	path: string,
+	context?: MediaContentLookup
 ) => Promise<string | undefined> | string | undefined;
 
 export type MediaContentLookup = {
@@ -13,6 +14,9 @@ export type MediaContentLookup = {
 	imgId?: string;
 	key?: string;
 	contentType?: string;
+	person?: string;
+	tree?: string;
+	treeName?: string;
 };
 
 export type MediaContentResult = {
@@ -51,18 +55,27 @@ export const isRemoteOrEmbeddedMediaUrl = (path?: string) => {
 
 /**
  * Resolve a FILE payload to a browser-displayable URL when possible.
- * Leaves http(s)/data/blob URLs unchanged; asks the injected resolver for local paths.
+ * Remote http(s) URLs go through the host resolver so they can be cached.
+ * Local GEDZIP paths are resolved via the injected lookup.
  */
-export const resolveLocalMediaUrl = async (path?: string) => {
+export const resolveLocalMediaUrl = async (
+	path?: string,
+	context?: MediaContentLookup
+) => {
 	if (!path) {
 		return undefined;
 	}
-	if (isRemoteOrEmbeddedMediaUrl(path)) {
+	if (path.startsWith("data:") || path.startsWith("blob:")) {
 		return path;
 	}
-	const resolved = await localMediaResolver?.(path);
-	// Do not fall back to the raw path — `media/foo.jpg` is not browser-usable.
-	return resolved;
+	const resolved = await localMediaResolver?.(path, context);
+	if (resolved) {
+		return resolved;
+	}
+	if (/^https?:\/\//i.test(path)) {
+		return path;
+	}
+	return undefined;
 };
 
 const blobToDataUrl = async (blob: Blob) => {

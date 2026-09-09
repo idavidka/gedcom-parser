@@ -618,6 +618,28 @@ export class GedCom extends Common implements IGedcom {
 		return this.getMain<List, ObjeType>(this.objes(), index);
 	}
 
+	/**
+	 * People who link a shared multimedia record (`1 OBJE @On@`), i.e. Ancestry
+	 * face tags / everyone the photo is attached to.
+	 */
+	indisLinkingObje(objeKey: string): IndiType[] {
+		const people: IndiType[] = [];
+		this.indis()?.forEach((indi) => {
+			const linked = indi
+				?.get("OBJE")
+				?.toList()
+				?.values()
+				?.some(
+					(item) =>
+						item?.toValue?.() === objeKey || item?.id === objeKey
+				);
+			if (linked && indi) {
+				people.push(indi);
+			}
+		});
+		return people;
+	}
+
 	sour(index: number | SourKey) {
 		return this.getMain<List, SourType>(this.sours(), index);
 	}

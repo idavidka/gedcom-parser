@@ -316,6 +316,8 @@ export const downloadGedzipMedia = async (
 					imgId: item.imgId,
 					key: "key" in item ? item.key : undefined,
 					contentType: item.contentType,
+					person: "person" in item ? item.person : undefined,
+					tree: "tree" in item ? item.tree : undefined,
 				});
 				if (!resolved?.content) {
 					return;

@@ -72,7 +72,7 @@ const mediaIdValue = (obje: ObjeGetter | undefined, path: MultiTag) => {
 
 /**
  * Ancestry (and similar) media identity. Shared `0 @On@ OBJE` records often
- * have `_OID` without `_MSER._LKID`; both are the UUID used in mediasvc URLs.
+ * have `_OID` without `_MSER._LKID`; both are the UUID used in media URLs.
  */
 export const resolveObjeMediaId = (obje?: ObjeGetter): string | undefined =>
 	mediaIdValue(obje, "RIN") ||
@@ -81,6 +81,14 @@ export const resolveObjeMediaId = (obje?: ObjeGetter): string | undefined =>
 	mediaIdValue(obje, "_OID") ||
 	mediaIdValue(obje, "_LKID");
 
+/** Ancestry tree media host used by their viewer. */
+export const ANCESTRY_MEDIA_RETRIEVAL_PREFIX =
+	"https://www.ancestry.com/api/media/retrieval/v2/image";
+const ANCESTRY_MEDIA_QUERY = "client=trees-mediaservice&imageQuality=hq";
+
+const ancestryMediaPath = (namespace: string | number, imgId: string) =>
+	`/namespaces/${namespace}/media/${imgId}?${ANCESTRY_MEDIA_QUERY}`;
+
 export const ancestryMediaFileUrl = (
 	namespace?: string | number,
 	imgId?: string
@@ -88,5 +96,23 @@ export const ancestryMediaFileUrl = (
 	if (!namespace || !imgId) {
 		return undefined;
 	}
-	return `https://mediasvc.ancestry.com/v2/image/namespaces/${namespace}/media/${imgId}?client=trees-mediaservice&imageQuality=hq`;
+	return `${ANCESTRY_MEDIA_RETRIEVAL_PREFIX}${ancestryMediaPath(namespace, imgId)}`;
 };
+
+/** Xref on a shared `0 @On@ OBJE` record, or the pointer payload, or a list index. */
+export const objeXrefKey = (
+	obje?: { id?: string; toValue?: () => unknown },
+	index = 0
+): string => {
+	if (typeof obje?.id === "string" && obje.id) {
+		return obje.id;
+	}
+	const value = obje?.toValue?.();
+	if (typeof value === "string" && value.trim()) {
+		return value.trim();
+	}
+	return `@O${index}@`;
+};
+
+export const objeNoteValue = (obje?: ObjeGetter): string =>
+	mediaIdValue(obje, "FILE.NOTE") || mediaIdValue(obje, "NOTE") || "";

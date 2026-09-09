@@ -34,6 +34,7 @@ export type MediaList = Record<
 		tree: string;
 		person: IndiKey;
 		title: string;
+		note?: string;
 		url: string;
 		contentType: string;
 		downloadName: string;

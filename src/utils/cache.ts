@@ -134,9 +134,9 @@ const storeCache: CacheStores = {
 	}, 50),
 	// profilePictureCache IS persisted to IndexedDB
 	profilePictureCache: debounce((value) => {
-		if (value) {
-			getCacheDbs().profilePictureCache.setItem(value);
-		}
+		void value;
+		// Bytes live in per-image IndexedDB records (`Main-images`).
+		// Metadata stays in memory for the session.
 	}, 100),
 };
 
@@ -163,20 +163,8 @@ export const initializeCache = async () => {
 
 	cacheInitialized = true;
 
-	// NOTE: Only profilePictureCache is persisted to IndexedDB
-	// pathCache, relativesOnLevelCache, and relativesOnDegreeCache are intentionally
-	// kept in memory only for performance reasons
-	try {
-		const profilePictureData =
-			await getCacheDbs().profilePictureCache.getItem();
-
-		if (profilePictureData) {
-			caches.profilePictureCache = profilePictureData;
-		}
-	} catch (_error) {
-		// Cache manager factory might not be initialized yet
-		// This is fine - cache will be populated as images are loaded
-	}
+	// Profile picture *bytes* are stored as one IndexedDB record per image
+	// (see visualiser `media-cache.ts`). This in-memory map is session-only.
 };
 
 export const resetRelativesCache = () => {

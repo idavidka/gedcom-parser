@@ -69,7 +69,9 @@ export class Obje extends Common<string, ObjeKey> implements IObje {
 
 		const imgId = resolveObjeMediaId(this);
 
-		const url = file || (namespace && urlGetter?.(namespace, imgId));
+		const url =
+			file ||
+			(this.isAncestry() && namespace && urlGetter?.(namespace, imgId));
 
 		if (!url) {
 			return this;

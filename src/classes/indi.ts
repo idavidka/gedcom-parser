@@ -56,6 +56,8 @@ import {
 	ancestryMediaFileUrl,
 	getFileExtension,
 	isImageFormat,
+	objeNoteValue,
+	objeXrefKey,
 	resolveObjeForm,
 	resolveObjeMediaId,
 } from "../utils/media-utils";
@@ -1012,7 +1014,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		if (objeList) {
 			await Promise.all(
 				objeList.map(async (objeRef) => {
-					const key = objeRef?.id as ObjeKey;
+					const key = objeXrefKey(objeRef, 0) as ObjeKey;
 					const obje = objeRef?.standardizeMedia(
 						namespace,
 						true,
@@ -1028,6 +1030,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 							string | undefined) ??
 						(obje?.get("TITL")?.toValue() as string | undefined) ??
 						"";
+					const note = objeNoteValue(obje);
 					const type =
 						resolveObjeForm(obje) ??
 						(url ? getFileExtension(url) : undefined) ??
@@ -1089,6 +1092,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 							imgId,
 							person: this.id!,
 							title: title as string,
+							note,
 							url,
 							contentType: type as string,
 							downloadName: `${this.id!.replaceAll("@", "")}_${
@@ -1159,7 +1163,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			}
 
 			const obje = o as ObjeType;
-			const key = `@O${index}@`;
+			const key = objeXrefKey(obje, index);
 
 			obje.standardizeMedia();
 
@@ -1197,6 +1201,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					imgId,
 					person: this.id!,
 					title: title as string,
+					note: objeNoteValue(obje),
 					url,
 					contentType: type as string,
 					downloadName: `${this.id!.replaceAll("@", "")}_${
@@ -1368,7 +1373,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				return;
 			}
 
-			const key = `@O${index}@`;
+			const key = objeXrefKey(obje, index);
 
 			// Get media information
 			const isPrimary = obje?.get("_PRIM")?.toValue() === "Y";
@@ -1399,6 +1404,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					imgId,
 					person: this.id!,
 					title: title as string,
+					note: objeNoteValue(obje),
 					url,
 					contentType: type as string,
 					downloadName: `${this.id!.replaceAll("@", "")}_${
@@ -1437,7 +1443,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				return;
 			}
 
-			const key = `@O${index}@`;
+			const key = objeXrefKey(obje, index);
 
 			obje.standardizeMedia();
 
@@ -1474,6 +1480,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					imgId,
 					person: this.id!,
 					title: title as string,
+					note: objeNoteValue(obje),
 					url,
 					contentType: type as string,
 					downloadName: `${this.id!.replaceAll("@", "")}_${
@@ -1524,7 +1531,12 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		if (cached !== undefined) {
 			// Re-resolve stale `media/...` cache entries after GEDZIP import.
 			if (cached?.file && !isRemoteOrEmbeddedMediaUrl(cached.file)) {
-				const resolvedCached = await resolveLocalMediaUrl(cached.file);
+				const resolvedCached = await resolveLocalMediaUrl(cached.file, {
+					url: cached.file,
+					person: this.id,
+					tree: this.getTreeId?.(),
+					treeName: this.getTreeName?.(),
+				});
 				if (
 					resolvedCached &&
 					isRemoteOrEmbeddedMediaUrl(resolvedCached)
@@ -1561,7 +1573,16 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			media: (typeof mediaArray)[number],
 			isPrimary: boolean
 		): Promise<ProfilePicture | undefined> => {
-			const resolvedFile = await resolveLocalMediaUrl(media.url);
+			const resolvedFile = await resolveLocalMediaUrl(media.url, {
+				url: media.url,
+				id: media.id,
+				imgId: media.imgId,
+				key: media.key,
+				contentType: media.contentType,
+				person: media.person || this.id,
+				tree: media.tree || this.getTreeId?.(),
+				treeName: this.getTreeName?.(),
+			});
 			if (!resolvedFile || !isRemoteOrEmbeddedMediaUrl(resolvedFile)) {
 				return undefined;
 			}
