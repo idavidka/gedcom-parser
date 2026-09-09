@@ -60,3 +60,33 @@ export const resolveObjeForm = (obje?: {
 		obje?.get?.("FORM")?.toValue?.();
 	return typeof value === "string" && value.trim() ? value.trim() : undefined;
 };
+
+type ObjeGetter = {
+	get?: (path: MultiTag) => { toValue?: () => unknown } | undefined;
+};
+
+const mediaIdValue = (obje: ObjeGetter | undefined, path: MultiTag) => {
+	const value = obje?.get?.(path)?.toValue?.();
+	return typeof value === "string" && value.trim() ? value.trim() : undefined;
+};
+
+/**
+ * Ancestry (and similar) media identity. Shared `0 @On@ OBJE` records often
+ * have `_OID` without `_MSER._LKID`; both are the UUID used in mediasvc URLs.
+ */
+export const resolveObjeMediaId = (obje?: ObjeGetter): string | undefined =>
+	mediaIdValue(obje, "RIN") ||
+	mediaIdValue(obje, "_CLON._OID") ||
+	mediaIdValue(obje, "_MSER._LKID") ||
+	mediaIdValue(obje, "_OID") ||
+	mediaIdValue(obje, "_LKID");
+
+export const ancestryMediaFileUrl = (
+	namespace?: string | number,
+	imgId?: string
+): string | undefined => {
+	if (!namespace || !imgId) {
+		return undefined;
+	}
+	return `https://mediasvc.ancestry.com/v2/image/namespaces/${namespace}/media/${imgId}?client=trees-mediaservice&imageQuality=hq`;
+};

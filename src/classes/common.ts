@@ -6,6 +6,7 @@ import type ICommon from "../interfaces/common";
 import type IObje from "../interfaces/obje";
 import type { Tag, IdType, MultiTag, ObjeKey, ListTag } from "../types/types";
 import { isGedcomTrailerTag } from "../utils/gedcom-trailer";
+import { ancestryMediaFileUrl } from "../utils/media-utils";
 
 import type { GedComType } from "./gedcom";
 import { List } from "./list";
@@ -359,7 +360,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 				this,
 				options.obje.namespace,
 				options.obje.override,
-				undefined,
+				this.isAncestry() ? ancestryMediaFileUrl : undefined,
 				options.gedcomVersion
 			);
 		}

@@ -53,9 +53,11 @@ import {
 } from "../utils/local-media";
 import { implemented } from "../utils/logger";
 import {
+	ancestryMediaFileUrl,
 	getFileExtension,
 	isImageFormat,
 	resolveObjeForm,
+	resolveObjeMediaId,
 } from "../utils/media-utils";
 import type {
 	AttachMultimediaOptions,
@@ -1014,20 +1016,11 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					const obje = objeRef?.standardizeMedia(
 						namespace,
 						true,
-						(ns, iId) => {
-							return ns && iId
-								? `https://mediasvc.ancestry.com/v2/image/namespaces/${ns}/media/${iId}?client=trees-mediaservice&imageQuality=hq`
-								: undefined;
-						}
+						ancestryMediaFileUrl
 					);
 
 					const isPrimary = obje?.get("_PRIM")?.toValue() === "Y";
-					const media =
-						obje?.RIN?.toValue() || obje?.get("_OID")?.toValue();
-					const clone = obje?.get("_CLON._OID")?.toValue() as
-						string | undefined;
-					const mser = obje?.get("_MSER._LKID")?.toValue() as
-						string | undefined;
+					const media = resolveObjeMediaId(obje);
 					let url = obje?.get("FILE")?.toValue() as
 						string | undefined;
 					const title =
@@ -1040,7 +1033,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 						(url ? getFileExtension(url) : undefined) ??
 						"raw";
 
-					let imgId = clone || mser;
+					let imgId = media;
 					const hasEmbeddedOrLocalFile =
 						!!url &&
 						(url.startsWith("data:") ||

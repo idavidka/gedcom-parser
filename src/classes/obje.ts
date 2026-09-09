@@ -5,9 +5,10 @@ import {
 	normalizeGedcomVersion,
 	type GedcomExportVersion,
 } from "../utils/gedcom-version";
+import { resolveObjeMediaId } from "../utils/media-utils";
 import { inferMediaForm } from "../utils/multimedia";
 
-import { Common, createCommon, createProxy } from "./common";
+import { Common, createCommon, createProxy, isId } from "./common";
 import type { ProxyOriginal } from "./common";
 import type { GedComType } from "./gedcom";
 
@@ -25,9 +26,30 @@ export class Obje extends Common<string, ObjeKey> implements IObje {
 			return this;
 		}
 
+		// `1 OBJE @On@` pointers hold `_PRIM`; FILE / `_OID` live on the shared
+		// record. Standardize that record so export and profile photos resolve.
+		if (
+			typeof this.value === "string" &&
+			isId(this.value) &&
+			this.refType === "OBJE"
+		) {
+			const resolved = this.ref as Obje | undefined;
+			if (
+				resolved &&
+				resolved !== this &&
+				typeof resolved.standardizeMedia === "function"
+			) {
+				resolved.standardizeMedia(
+					namespace,
+					override,
+					urlGetter,
+					gedcomVersion
+				);
+				return this;
+			}
+		}
+
 		const rin = this?.get("RIN")?.toValue() as string | undefined;
-		const clone = this?.get("_CLON._OID")?.toValue() as string | undefined;
-		const mser = this?.get("_MSER._LKID")?.toValue() as string | undefined;
 		const title =
 			this?.get("FILE.TITL")?.toValue() ??
 			this?.get("TITL")?.toValue() ??
@@ -45,7 +67,7 @@ export class Obje extends Common<string, ObjeKey> implements IObje {
 			(this?.get("MEDI")?.toValue() as string | undefined);
 		const file = this?.get("FILE")?.toValue() as string | undefined;
 
-		const imgId = rin || clone || mser;
+		const imgId = resolveObjeMediaId(this);
 
 		const url = file || (namespace && urlGetter?.(namespace, imgId));
 
