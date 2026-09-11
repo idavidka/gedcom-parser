@@ -3,7 +3,7 @@ import { hungarianOrdinalize } from "../utils/ordinalize";
 
 import KinshipTranslatorBasic from "./kinship-translator.basic";
 import { InLawsHu, casesHu, parentRelationsHu } from "./patterns.hu";
-import type {CrossCases} from "./types";
+import type { CrossCases } from "./types";
 
 export default class KinshipTranslatorHU extends KinshipTranslatorBasic {
 	private directPrefix(l?: number) {
@@ -92,7 +92,7 @@ export default class KinshipTranslatorHU extends KinshipTranslatorBasic {
 
 		return `${hungarianOrdinalize(
 			degree
-		)}unokatestvér ${level}x eltávolítva`;
+		)}unokatestvér ${Math.abs(level)}x eltávolítva`;
 	}
 
 	auncle() {
@@ -160,17 +160,34 @@ export default class KinshipTranslatorHU extends KinshipTranslatorBasic {
 	}
 
 	parent() {
+		const level = Math.abs(this.pathN?.level ?? 0);
+
+		if (level <= 1) {
+			if (this.personN?.isMale()) {
+				return "apa";
+			}
+
+			if (this.personN?.isFemale()) {
+				return "anya";
+			}
+
+			return "szülő";
+		}
+
+		// déd-/ük-/szép- attach to nagyanya/nagyapa, not to anya/apa.
+		// Descendants stay dédunoka / ükunoka (see child()).
 		const prefix = this.directPrefix();
+		const gen = prefix === "nagy" ? "" : prefix;
 
 		if (this.personN?.isMale()) {
-			return `${prefix}apa`;
+			return `${gen}nagyapa`;
 		}
 
 		if (this.personN?.isFemale()) {
-			return `${prefix}anya`;
+			return `${gen}nagyanya`;
 		}
 
-		return `${prefix}szülő`;
+		return `${gen}nagyszülő`;
 	}
 
 	child() {

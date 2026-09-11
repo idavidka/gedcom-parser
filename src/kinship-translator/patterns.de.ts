@@ -1,16 +1,25 @@
+export const parentRelationsDe: Record<string, string> = {
+	step: "Stief",
+	foster: "Pflege",
+	adopted: "Adoptiv",
+};
+
 export const InLawsDe: Record<string, string> = {
-	"Ehepartner von (kind|tochter|sohn)": "Schwiegerkind",
-	"Ehefrau von (kind|tochter|sohn)": "Schwiegertochter",
-	"Ehemann von (kind|tochter|sohn)": "Schwiegersohn",
-	"mutter des (Ehepartner|Ehefrau|Ehemann)s": "Schwiegermutter",
-	"vater des (Ehepartner|Ehefrau|Ehemann)s": "Schwiegervater",
-	"elternteil des (Ehepartner|Ehefrau|Ehemann)s": "Schwiegerelternteil",
-	"Ehefrau von (Halb)?(geschwister|schwester|bruder)": "Schwägerin",
-	"Ehemann von (Halb)?(geschwister|schwester|bruder)": "Schwager",
-	"Ehepartner von (Halb)?(geschwister|schwester|bruder)":
+	"Ehepartner von (Kind|Tochter|Sohn)": "Schwiegerkind",
+	"Ehefrau von (Kind|Tochter|Sohn)": "Schwiegertochter",
+	"Ehemann von (Kind|Tochter|Sohn)": "Schwiegersohn",
+	"Mutter (des Ehepartners|des Ehemanns|der Ehefrau)": "Schwiegermutter",
+	"Vater (des Ehepartners|des Ehemanns|der Ehefrau)": "Schwiegervater",
+	"Elternteil (des Ehepartners|des Ehemanns|der Ehefrau)":
+		"Schwiegerelternteil",
+	"Ehefrau von (Halb)?-?(Geschwister|Schwester|Bruder)": "Schwägerin",
+	"Ehemann von (Halb)?-?(Geschwister|Schwester|Bruder)": "Schwager",
+	"Ehepartner von (Halb)?-?(Geschwister|Schwester|Bruder)":
 		"Schwager/Schwägerin",
-	"(Halb)?schwester des (Ehepartner|Ehefrau|Ehemann)s": "Schwägerin",
-	"(Halb)?bruder des (Ehepartner|Ehefrau|Ehemann)s": "Schwager",
-	"(Halb)?geschwister des (Ehepartner|Ehefrau|Ehemann)s":
+	"(Halb)?-?(Schwester|schwester) (des Ehepartners|des Ehemanns|der Ehefrau)":
+		"Schwägerin",
+	"(Halb)?-?(Bruder|bruder) (des Ehepartners|des Ehemanns|der Ehefrau)":
+		"Schwager",
+	"(Halb)?-?(Geschwister|geschwister) (des Ehepartners|des Ehemanns|der Ehefrau)":
 		"Schwager/Schwägerin",
 };

@@ -107,34 +107,34 @@ export default class KinshipTranslatorJa extends KinshipTranslatorBasic {
 	auncle() {
 		const level = Math.abs(this.pathN?.level ?? 0);
 		const sex = sexOf(this.personN);
-		if (level <= 2) {
+		if (level <= 1) {
 			return pick(sex, "おじ", "おば", "おじ/おば");
 		}
-		if (level === 3) {
+		if (level === 2) {
 			return pick(sex, "大おじ", "大おば", "大おじ/大おば");
 		}
 		return pick(
 			sex,
-			`${level - 2}代前のおじ`,
-			`${level - 2}代前のおば`,
-			`${level - 2}代前のおじ/おば`
+			`${level - 1}代前のおじ`,
+			`${level - 1}代前のおば`,
+			`${level - 1}代前のおじ/おば`
 		);
 	}
 
 	nibling() {
 		const level = Math.abs(this.pathN?.level ?? 0);
 		const sex = sexOf(this.personN);
-		if (level <= 2) {
+		if (level <= 1) {
 			return pick(sex, "甥", "姪", "甥/姪");
 		}
-		if (level === 3) {
+		if (level === 2) {
 			return pick(sex, "大甥", "大姪", "大甥/大姪");
 		}
 		return pick(
 			sex,
-			`${level - 2}代下の甥`,
-			`${level - 2}代下の姪`,
-			`${level - 2}代下の甥/姪`
+			`${level - 1}代下の甥`,
+			`${level - 1}代下の姪`,
+			`${level - 1}代下の甥/姪`
 		);
 	}
 
@@ -230,6 +230,31 @@ export default class KinshipTranslatorJa extends KinshipTranslatorBasic {
 		if (!relation || !this.pathN?.relation) {
 			return relation ?? "";
 		}
-		return `${this.pathN.relation}の${relation}`;
+
+		if (this.pathN.relation === "step") {
+			if (relation === "父") {
+				return "继父";
+			}
+			if (relation === "母") {
+				return "継母";
+			}
+			if (relation === "息子") {
+				return "継子";
+			}
+			if (relation === "娘") {
+				return "継娘";
+			}
+			return `継${relation}`;
+		}
+
+		if (this.pathN.relation === "adopted") {
+			return `養子の${relation}`;
+		}
+
+		if (this.pathN.relation === "foster") {
+			return `里親の${relation}`;
+		}
+
+		return relation;
 	}
 }

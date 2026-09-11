@@ -1,7 +1,7 @@
 import { nameFormatter } from "../utils/name-formatter";
 
 import KinshipTranslatorBasic from "./kinship-translator.basic";
-import { InLawsRu } from "./patterns.ru";
+import { InLawsRu, parentRelationsRu } from "./patterns.ru";
 
 const GENITIVE: Record<string, string> = {
 	сын: "сына",
@@ -81,28 +81,48 @@ export default class KinshipTranslatorRu extends KinshipTranslatorBasic {
 
 	auncle() {
 		const level = Math.abs(this.pathN?.level ?? 0);
-		const pra = praRepeat(Math.max(0, level - 2));
 		const sex = sexOf(this.personN);
+		if (level <= 1) {
+			if (sex === "m") {
+				return "дядя";
+			}
+			if (sex === "f") {
+				return "тётя";
+			}
+			return "дядя/тётя";
+		}
+
+		const pra = praRepeat(level - 2);
 		if (sex === "m") {
-			return `${pra}дядя`;
+			return `двоюродный ${pra}дед`;
 		}
 		if (sex === "f") {
-			return `${pra}тётя`;
+			return `двоюродная ${pra}бабушка`;
 		}
-		return `${pra}дядя/тётя`;
+		return `двоюродный ${pra}дед/бабушка`;
 	}
 
 	nibling() {
 		const level = Math.abs(this.pathN?.level ?? 0);
-		const pra = praRepeat(Math.max(0, level - 2));
 		const sex = sexOf(this.personN);
+		if (level <= 1) {
+			if (sex === "m") {
+				return "племянник";
+			}
+			if (sex === "f") {
+				return "племянница";
+			}
+			return "племянник/племянница";
+		}
+
+		const pra = praRepeat(level - 2);
 		if (sex === "m") {
-			return `${pra}племянник`;
+			return `${pra}внучатый племянник`;
 		}
 		if (sex === "f") {
-			return `${pra}племянница`;
+			return `${pra}внучатая племянница`;
 		}
-		return `${pra}племянник/племянница`;
+		return `${pra}внучатый племянник/племянница`;
 	}
 
 	parent() {
@@ -175,7 +195,7 @@ export default class KinshipTranslatorRu extends KinshipTranslatorBasic {
 		if (sex === "f") {
 			return "сестра";
 		}
-		return "сиблинг";
+		return "брат/сестра";
 	}
 
 	halfBlood(relation?: string | undefined) {
@@ -274,6 +294,27 @@ export default class KinshipTranslatorRu extends KinshipTranslatorBasic {
 			return relation ?? "";
 		}
 
-		return `${this.pathN.relation} ${relation}`;
+		const mapped = parentRelationsRu[this.pathN.relation]?.[relation];
+		if (mapped) {
+			return mapped;
+		}
+
+		if (this.pathN.relation === "step") {
+			return `неродной ${relation}`;
+		}
+
+		if (this.pathN.relation === "adopted") {
+			return /сестра|дочь|мать|тётя|бабушка|жена|племянница|внучка/.test(
+				relation
+			)
+				? `приёмная ${relation}`
+				: `приёмный ${relation}`;
+		}
+
+		if (this.pathN.relation === "foster") {
+			return `приёмный ${relation}`;
+		}
+
+		return relation;
 	}
 }

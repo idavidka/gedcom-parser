@@ -1,38 +1,86 @@
 import { nameFormatter } from "../utils/name-formatter";
-import { ordinalize } from "../utils/ordinalize";
 
 import KinshipTranslatorBasic from "./kinship-translator.basic";
-import { InLawsEs } from "./patterns.es";
+import { InLawsEs, parentRelationsEs } from "./patterns.es";
+
+type Sex = "m" | "f" | "n";
+
+const sexOf = (person?: {
+	isMale?: () => boolean;
+	isFemale?: () => boolean;
+}): Sex => {
+	if (person?.isMale?.()) {
+		return "m";
+	}
+	if (person?.isFemale?.()) {
+		return "f";
+	}
+	return "n";
+};
+
+const pick = (sex: Sex, male: string, female: string, neutral: string) => {
+	if (sex === "m") {
+		return male;
+	}
+	if (sex === "f") {
+		return female;
+	}
+	return neutral;
+};
+
+const SPANISH_ORDINALS_M = [
+	"",
+	"",
+	"segundo",
+	"tercero",
+	"cuarto",
+	"quinto",
+	"sexto",
+	"séptimo",
+	"octavo",
+	"noveno",
+	"décimo",
+];
+const SPANISH_ORDINALS_F = [
+	"",
+	"",
+	"segunda",
+	"tercera",
+	"cuarta",
+	"quinta",
+	"sexta",
+	"séptima",
+	"octava",
+	"novena",
+	"décima",
+];
+
+const spanishOrdinal = (n: number, sex: Sex) => {
+	const list = sex === "f" ? SPANISH_ORDINALS_F : SPANISH_ORDINALS_M;
+	return list[n] ?? `${n}.º`;
+};
+
+const ofSpousePrep = (spouseType: string) => {
+	if (spouseType === "esposa") {
+		return "de la ";
+	}
+	return "del ";
+};
 
 export default class KinshipTranslatorEs extends KinshipTranslatorBasic {
-	private directPrefix() {
-		const level = Math.abs(this.pathN?.level ?? 0);
-		if (level <= 1) {
-			return "";
-		}
-
-		if (level === 2) {
-			return "bisabuel";
-		}
-
-		if (level === 3) {
-			return "tatarabuel";
-		}
-
-		return `tátara${level - 2}-abuel`;
-	}
-
 	indirect() {
 		let degree = Math.abs(this.pathN?.degree ?? 0);
 		if (degree > 0) {
 			degree = degree - 1;
 		}
 
-		if (degree === 1) {
-			return `primo`;
+		const sex = sexOf(this.personN);
+		const cousin = pick(sex, "primo", "prima", "primo/prima");
+		if (degree <= 1) {
+			return cousin;
 		}
 
-		return `primo ${ordinalize(degree)}`;
+		return `${cousin} ${spanishOrdinal(degree, sex)}`;
 	}
 
 	removal() {
@@ -46,75 +94,154 @@ export default class KinshipTranslatorEs extends KinshipTranslatorBasic {
 			return level < 0 ? this.nibling() : this.auncle();
 		}
 
-		return `primo ${ordinalize(degree)} ${Math.abs(level)}× separado`;
+		return `${this.indirect()} ${Math.abs(level)}× separado`;
 	}
 
 	auncle() {
-		const prefix = this.directPrefix();
-
-		if (this.personN?.isMale()) {
-			return `${prefix}tío`;
+		const level = Math.abs(this.pathN?.level ?? 0);
+		const sex = sexOf(this.personN);
+		if (level <= 1) {
+			return pick(sex, "tío", "tía", "tío/tía");
 		}
 
-		if (this.personN?.isFemale()) {
-			return `${prefix}tía`;
+		if (level === 2) {
+			return pick(sex, "tío abuelo", "tía abuela", "tío/tía abuelo");
 		}
 
-		return `${prefix}tío/tía`;
+		if (level === 3) {
+			return pick(
+				sex,
+				"tío bisabuelo",
+				"tía bisabuela",
+				"tío/tía bisabuelo"
+			);
+		}
+
+		return pick(
+			sex,
+			`tío abuelo (${level - 1}.º)`,
+			`tía abuela (${level - 1}.ª)`,
+			`tío/tía abuelo (${level - 1}.º)`
+		);
 	}
 
 	nibling() {
-		const prefix = this.directPrefix();
-
-		if (this.personN?.isMale()) {
-			return `${prefix}sobrino`;
+		const level = Math.abs(this.pathN?.level ?? 0);
+		const sex = sexOf(this.personN);
+		if (level <= 1) {
+			return pick(sex, "sobrino", "sobrina", "sobrino/sobrina");
 		}
 
-		if (this.personN?.isFemale()) {
-			return `${prefix}sobrina`;
+		if (level === 2) {
+			return pick(
+				sex,
+				"sobrino nieto",
+				"sobrina nieta",
+				"sobrino/sobrina nieto"
+			);
 		}
 
-		return `${prefix}sobrino/sobrina`;
+		if (level === 3) {
+			return pick(
+				sex,
+				"sobrino bisnieto",
+				"sobrina bisnieta",
+				"sobrino/sobrina bisnieto"
+			);
+		}
+
+		return pick(
+			sex,
+			`sobrino nieto (${level - 1}.º)`,
+			`sobrina nieta (${level - 1}.ª)`,
+			`sobrino/sobrina nieto (${level - 1}.º)`
+		);
 	}
 
 	parent() {
-		const prefix = this.directPrefix();
-
-		if (this.personN?.isMale()) {
-			return `${prefix}padre`;
+		const level = Math.abs(this.pathN?.level ?? 0);
+		const sex = sexOf(this.personN);
+		if (level <= 1) {
+			return pick(sex, "padre", "madre", "padre/madre");
 		}
 
-		if (this.personN?.isFemale()) {
-			return `${prefix}madre`;
+		if (level === 2) {
+			return pick(sex, "abuelo", "abuela", "abuelo/abuela");
 		}
 
-		return `${prefix}padre/madre`;
+		if (level === 3) {
+			return pick(sex, "bisabuelo", "bisabuela", "bisabuelo/bisabuela");
+		}
+
+		if (level === 4) {
+			return pick(
+				sex,
+				"tatarabuelo",
+				"tatarabuela",
+				"tatarabuelo/tatarabuela"
+			);
+		}
+
+		if (level === 5) {
+			return pick(
+				sex,
+				"trastatarabuelo",
+				"trastatarabuela",
+				"trastatarabuelo/trastatarabuela"
+			);
+		}
+
+		return pick(
+			sex,
+			`abuelo (${level}.º)`,
+			`abuela (${level}.ª)`,
+			`abuelo/abuela (${level}.º)`
+		);
 	}
 
 	child() {
-		const prefix = this.directPrefix();
-
-		if (this.personN?.isMale()) {
-			return `${prefix}hijo`;
+		const level = Math.abs(this.pathN?.level ?? 0);
+		const sex = sexOf(this.personN);
+		if (level <= 1) {
+			return pick(sex, "hijo", "hija", "hijo/hija");
 		}
 
-		if (this.personN?.isFemale()) {
-			return `${prefix}hija`;
+		if (level === 2) {
+			return pick(sex, "nieto", "nieta", "nieto/nieta");
 		}
 
-		return `${prefix}hijo/hija`;
+		if (level === 3) {
+			return pick(sex, "bisnieto", "bisnieta", "bisnieto/bisnieta");
+		}
+
+		if (level === 4) {
+			return pick(
+				sex,
+				"tataranieto",
+				"tataranieta",
+				"tataranieto/tataranieta"
+			);
+		}
+
+		if (level === 5) {
+			return pick(
+				sex,
+				"trastataranieto",
+				"trastataranieta",
+				"trastataranieto/trastataranieta"
+			);
+		}
+
+		return pick(
+			sex,
+			`nieto (${level}.º)`,
+			`nieta (${level}.ª)`,
+			`nieto/nieta (${level}.º)`
+		);
 	}
 
 	sibling() {
-		if (this.personN?.isMale()) {
-			return "hermano";
-		}
-
-		if (this.personN?.isFemale()) {
-			return "hermana";
-		}
-
-		return "hermano/hermana";
+		return pick(sexOf(this.personN), "hermano", "hermana", "hermano/hermana");
 	}
 
 	halfBlood(relation?: string | undefined) {
@@ -134,15 +261,7 @@ export default class KinshipTranslatorEs extends KinshipTranslatorBasic {
 	}
 
 	spouse() {
-		if (this.personN?.isMale()) {
-			return "esposo";
-		}
-
-		if (this.personN?.isFemale()) {
-			return "esposa";
-		}
-
-		return "cónyuge";
+		return pick(sexOf(this.personN), "esposo", "esposa", "cónyuge");
 	}
 
 	ofSpouse(relation?: string | undefined) {
@@ -150,18 +269,14 @@ export default class KinshipTranslatorEs extends KinshipTranslatorBasic {
 			return "";
 		}
 
-		const spouse = this.path?.[1].indi;
+		const spouseType = pick(
+			sexOf(this.path?.[1].indi),
+			"esposo",
+			"esposa",
+			"cónyuge"
+		);
 
-		let spouseType = "cónyuge";
-		if (spouse?.isMale()) {
-			spouseType = "esposo";
-		}
-
-		if (spouse?.isFemale()) {
-			spouseType = "esposa";
-		}
-
-		return `${relation} del ${spouseType}`;
+		return `${relation} ${ofSpousePrep(spouseType)}${spouseType}`;
 	}
 
 	spouseOf(relation?: string | undefined) {
@@ -169,16 +284,12 @@ export default class KinshipTranslatorEs extends KinshipTranslatorBasic {
 			return "";
 		}
 
-		const spouse = this.path?.[this.path.length - 1].indi;
-
-		let spouseType = "cónyuge";
-		if (spouse?.isMale()) {
-			spouseType = "esposo";
-		}
-
-		if (spouse?.isFemale()) {
-			spouseType = "esposa";
-		}
+		const spouseType = pick(
+			sexOf(this.path?.[this.path.length - 1].indi),
+			"esposo",
+			"esposa",
+			"cónyuge"
+		);
 
 		return `${spouseType} de ${relation}`;
 	}
@@ -202,8 +313,12 @@ export default class KinshipTranslatorEs extends KinshipTranslatorBasic {
 			return relation ?? "";
 		}
 
-		if (relation.includes(" del ") || relation.includes(" de ")) {
-			return relation.replace(/ (del|de) /, ` $1 ${name} `);
+		if (
+			relation.includes(" del ") ||
+			relation.includes(" de la ") ||
+			relation.includes(" de ")
+		) {
+			return relation.replace(/ (del|de la|de) /, ` $1 ${name} `);
 		}
 
 		return `${relation} de ${name}`;
@@ -247,6 +362,23 @@ export default class KinshipTranslatorEs extends KinshipTranslatorBasic {
 			return relation ?? "";
 		}
 
-		return `${this.pathN.relation} ${relation}`;
+		const mapped = parentRelationsEs[this.pathN.relation]?.[relation];
+		if (mapped) {
+			return mapped;
+		}
+
+		if (this.pathN.relation === "step") {
+			return `${relation} político`;
+		}
+
+		if (this.pathN.relation === "adopted") {
+			return `${relation} adoptivo`;
+		}
+
+		if (this.pathN.relation === "foster") {
+			return `${relation} de acogida`;
+		}
+
+		return relation;
 	}
 }

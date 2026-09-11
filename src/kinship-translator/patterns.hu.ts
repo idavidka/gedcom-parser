@@ -1,6 +1,6 @@
-import type {IndiType} from "../classes/indi";
+import type { IndiType } from "../classes/indi";
 
-import type {CrossCases, CrossCase} from "./types";
+import type { CrossCases, CrossCase } from "./types";
 
 export const parentRelationsHu: Record<string, string> = {
 	step: "mostoha",

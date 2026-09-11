@@ -46,35 +46,40 @@ export default class KinshipTranslatorEn extends KinshipTranslatorBasic {
 			return level < 0 ? this.nibling() : this.auncle();
 		}
 
-		return `${ordinalize(degree)} cousin ${level}x removed`;
+		return `${ordinalize(degree)} cousin ${Math.abs(level)}x removed`;
 	}
 
 	auncle() {
-		const prefix = this.directPrefix();
+		const level = Math.abs(this.pathN?.level ?? 0);
+		const greats = level <= 1 ? "" : "great-".repeat(level - 1);
 
 		if (this.personN?.isMale()) {
-			return `${prefix}uncle`;
+			return `${greats}uncle`;
 		}
 
 		if (this.personN?.isFemale()) {
-			return `${prefix}aunt`;
+			return `${greats}aunt`;
 		}
 
-		return `${prefix}auncle`;
+		return greats ? `${greats}uncle/${greats}aunt` : "uncle/aunt";
 	}
 
 	nibling() {
-		const prefix = this.directPrefix();
+		const level = Math.abs(this.pathN?.level ?? 0);
+		const greats = level <= 2 ? "" : "great-".repeat(level - 2);
+		const grand = level <= 1 ? "" : "grand";
 
 		if (this.personN?.isMale()) {
-			return `${prefix}nephew`;
+			return `${greats}${grand}nephew`;
 		}
 
 		if (this.personN?.isFemale()) {
-			return `${prefix}niece`;
+			return `${greats}${grand}niece`;
 		}
 
-		return `${prefix}nibling`;
+		return greats || grand
+			? `${greats}${grand}nephew/${greats}${grand}niece`
+			: "nephew/niece";
 	}
 
 	parent() {

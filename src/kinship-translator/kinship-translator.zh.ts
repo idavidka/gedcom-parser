@@ -104,34 +104,34 @@ export default class KinshipTranslatorZh extends KinshipTranslatorBasic {
 	auncle() {
 		const level = Math.abs(this.pathN?.level ?? 0);
 		const sex = sexOf(this.personN);
-		if (level <= 2) {
+		if (level <= 1) {
 			return pick(sex, "叔叔", "阿姨", "叔伯/姑姨");
 		}
-		if (level === 3) {
+		if (level === 2) {
 			return pick(sex, "伯叔祖父", "姑祖母", "伯叔祖父母");
 		}
 		return pick(
 			sex,
-			`${level - 2}代前的叔叔`,
-			`${level - 2}代前的阿姨`,
-			`${level - 2}代前的叔伯/姑姨`
+			`${level - 1}代前的叔叔`,
+			`${level - 1}代前的阿姨`,
+			`${level - 1}代前的叔伯/姑姨`
 		);
 	}
 
 	nibling() {
 		const level = Math.abs(this.pathN?.level ?? 0);
 		const sex = sexOf(this.personN);
-		if (level <= 2) {
+		if (level <= 1) {
 			return pick(sex, "侄子", "侄女", "侄子女");
 		}
-		if (level === 3) {
+		if (level === 2) {
 			return pick(sex, "侄孙", "侄孙女", "侄孙子女");
 		}
 		return pick(
 			sex,
-			`${level - 2}代下的侄子`,
-			`${level - 2}代下的侄女`,
-			`${level - 2}代下的侄子女`
+			`${level - 1}代下的侄子`,
+			`${level - 1}代下的侄女`,
+			`${level - 1}代下的侄子女`
 		);
 	}
 
@@ -227,6 +227,43 @@ export default class KinshipTranslatorZh extends KinshipTranslatorBasic {
 		if (!relation || !this.pathN?.relation) {
 			return relation ?? "";
 		}
-		return `${this.pathN.relation}${relation}`;
+
+		if (this.pathN.relation === "step") {
+			if (relation === "父亲") {
+				return "继父";
+			}
+			if (relation === "母亲") {
+				return "继母";
+			}
+			if (relation === "儿子") {
+				return "继子";
+			}
+			if (relation === "女儿") {
+				return "继女";
+			}
+			return `继${relation}`;
+		}
+
+		if (this.pathN.relation === "adopted") {
+			if (relation === "父亲") {
+				return "养父";
+			}
+			if (relation === "母亲") {
+				return "养母";
+			}
+			if (relation === "儿子") {
+				return "养子";
+			}
+			if (relation === "女儿") {
+				return "养女";
+			}
+			return `养${relation}`;
+		}
+
+		if (this.pathN.relation === "foster") {
+			return `寄养${relation}`;
+		}
+
+		return relation;
 	}
 }
