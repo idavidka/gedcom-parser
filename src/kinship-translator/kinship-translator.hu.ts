@@ -294,7 +294,7 @@ export default class KinshipTranslatorHU extends KinshipTranslatorBasic {
 
 	of(relation?: string | undefined) {
 		const formattedName = nameFormatter(this.path?.[0]?.indi, {
-			nameOrder: "last-first",
+			nameOrder: this.nameOrder,
 		});
 
 		let name = formattedName.inOrder.filter(Boolean).join(" ");

@@ -1,4 +1,5 @@
 import type {Path} from "../classes/indi";
+import type { NameOrder } from "../types/types";
 import { RelationType } from "../types/types";
 
 import type IKinshipTranslator from "./kinship-translator.interface";
@@ -7,14 +8,17 @@ export default class KinshipTranslatorBasic implements IKinshipTranslator {
 	isOfSpouse = false;
 	isSpouseOf = false;
 	displayName: "none" | "givenname" | "surname" | "all";
+	nameOrder: NameOrder;
 
 	private readonly _path?: Path;
 	constructor(
 		path: Path,
-		displayName: "none" | "givenname" | "surname" | "all" = "givenname"
+		displayName: "none" | "givenname" | "surname" | "all" = "givenname",
+		nameOrder: NameOrder = "first-last"
 	) {
 		this._path = path;
 		this.displayName = displayName;
+		this.nameOrder = nameOrder;
 	}
 
 	protected get path() {

@@ -1,7 +1,7 @@
 import type { IndiType } from "../classes/indi";
 import KinshipTranslator from "../kinship-translator/kinship-translator";
 import type { Language } from "../kinship-translator/types";
-import type { IndiKey } from "../types/types";
+import type { IndiKey, NameOrder } from "../types/types";
 
 /**
  * Kinship translator class constructor type
@@ -11,7 +11,8 @@ export type KinshipTranslatorConstructor = new (
 	person2?: IndiType | IndiKey,
 	lang?: Language,
 	entirePath?: boolean,
-	displayName?: "none" | "givenname" | "surname" | "all"
+	displayName?: "none" | "givenname" | "surname" | "all",
+	nameOrder?: NameOrder
 ) => {
 	translate: <T extends boolean | undefined>(
 		showMainPerson: boolean

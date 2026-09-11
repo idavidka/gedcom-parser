@@ -28,6 +28,7 @@ import type {
 	MultiTag,
 	IdType,
 	SnoteKey,
+	NameOrder,
 } from "../types/types";
 import {
 	pathCache,
@@ -2695,7 +2696,8 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		showMainPerson?: boolean,
 		lang: Language = "en",
 		entirePath?: T,
-		displayName: "none" | "givenname" | "surname" | "all" = "givenname"
+		displayName: "none" | "givenname" | "surname" | "all" = "givenname",
+		nameOrder?: NameOrder
 	) {
 		const KinshipTranslatorClass = getKinshipTranslatorClass();
 		const translator = new KinshipTranslatorClass(
@@ -2703,7 +2705,8 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			other,
 			lang,
 			entirePath,
-			showMainPerson ? displayName : undefined
+			showMainPerson ? displayName : undefined,
+			nameOrder
 		);
 
 		return translator.translate<T>(!!showMainPerson) as

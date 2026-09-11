@@ -1,9 +1,14 @@
 import type {Path, IndiType} from "../classes/indi";
-import type {IndiKey} from "../types/types";
+import type {IndiKey, NameOrder} from "../types/types";
 
 import type IKinshipTranslator from "./kinship-translator.interface";
 import * as translators from "./translators";
 import type { Language } from "./types";
+
+const nameOrderForLang = (lang: Language): NameOrder =>
+	lang === "hu" || lang === "ja" || lang === "zh"
+		? "last-first"
+		: "first-last";
 
 export default class KinshipTranslator<T extends boolean | undefined> {
 	private readonly translator?: IKinshipTranslator;
@@ -13,12 +18,14 @@ export default class KinshipTranslator<T extends boolean | undefined> {
 	private readonly entirePath?: T;
 	private readonly lang: Language;
 	private readonly displayName: "none" | "givenname" | "surname" | "all";
+	private readonly nameOrder: NameOrder;
 	constructor(
 		person1: IndiType,
 		person2?: IndiType | IndiKey,
 		lang: Language = "en",
 		entirePath?: T,
-		displayName: "none" | "givenname" | "surname" | "all" = "givenname"
+		displayName: "none" | "givenname" | "surname" | "all" = "givenname",
+		nameOrder?: NameOrder
 	) {
 		this.displayName = displayName;
 		this.lang = lang;
@@ -31,17 +38,25 @@ export default class KinshipTranslator<T extends boolean | undefined> {
 
 		this.path = this.person1.path(this.person2);
 
+		const order = nameOrder ?? nameOrderForLang(lang);
+		this.nameOrder = order;
+
 		if (translators[lang]) {
 			this.translator = new translators[lang](
 				this.path ?? [],
-				displayName
+				displayName,
+				order
 			);
 		}
 
 		// Fallback
 		if (!this.translator) {
 			// eslint-disable-next-line new-cap
-			this.translator = new translators.en(this.path ?? [], displayName);
+			this.translator = new translators.en(
+				this.path ?? [],
+				displayName,
+				order
+			);
 		}
 	}
 
@@ -97,14 +112,16 @@ export default class KinshipTranslator<T extends boolean | undefined> {
 					showMainPerson,
 					this.lang,
 					false,
-					this.displayName
+					this.displayName,
+					this.nameOrder
 				),
 				relative: this.path?.[index - 1]?.indi.kinship(
 					path.indi.id,
 					showMainPerson,
 					this.lang,
 					false,
-					this.displayName
+					this.displayName,
+					this.nameOrder
 				),
 			})) as
 				| Array<{ id?: IndiKey; absolute?: string; relative?: string }>
