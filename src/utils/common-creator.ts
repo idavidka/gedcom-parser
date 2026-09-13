@@ -73,7 +73,8 @@ export const create = (
 		} else if (
 			type === "NOTE" ||
 			type === "SNOTE" ||
-			type === "_TREEVIZ_LIFE_STORY"
+			type === "_TREEVIZ_LIFE_STORY" ||
+			type === "_TREEVIZ_FAMILY_STORY"
 		) {
 			prevNode = createCommonNote(gedcom, undefined, mainNode, curNode);
 		} else if (type === "NAME" && mainNode instanceof Indi) {

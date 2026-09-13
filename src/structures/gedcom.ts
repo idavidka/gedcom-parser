@@ -62,6 +62,7 @@ interface IGedComStructure
 		PLAC?: Common & {
 			FORM?: Common;
 		};
+		_TREEVIZ_FAMILY_STORY?: Common;
 	} & INoteStructure;
 }
 export default IGedComStructure;
