@@ -79,6 +79,7 @@ interface Tags {
 	_UID?: Common;
 	_TID?: Common;
 	_TREE?: Common;
+	_TREEVIZ_LIFE_STORY?: Common;
 	_ENV?: Common;
 	_INDI?: Common; // Individual
 	_GUESSEDORIGINAL?: Common;

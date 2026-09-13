@@ -70,7 +70,11 @@ export const create = (
 			prevNode = createObje(gedcom, undefined, mainNode, curNode);
 		} else if (type === "DATE") {
 			prevNode = createCommonDate(gedcom, undefined, mainNode, curNode);
-		} else if (type === "NOTE" || type === "SNOTE") {
+		} else if (
+			type === "NOTE" ||
+			type === "SNOTE" ||
+			type === "_TREEVIZ_LIFE_STORY"
+		) {
 			prevNode = createCommonNote(gedcom, undefined, mainNode, curNode);
 		} else if (type === "NAME" && mainNode instanceof Indi) {
 			prevNode = createCommonName(gedcom, undefined, mainNode, curNode);

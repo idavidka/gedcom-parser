@@ -42,6 +42,7 @@ interface IIndividualStructure
 	ANCI?: Common;
 	DESI?: Common;
 	_WLNK?: Common & { TITL?: Common; NOTE?: CommonNote };
+	_TREEVIZ_LIFE_STORY?: CommonNote;
 	_FS_LINK?: Common;
 	_FS_ID?: Common;
 
