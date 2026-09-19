@@ -1,3 +1,4 @@
+import type { CommonDate } from "../classes/date";
 import { createCommonDate, isCommonDate } from "../classes/date";
 import type {FamType} from "../classes/fam";
 import type {IndiType} from "../classes/indi";
@@ -29,8 +30,9 @@ const firstDate = (
 			date.index(0) as IDateStructure["DATE"] | undefined
 		);
 	}
-	if (typeof (date as IDateStructure["DATE"]).toValue === "function") {
-		return date as IDateStructure["DATE"];
+	const node = date as NonNullable<IDateStructure["DATE"]>;
+	if (typeof node.toValue === "function") {
+		return node;
 	}
 	return undefined;
 };
