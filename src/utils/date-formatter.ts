@@ -1,7 +1,7 @@
-import { createCommonDate } from "../classes/date";
-import type { CommonDate } from "../classes/date";
+import { createCommonDate, isCommonDate } from "../classes/date";
 import type {FamType} from "../classes/fam";
 import type {IndiType} from "../classes/indi";
+import { List } from "../classes/list";
 import { i18n } from "../factories/i18n-factory";
 import type IDateStructure from "../structures/date";
 import type IEventDetailStructure from "../structures/event-detail-structure";
@@ -19,12 +19,39 @@ export const ACCEPTED_DATE_FORMATS_REGEX = new RegExp(
 	).join("|")})`,
 	"gi"
 );
+const firstDate = (
+	date?: IDateStructure["DATE"] | List | null
+): IDateStructure["DATE"] | undefined => {
+	if (!date) return undefined;
+	if (isCommonDate(date)) return date;
+	if (date instanceof List) {
+		return firstDate(
+			date.index(0) as IDateStructure["DATE"] | undefined
+		);
+	}
+	if (typeof (date as IDateStructure["DATE"]).toValue === "function") {
+		return date as IDateStructure["DATE"];
+	}
+	return undefined;
+};
+
+const dateNote = (
+	date?: IDateStructure["DATE"],
+	shortNote = true
+): string => {
+	if (date && typeof date.toNote === "function") {
+		return date.toNote(shortNote) ?? "";
+	}
+	return "";
+};
+
 export const commonDateFormatter = (
 	date?: IDateStructure["DATE"],
 	format = "yyyy",
 	prefix = ""
 ) => {
-	const formattedDate = date?.toValue(format);
+	const used = firstDate(date);
+	const formattedDate = used?.toValue(format);
 	if (!formattedDate) {
 		return undefined;
 	}
@@ -39,13 +66,14 @@ export const noteDateFormatter = (
 	shortNote = true,
 	showNote = true
 ) => {
-	const rawDate = commonDateFormatter(date, format, "");
+	const used = firstDate(date);
+	const rawDate = commonDateFormatter(used, format, "");
 
 	if (!rawDate) {
 		return undefined;
 	}
 
-	const note = date?.toNote(shortNote) ?? "";
+	const note = dateNote(used, shortNote);
 
 	return `${prefix}${
 		note && showNote
@@ -232,11 +260,12 @@ export const dateFormatter = (
 		? birthEvents
 		: birthEvents.slice(0, 1);
 	eventsToProcess.forEach((birthEvent) => {
+		const birthDateNode = firstDate(birthEvent?.DATE);
 		const birthDate = commonDateFormatter(
-			birthEvent?.DATE,
+			birthDateNode,
 			showDays ? fullDateFormat : "yyyy"
 		) as string | undefined;
-		const birthEventNote = birthEvent?.DATE?.toNote(shortNote) ?? "";
+		const birthEventNote = dateNote(birthDateNode, shortNote);
 		const birthEventPlace = showPlaces
 			? birthEvent?.PLAC?.value
 			: undefined;
@@ -262,11 +291,12 @@ export const dateFormatter = (
 		? deathEvents
 		: deathEvents.slice(0, 1);
 	deathEventsToProcess.forEach((deathEvent) => {
+		const deathDateNode = firstDate(deathEvent?.DATE);
 		const deathDate = commonDateFormatter(
-			deathEvent?.DATE,
+			deathDateNode,
 			showDays ? fullDateFormat : "yyyy"
 		) as string | undefined;
-		const deathEventNote = deathEvent?.DATE?.toNote(shortNote) ?? "";
+		const deathEventNote = dateNote(deathDateNode, shortNote);
 		const deathEventPlace = showPlaces
 			? deathEvent?.PLAC?.value
 			: undefined;

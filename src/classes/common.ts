@@ -436,7 +436,11 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 			const current = this.get<Common | List>(validKey as MultiTag);
 			const mergeValue = other.get<Common | List>(validKey as MultiTag);
 			if (mergeValue) {
-				if (current instanceof Common || current instanceof List) {
+				if (current instanceof Common && !current.isListable) {
+					if (override) {
+						this.set(validKey as MultiTag, mergeValue);
+					}
+				} else if (current instanceof Common || current instanceof List) {
 					this.assign(validKey as MultiTag, mergeValue, true);
 				} else if (
 					!current ||

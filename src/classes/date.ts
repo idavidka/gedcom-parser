@@ -100,6 +100,8 @@ const formatDateWithComponents = (
 export class CommonDate extends Common<string> {
 	private _date?: Date;
 	private _calendar?: string;
+	/** One DATE per event — merge must not turn this into a List. */
+	isListable = false;
 
 	DAY?: Common;
 	MONTH?: Common;
