@@ -169,7 +169,8 @@ export const ensureExtensionSchema = (
 
 	tags.forEach((tag) => {
 		const uri =
-			TREEVIZ_EXTENSION_URIS[tag] ?? `${TREEVIZ_EXTENSION_BASE_URI}#${tag}`;
+			TREEVIZ_EXTENSION_URIS[tag] ??
+			`${TREEVIZ_EXTENSION_BASE_URI}#${tag}`;
 		if (tag.startsWith("_")) {
 			registerExtensionTag(gedcom, tag, uri);
 		}
