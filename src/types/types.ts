@@ -81,6 +81,7 @@ interface Tags {
 	_TREE?: Common;
 	_TREEVIZ_LIFE_STORY?: Common;
 	_TREEVIZ_FAMILY_STORY?: Common;
+	_TREEVIZ_FS_IGNORE?: Common; // FamilySearch diffs the user dismissed
 	_ENV?: Common;
 	_INDI?: Common; // Individual
 	_GUESSEDORIGINAL?: Common;
