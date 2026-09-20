@@ -81,6 +81,43 @@ export const resolveObjeMediaId = (obje?: ObjeGetter): string | undefined =>
 	mediaIdValue(obje, "_OID") ||
 	mediaIdValue(obje, "_LKID");
 
+/**
+ * Ancestry member-tree photos (user uploads) always live in media
+ * namespace 1093. Ancestry GEDCOM exports do not store this id — only
+ * `_OID` / `_MSER._LKID` UUIDs and `_ORIG acom`. Other namespaces
+ * (e.g. 7163) are historical record databases, not tree media.
+ */
+export const ANCESTRY_TREE_MEDIA_NAMESPACE = 1093;
+
+const ANCESTRY_NAMESPACE_IN_URL = /\/namespaces\/(\d+)\/media\//i;
+
+export const parseAncestryNamespaceFromUrl = (
+	url?: string
+): number | undefined => {
+	if (!url) {
+		return undefined;
+	}
+	const match = url.match(ANCESTRY_NAMESPACE_IN_URL);
+	const namespace = match?.[1] ? Number(match[1]) : NaN;
+	return Number.isFinite(namespace) ? namespace : undefined;
+};
+
+/** Tree-media object from Ancestry: `_ORIG acom`, empty FILE + UUID, or a retrieval URL. */
+export const isAncestryOriginObje = (obje?: ObjeGetter): boolean => {
+	if (!obje) {
+		return false;
+	}
+	const orig = mediaIdValue(obje, "_ORIG");
+	if (orig?.toLowerCase() === "acom") {
+		return true;
+	}
+	const file = mediaIdValue(obje, "FILE") ?? "";
+	if (parseAncestryNamespaceFromUrl(file)) {
+		return true;
+	}
+	return Boolean(resolveObjeMediaId(obje) && !file.trim());
+};
+
 /** Ancestry tree media host used by their viewer. */
 export const ANCESTRY_MEDIA_RETRIEVAL_PREFIX =
 	"https://www.ancestry.com/api/media/retrieval/v2/image";

@@ -54,14 +54,17 @@ import {
 } from "../utils/local-media";
 import { implemented } from "../utils/logger";
 import {
+	ANCESTRY_TREE_MEDIA_NAMESPACE,
 	ancestryMediaFileUrl,
 	getFileExtension,
+	isAncestryOriginObje,
 	isImageFormat,
 	objeNoteValue,
 	objeXrefKey,
 	resolveObjeForm,
 	resolveObjeMediaId,
 } from "../utils/media-utils";
+import { mergeMediaListsByObjeKey } from "../utils/multimedia";
 import type {
 	AttachMultimediaOptions,
 	CreateMultimediaInput,
@@ -1014,13 +1017,17 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			this.getFromSourceHeads<string>("SOUR.CORP.WWW.value") ||
 			this._gedcom?.HEAD?.SOUR?.CORP?.WWW?.value;
 		const tree = this.getAncestryTreeId();
+		const usedNamespace =
+			namespace ||
+			this.getAncestryMediaNamespace() ||
+			ANCESTRY_TREE_MEDIA_NAMESPACE;
 
 		if (objeList) {
 			await Promise.all(
 				objeList.map(async (objeRef) => {
 					const key = objeXrefKey(objeRef, 0) as ObjeKey;
 					const obje = objeRef?.standardizeMedia(
-						namespace,
+						usedNamespace,
 						true,
 						ancestryMediaFileUrl
 					);
@@ -1051,19 +1058,18 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 						return;
 					}
 
-					// Remote Ancestry URLs need tree/www unless spaceId already
-					// resolved FILE (typical after TreeViz re-export, when RIN
-					// lives only under _ORIGHEAD).
+					// Remote Ancestry URLs need tree/www unless the namespace
+					// already resolved FILE (TreeViz re-export / GEDCOM 7).
 					if (
 						!url &&
-						!namespace &&
+						!usedNamespace &&
 						!hasEmbeddedOrLocalFile &&
 						(!www || !tree)
 					) {
 						return;
 					}
 
-					if (!namespace && !url) {
+					if (!usedNamespace && !url) {
 						try {
 							if (media) {
 								const mediaDetailsResponse = await fetch(
@@ -1510,19 +1516,36 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	async multimedia(
 		namespace?: string | number
 	): Promise<MediaList | undefined> {
-		if (this?.isAncestry()) {
-			return await this.ancestryMedia(namespace);
+		const lists: Array<MediaList | undefined> = [];
+		const ownObjes = this.get("OBJE")?.toList()?.values() ?? [];
+		const ownAncestryMedia = ownObjes.some(
+			(obje) =>
+				!!obje &&
+				(isAncestryOriginObje(obje) ||
+					isAncestryOriginObje(obje.ref))
+		);
+
+		if (this.isAncestry() || ownAncestryMedia) {
+			lists.push(
+				await this.ancestryMedia(
+					namespace || this.getAncestryMediaNamespace()
+				)
+			);
 		}
 
 		if (this?.isMyHeritage()) {
-			return this.myheritageMedia();
+			lists.push(this.myheritageMedia());
 		}
 
 		if (this?.isGeni()) {
-			return this.geniMedia();
+			lists.push(this.geniMedia());
 		}
 
-		return this.universalMedia();
+		// Always include local / GEDCOM 7 / GEDZIP FILE payloads so TreeViz
+		// pictures keep working after a vendor GEDCOM is re-exported.
+		lists.push(this.universalMedia());
+
+		return mergeMediaListsByObjeKey(...lists);
 	}
 
 	async getProfilePicture(

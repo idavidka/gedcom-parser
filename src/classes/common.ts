@@ -6,7 +6,12 @@ import type ICommon from "../interfaces/common";
 import type IObje from "../interfaces/obje";
 import type { Tag, IdType, MultiTag, ObjeKey, ListTag } from "../types/types";
 import { isGedcomTrailerTag } from "../utils/gedcom-trailer";
-import { ancestryMediaFileUrl } from "../utils/media-utils";
+import {
+	ANCESTRY_TREE_MEDIA_NAMESPACE,
+	ancestryMediaFileUrl,
+	isAncestryOriginObje,
+	parseAncestryNamespaceFromUrl,
+} from "../utils/media-utils";
 
 import type { GedComType } from "./gedcom";
 import { List } from "./list";
@@ -624,6 +629,48 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 
 	isMyHeritage() {
 		return this.sourStartsWith("myheritage");
+	}
+
+	private hostGedcom(): GedComType | undefined {
+		const linked = this.getGedcom();
+		if (linked) {
+			return linked;
+		}
+		if ("objes" in this && typeof (this as GedComType).objes === "function") {
+			return this as unknown as GedComType;
+		}
+		return undefined;
+	}
+
+	/** True when the file still has Ancestry tree media (`_ORIG acom`, `_OID`, retrieval URL). */
+	hasAncestryOriginMedia() {
+		const objes = this.hostGedcom()?.objes?.();
+		return (
+			objes?.values().some((obje) => isAncestryOriginObje(obje)) ?? false
+		);
+	}
+
+	/**
+	 * Namespace for Ancestry tree photos. Prefer a `namespaces/{id}` FILE URL
+	 * (TreeViz GEDCOM 7 / GEDZIP export), otherwise 1093 for member-tree media.
+	 */
+	getAncestryMediaNamespace(): number | undefined {
+		const objes = this.hostGedcom()?.objes?.();
+		if (objes) {
+			for (const obje of objes.values()) {
+				const file = obje?.get("FILE")?.toValue();
+				const fromUrl = parseAncestryNamespaceFromUrl(
+					typeof file === "string" ? file : undefined
+				);
+				if (fromUrl) {
+					return fromUrl;
+				}
+			}
+		}
+		if (this.isAncestry() || this.hasAncestryOriginMedia()) {
+			return ANCESTRY_TREE_MEDIA_NAMESPACE;
+		}
+		return undefined;
 	}
 
 	/**

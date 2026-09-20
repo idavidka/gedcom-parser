@@ -55,5 +55,32 @@ export const mergeMediaLists = (...lists: Array<MediaList | undefined>) => {
 	return merged;
 };
 
+/**
+ * Merge media from vendor resolvers and local/GEDZIP FILE payloads.
+ * First list wins when the same OBJE xref appears twice.
+ */
+export const mergeMediaListsByObjeKey = (
+	...lists: Array<MediaList | undefined>
+) => {
+	const merged: MediaList = {};
+	const seen = new Set<string>();
+	for (const list of lists) {
+		if (!list) {
+			continue;
+		}
+		for (const [id, item] of Object.entries(list)) {
+			const objeKey = item.key ? String(item.key) : "";
+			if (objeKey && seen.has(objeKey)) {
+				continue;
+			}
+			merged[id] = item;
+			if (objeKey) {
+				seen.add(objeKey);
+			}
+		}
+	}
+	return merged;
+};
+
 export const isObjePointer = (value: unknown): value is ObjeKey =>
 	typeof value === "string" && /^@O\d+@$/.test(value);

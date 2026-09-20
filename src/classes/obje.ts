@@ -3,8 +3,8 @@ import type IMultimediaLinkStructure from "../structures/multimedia-link";
 import type { ObjeKey } from "../types/types";
 import {
 	normalizeGedcomVersion,
-	type GedcomExportVersion,
 } from "../utils/gedcom-version";
+import type { GedcomExportVersion } from "../utils/gedcom-version";
 import { resolveObjeMediaId } from "../utils/media-utils";
 import { inferMediaForm } from "../utils/multimedia";
 
@@ -154,6 +154,10 @@ export class Obje extends Common<string, ObjeKey> implements IObje {
 		const lkidNode = this.get("_LKID");
 		if (lkidNode && !newObject.get("_LKID")) {
 			newObject.set("_LKID", lkidNode);
+		}
+		const origNode = this.get("_ORIG");
+		if (origNode && !newObject.get("_ORIG")) {
+			newObject.set("_ORIG", origNode);
 		}
 
 		if (override) {

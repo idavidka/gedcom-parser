@@ -112,6 +112,49 @@ describe("Ancestry shared OBJE profile pictures", () => {
 		);
 	});
 
+	it("keeps TreeViz local FILE pictures alongside Ancestry _OID media", async () => {
+		const mixed = `0 HEAD
+1 SOUR TreeViz - The Family Tree Visualiser & Editor
+2 CORP TreeViz
+3 WWW treeviz.com
+0 _ORIGHEAD
+1 SOUR Ancestry.com Family Trees
+2 _TREE Test Tree
+3 RIN 88339524
+2 CORP Ancestry.com
+3 WWW www.ancestry.com
+0 @I1@ INDI
+1 NAME Hermina Angéla /Mommer/
+1 OBJE @O1@
+2 _PRIM Y
+1 OBJE @O4@
+0 @O1@ OBJE
+1 FILE
+2 FORM jpg
+2 TITL Ancestry photo
+1 _OID 8c467340-e92c-4814-bb1f-047320f6de36
+1 _ORIG acom
+0 @O4@ OBJE
+1 FILE media/local-portrait.jpg
+2 FORM jpg
+2 TITL Local portrait
+0 TRLR`;
+
+		const { gedcom } = GedcomTree.parse(mixed);
+		const hermina = gedcom.indi("@I1@");
+		const media = await hermina?.multimedia();
+
+		expect(gedcom.isAncestry()).toBe(true);
+		expect(gedcom.hasAncestryOriginMedia()).toBe(true);
+		expect(gedcom.getAncestryMediaNamespace()).toBe(1093);
+
+		const files = Object.values(media ?? {}).map((item) => item.url);
+		expect(files.some((url) => url.includes("namespaces/1093/media/8c467340"))).toBe(
+			true
+		);
+		expect(files).toContain("media/local-portrait.jpg");
+	});
+
 	it("lists people who share a tagged photo", async () => {
 		const { gedcom } = GedcomTree.parse(ANCESTRY_SHARED_OBJE);
 		const hermina = gedcom.indi("@I1@");
@@ -138,5 +181,10 @@ describe("Ancestry media URL hosts", () => {
 			"https://www.ancestry.com/api/media/retrieval/v2/image/namespaces/1093/media/0dee7412-4f7f-4f0c-b21e-18edf598b07c?client=trees-mediaservice&imageQuality=hq"
 		);
 		expect(url).not.toContain("mediasvc.ancestry.com");
+		const { parseAncestryNamespaceFromUrl, ANCESTRY_TREE_MEDIA_NAMESPACE } =
+			await import("../utils/media-utils");
+		expect(parseAncestryNamespaceFromUrl(url)).toBe(
+			ANCESTRY_TREE_MEDIA_NAMESPACE
+		);
 	});
 });
