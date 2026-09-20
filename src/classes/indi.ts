@@ -990,9 +990,12 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	}
 
 	ancestryLink() {
-		const www =
+		let www =
 			this.getFromSourceHeads<string>("SOUR.CORP.WWW.value") ||
 			this._gedcom?.HEAD?.SOUR?.CORP?.WWW?.value;
+		if (!www || /treeviz/i.test(String(www))) {
+			www = "www.ancestry.com";
+		}
 		const tree = this.getAncestryTreeId();
 
 		if (this.id) {
@@ -1044,15 +1047,19 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 							url.startsWith("blob:") ||
 							!/^https?:\/\//i.test(url));
 
-					// Remote Ancestry URLs need tree/www; embedded/local FILE does not.
-					if (
-						!hasEmbeddedOrLocalFile &&
-						(!www || !tree || !this.id)
-					) {
+					if (!this.id) {
 						return;
 					}
 
-					if (!this.id) {
+					// Remote Ancestry URLs need tree/www unless spaceId already
+					// resolved FILE (typical after TreeViz re-export, when RIN
+					// lives only under _ORIGHEAD).
+					if (
+						!url &&
+						!namespace &&
+						!hasEmbeddedOrLocalFile &&
+						(!www || !tree)
+					) {
 						return;
 					}
 
@@ -1112,15 +1119,19 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	}
 
 	myheritageLink(poolId = 0) {
-		const www = (
+		let www = (
 			this.getFromSourceHeads<string>("SOUR.CORP.value") ||
 			this._gedcom?.HEAD?.SOUR?.CORP?.value
 		)
 			?.toLowerCase()
 			.replace(/^www\./gi, "");
+		if (!www || /treeviz/i.test(www)) {
+			www = "myheritage.com";
+		}
 		const site = this.getMyHeritageTreeId();
 		const file = (
-			this._gedcom?.HEAD?.get("FILE")?.toValue() as string | undefined
+			this.getFromSourceHeads<string>("FILE.value") ||
+			(this._gedcom?.HEAD?.get("FILE")?.toValue() as string | undefined)
 		)?.match(/Exported by MyHeritage.com from .+ in (?<site>.+) on .+$/)
 			?.groups?.site;
 		const normalizedFile = file

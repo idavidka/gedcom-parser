@@ -81,6 +81,37 @@ describe("Ancestry shared OBJE profile pictures", () => {
 		);
 	});
 
+	it("still uses spaceId after TreeViz re-export (Ancestry only in _ORIGHEAD)", async () => {
+		const { gedcom: original } = GedcomTree.parse(ANCESTRY_SHARED_OBJE);
+		original.applyObject({
+			_ORIGHEAD: original.HEAD?.toObject(undefined, {
+				original: true,
+			}) as never,
+		});
+		original.HEAD?.remove("SOUR");
+		original.HEAD?.set("SOUR", "TreeViz - The Family Tree Visualiser & Editor");
+		const nextSour = original.HEAD?.get("SOUR");
+		nextSour?.set("CORP", "TreeViz");
+		nextSour?.get("CORP")?.set("WWW", "treeviz.com");
+		original.HEAD?.get("SOUR")?.get("_TREE")?.remove("RIN");
+
+		const exported = original.toGedcom(undefined, undefined, {
+			original: true,
+		});
+		const { gedcom } = GedcomTree.parse(exported);
+		const hermina = gedcom.indi("@I1@");
+
+		expect(gedcom.isAncestry()).toBe(true);
+		expect(hermina?.isAncestry()).toBe(true);
+		expect(gedcom.getAncestryTreeId()).toBe("88339524");
+		expect(gedcom.HEAD?.SOUR?.value).toContain("TreeViz");
+
+		const herminaPic = await hermina?.getProfilePicture(1093);
+		expect(herminaPic?.file).toContain(
+			"api/media/retrieval/v2/image/namespaces/1093/media/8c467340-e92c-4814-bb1f-047320f6de36"
+		);
+	});
+
 	it("lists people who share a tagged photo", async () => {
 		const { gedcom } = GedcomTree.parse(ANCESTRY_SHARED_OBJE);
 		const hermina = gedcom.indi("@I1@");

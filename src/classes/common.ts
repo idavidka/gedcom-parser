@@ -530,12 +530,36 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 			| undefined;
 	}
 
+	private unwrapHeadRecord(node: unknown): Common | undefined {
+		if (!node) {
+			return undefined;
+		}
+
+		const common =
+			node instanceof List
+				? (node.index(0) as Common | undefined)
+				: (node as Common);
+		if (!common || typeof common.get !== "function") {
+			return undefined;
+		}
+
+		const nested = common.get("HEAD");
+		if (nested instanceof List) {
+			return (nested.index(0) as Common | undefined) ?? common;
+		}
+		if (nested instanceof Common) {
+			return nested;
+		}
+
+		return common;
+	}
+
 	getOriginalHeadRecord() {
 		return (
-			get(this, ORIG_HEAD_TAG) ||
-			get(this.getGedcom(), ORIG_HEAD_TAG) ||
-			get(this.getHeadRecord(), ORIG_HEAD_TAG)
-		) as Common | undefined;
+			this.unwrapHeadRecord(get(this, ORIG_HEAD_TAG)) ||
+			this.unwrapHeadRecord(get(this.getGedcom(), ORIG_HEAD_TAG)) ||
+			this.unwrapHeadRecord(get(this.getHeadRecord(), ORIG_HEAD_TAG))
+		);
 	}
 
 	getSourceHeads() {
@@ -545,9 +569,26 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		});
 	}
 
+	private sourceHeadField(head: Common, path: string): unknown {
+		const normalized = path.endsWith(".value")
+			? path.slice(0, -".value".length)
+			: path;
+		const node = head.get(normalized as MultiTag);
+		if (!node) {
+			return undefined;
+		}
+		if (node instanceof List) {
+			return node.index(0)?.toValue();
+		}
+		if (typeof node.toValue === "function") {
+			return node.toValue();
+		}
+		return undefined;
+	}
+
 	getFromSourceHeads<T = unknown>(path: string): T | undefined {
 		for (const head of this.getSourceHeads()) {
-			const value = get(head, path) as T | undefined;
+			const value = this.sourceHeadField(head, path) as T | undefined;
 			if (value !== undefined && value !== null && value !== "") {
 				return value;
 			}
@@ -557,8 +598,11 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 
 	private sourStartsWith(prefix: string) {
 		return this.getSourceHeads().some((head) => {
-			const sour = get(head, "SOUR.value") as string | undefined;
-			return !!sour?.toLowerCase()?.startsWith(prefix);
+			const sour = this.sourceHeadField(head, "SOUR");
+			return (
+				typeof sour === "string" &&
+				sour.toLowerCase().startsWith(prefix)
+			);
 		});
 	}
 
@@ -599,14 +643,14 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 
 	isFamilySearch() {
 		return this.getSourceHeads().some((head) => {
-			const sourName = get(head, "SOUR.NAME.value") as string | undefined;
+			const sourName = this.sourceHeadField(head, "SOUR.NAME");
 			return sourName === "FamilySearch API";
 		});
 	}
 
 	isGNO2GED() {
 		return this.getSourceHeads().some((head) => {
-			const sour = get(head, "SOUR.value") as string | undefined;
+			const sour = this.sourceHeadField(head, "SOUR");
 			return sour === "GNO2GED";
 		});
 	}
@@ -682,11 +726,11 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 	}
 
 	getMyHeritageTreeName() {
-		const path = "HEAD.FILE.value";
-
-		const treeDetails = (get(this, path) || get(this.getGedcom(), path)) as
-			| string
-			| undefined;
+		const treeDetails = (this.getFromSourceHeads<string>("FILE.value") ||
+			(get(this, "HEAD.FILE.value") ||
+				get(this.getGedcom(), "HEAD.FILE.value")) as
+				| string
+				| undefined);
 
 		return treeDetails?.match(
 			/Exported by MyHeritage.com from (?<tree>.+) in.+$/
@@ -721,8 +765,9 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 			return treeName;
 		}
 
-		// Fallback to HEAD.FILE
-		const fileName = (get(this, "HEAD.FILE.value") ||
+		// Fallback to FILE from the original or live HEAD
+		const fileName = (this.getFromSourceHeads<string>("FILE.value") ||
+			get(this, "HEAD.FILE.value") ||
 			get(this.getGedcom(), "HEAD.FILE.value")) as string | undefined;
 
 		return fileName || "FamilySearch Import";
