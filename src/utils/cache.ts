@@ -5,7 +5,8 @@ import type { Path, PathItem, ProfilePicture } from "../classes/indi";
 import type { Individuals } from "../classes/indis";
 import { getCacheManagerFactory } from "../factories/cache-factory";
 import type { Kinship } from "../kinship-translator/kinship-translator.interface";
-import { RelationType, type IndiKey } from "../types/types";
+import { RelationType  } from "../types/types";
+import type {IndiKey} from "../types/types";
 
 /**
  * Cache manager interface for pluggable cache implementations.
@@ -155,28 +156,29 @@ export type CacheRelatives<O extends keyof Caches = "pathCache"> = <
 // NOTE: This function MUST be called from the main app after setting up the cache manager factory
 // (via setCacheManagerFactory in initGedcomParser). If not called, the gedcom-parser will use
 // in-memory cache only, which is still functional but won't persist data between sessions.
-let cacheInitialized = false;
-export const initializeCache = async () => {
-	if (cacheInitialized) {
-		return;
-	}
+let cacheInitPromise: Promise<void> | undefined;
 
-	cacheInitialized = true;
-
-	// NOTE: Only profilePictureCache is persisted to IndexedDB
-	// pathCache, relativesOnLevelCache, and relativesOnDegreeCache are intentionally
-	// kept in memory only for performance reasons
+const loadProfilePictureCache = async () => {
 	try {
 		const profilePictureData =
 			await getCacheDbs().profilePictureCache.getItem();
 
 		if (profilePictureData) {
-			caches.profilePictureCache = profilePictureData;
+			// IndexedDB wins so a racer that stored https URLs does not
+			// hide blobs persisted from an earlier session.
+			caches.profilePictureCache = {
+				...caches.profilePictureCache,
+				...profilePictureData,
+			};
 		}
 	} catch (_error) {
 		// Cache manager factory might not be initialized yet
-		// This is fine - cache will be populated as images are loaded
 	}
+};
+
+export const initializeCache = () => {
+	cacheInitPromise ??= loadProfilePictureCache();
+	return cacheInitPromise;
 };
 
 export const resetRelativesCache = () => {

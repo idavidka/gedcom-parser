@@ -33,6 +33,7 @@ import {
 	relativesCache,
 	profilePictureCache,
 	cacheDiscoveredPath,
+	initializeCache,
 } from "../utils/cache";
 import { dateFormatter } from "../utils/date-formatter";
 import { PlaceType, getPlaces } from "../utils/get-places";
@@ -1430,6 +1431,10 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		if (!this.id) {
 			return undefined;
 		}
+
+		// Early callers (profile page) can run before initGedcomParser's
+		// fire-and-forget initializeCache() has copied IndexedDB into memory.
+		await initializeCache();
 
 		const cacheKey = this.id;
 		const cached = profilePictureCache<ProfilePicture | undefined>(
