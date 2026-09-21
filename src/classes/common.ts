@@ -631,12 +631,23 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		return this.sourStartsWith("myheritage");
 	}
 
+	/**
+	 * GEDCOM root for Ancestry media helpers.
+	 * `this._gedcom` when called on a child record; `this` when called on the file root.
+	 *
+	 * Cannot use `instanceof GedCom`: `GedComType` is a type alias (erased at runtime),
+	 * and importing the `GedCom` class here would cycle (`GedCom extends Common`).
+	 * The root is the only Common with an `objes()` method.
+	 */
 	private hostGedcom(): GedComType | undefined {
 		const linked = this.getGedcom();
 		if (linked) {
 			return linked;
 		}
-		if ("objes" in this && typeof (this as GedComType).objes === "function") {
+		if (
+			"objes" in this &&
+			typeof (this as unknown as GedComType).objes === "function"
+		) {
 			return this as unknown as GedComType;
 		}
 		return undefined;
