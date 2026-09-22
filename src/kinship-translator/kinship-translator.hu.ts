@@ -2,7 +2,7 @@ import { nameFormatter } from "../utils/name-formatter";
 import { hungarianOrdinalize } from "../utils/ordinalize";
 
 import KinshipTranslatorBasic from "./kinship-translator.basic";
-import { InLawsHu, casesHu, parentRelationsHu } from "./patterns.hu";
+import { InLawsHu, casesHu, parentRelationPrefix } from "./patterns.hu";
 import type { CrossCases } from "./types";
 
 export default class KinshipTranslatorHU extends KinshipTranslatorBasic {
@@ -378,6 +378,13 @@ export default class KinshipTranslatorHU extends KinshipTranslatorBasic {
 			return relation ?? "";
 		}
 
-		return `${parentRelationsHu[this.pathN.relation]} ${relation}`;
+		const isAncestor =
+			(this.pathN.level ?? 0) > 0 && (this.pathN.degree ?? 0) === 0;
+		const prefix = parentRelationPrefix(this.pathN.relation, isAncestor);
+		if (!prefix) {
+			return relation;
+		}
+
+		return `${prefix} ${relation}`;
 	}
 }

@@ -2,13 +2,49 @@ import type { IndiType } from "../classes/indi";
 
 import type { CrossCases, CrossCase } from "./types";
 
-export const parentRelationsHu: Record<string, string> = {
+/**
+ * A string is the same in both directions (mostoha apa / mostoha gyermek).
+ * A directed pair flips with the link: the ancestor is the one who raises
+ * or adopts (nevelő, örökbefogadó); everyone else was raised or adopted
+ * (nevelt, örökbefogadott).
+ */
+export type ParentRelationLabel =
+	| string
+	| { ancestor: string; other: string };
+
+export const parentRelationsHu: Record<string, ParentRelationLabel> = {
 	step: "mostoha",
-	foster: "nevelt",
+	foster: { ancestor: "nevelő", other: "nevelt" },
 	birth: "vérszerinti",
 	biological: "vérszerinti",
-	adopted: "örökbefogadott",
+	adopted: { ancestor: "örökbefogadó", other: "örökbefogadott" },
 };
+
+export const parentRelationPrefix = (
+	relation: string,
+	ancestor: boolean
+): string | undefined => {
+	const label = parentRelationsHu[relation];
+	if (!label) {
+		return;
+	}
+
+	if (typeof label === "string") {
+		return label;
+	}
+
+	return ancestor ? label.ancestor : label.other;
+};
+
+const parentRelationModifiers = [
+	...new Set(
+		Object.values(parentRelationsHu).flatMap((label) =>
+			typeof label === "string"
+				? [label]
+				: [label.ancestor, label.other]
+		)
+	),
+].join("|");
 
 const nominativus: CrossCase = {
 	apa: { nominativus: "apa", dativus: "apjának", possessivus: "apja" },
@@ -96,15 +132,11 @@ export const InLawsHu: Record<
 > = {
 	"gyermek felesége": "meny",
 	"gyermek férje": "vő",
-	[`(férj|feleség) (?<mod1>(${Object.values(parentRelationsHu).join(
-		"|"
-	)}) )?anyja`]: "anyós",
-	[`(férj|feleség) (?<mod1>(${Object.values(parentRelationsHu).join(
-		"|"
-	)}) )?apja`]: "após",
-	[`(férj|feleség) (?<mod1>(${Object.values(parentRelationsHu).join(
-		"|"
-	)}) )?(fél)?testvére`]: (indi?: IndiType) => {
+	[`(férj|feleség) (?<mod1>(${parentRelationModifiers}) )?anyja`]: "anyós",
+	[`(férj|feleség) (?<mod1>(${parentRelationModifiers}) )?apja`]: "após",
+	[`(férj|feleség) (?<mod1>(${parentRelationModifiers}) )?(fél)?testvére`]: (
+		indi?: IndiType
+	) => {
 		if (indi?.isMale()) {
 			return "sógor";
 		}
