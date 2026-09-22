@@ -236,11 +236,13 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	private readonly _places?: Record<string, Place[]>;
 
 	toName() {
-		return this.get<Common>("NAME")?.toValue();
+		const name = this.get("NAME");
+		const value = name?.index(0)?.toValue() ?? name?.toValue();
+		return typeof value === "string" ? value : undefined;
 	}
 
 	toNaturalName() {
-		return this.get<Common>("NAME")?.toValue()?.replaceAll("/", "");
+		return this.toName()?.replaceAll("/", "");
 	}
 
 	toList() {
@@ -1249,10 +1251,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		}
 		const id = this.id.replace(/@|I/g, "");
 		const given =
-			this.toNaturalName()
-				?.trim()
-				.split(/\s+/)[0]
-				?.replaceAll("/", "") || id;
+			this.toNaturalName()?.trim().split(/\s+/)[0] || id;
 		return `https://www.geni.com/people/${given}/${id}`;
 	}
 
