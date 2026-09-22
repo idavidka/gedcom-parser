@@ -1124,7 +1124,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		return list;
 	}
 
-	myheritageLink(poolId = 0) {
+	myheritageLink(poolId = 0, treeToken?: string) {
 		let www = (
 			this.getFromSourceHeads<string>("SOUR.CORP.value") ||
 			this._gedcom?.HEAD?.SOUR?.CORP?.value
@@ -1134,21 +1134,31 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		if (!www || /treeviz/i.test(www)) {
 			www = "myheritage.com";
 		}
-		const site = this.getMyHeritageTreeId();
-		const file = (
-			this.getFromSourceHeads<string>("FILE.value") ||
-			(this._gedcom?.HEAD?.get("FILE")?.toValue() as string | undefined)
-		)?.match(/Exported by MyHeritage.com from .+ in (?<site>.+) on .+$/)
-			?.groups?.site;
-		const normalizedFile = file
-			?.normalize("NFD")
-			.replace(/[\u0300-\u036f]/g, "")
-			.toLowerCase()
-			.replace(/[^a-z0-9]+/g, "-");
 
-		if (normalizedFile && this.id) {
-			const id = Number(this.id.replace(/@|I/g, "")) + poolId;
-			return `https://www.${www}/site-family-tree-${site}/${normalizedFile}#!profile-${id}-info`;
+		if (!this.id) {
+			return;
+		}
+
+		const id = Number(this.id.replace(/@|I/g, "")) + poolId;
+		if (!Number.isFinite(id)) {
+			return;
+		}
+
+		const slug =
+			this.toNaturalName()
+				?.normalize("NFD")
+				.replace(/[\u0300-\u036f]/g, "")
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, "-")
+				.replace(/^-+|-+$/g, "") || String(id);
+
+		if (treeToken) {
+			return `https://www.${www}/profile-${treeToken}-${id}/${slug}`;
+		}
+
+		const site = this.getMyHeritageTreeId();
+		if (site) {
+			return `https://www.${www}/person-${id}_${site}_${site}/${slug}`;
 		}
 	}
 
@@ -1664,13 +1674,13 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		return undefined;
 	}
 
-	link(poolId?: number) {
+	link(poolId?: number, treeToken?: string) {
 		if (this?.isAncestry()) {
 			return this.ancestryLink();
 		}
 
 		if (this?.isMyHeritage()) {
-			return this.myheritageLink(poolId);
+			return this.myheritageLink(poolId, treeToken);
 		}
 
 		if (this?.isFamilySearch()) {
