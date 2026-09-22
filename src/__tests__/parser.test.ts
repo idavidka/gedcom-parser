@@ -29,5 +29,14 @@ describe("GEDCOM Parser Utility", () => {
 			expect(parsed).toHaveProperty("@@INDI");
 			expect(parsed).toHaveProperty("@@FAM");
 		});
+
+		it("parses a Geni header when a UTF-8 BOM precedes 0 HEAD", () => {
+			const raw = "\uFEFF0 HEAD\n1 SOUR Geni.com\n1 CHAR UTF-8\n0 TRLR\n";
+			const { gedcom } = GedcomTree.parse(raw, {
+				filename: "export-geni.zip",
+			});
+
+			expect(gedcom.HEAD?.get("SOUR")?.value).toBe("Geni.com");
+		});
 	});
 });

@@ -232,7 +232,10 @@ export const extractGedzip = async (
 		throw new Error("No .ged file found in the archive.");
 	}
 
-	const gedcomText = await preferred.async("string");
+	// TextDecoder drops a leading UTF-8 BOM. JSZip's async("string") keeps
+	// U+FEFF, which is how Geni zip exports lose their `0 HEAD` line.
+	const gedcomBytes = await preferred.async("uint8array");
+	const gedcomText = new TextDecoder("utf-8").decode(gedcomBytes);
 	const mediaEntries: ExtractedGedzipMedia[] = [];
 
 	for (const entry of entries) {

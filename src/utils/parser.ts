@@ -87,6 +87,9 @@ const GedcomTree = {
 		options?: { settings?: Settings; filename?: string }
 	) {
 		// printTime{ index: 0, label: "[Debug]", lastTime: Date.now() });
+		// JSZip keeps a leading UTF-8 BOM; File.text() strips it. LINE_REG
+		// then skips `0 HEAD`, and the next line (`1 SOUR ...`) has no parent.
+		content = content.replace(/^\uFEFF+/, "");
 		const { settings, filename = "" } = options ?? {};
 		const { linkedPersons = "skip", linkingKey } = settings ?? {};
 

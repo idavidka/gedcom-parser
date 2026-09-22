@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import GedcomTree from "../index";
 import {
 	GEDZIP_GEDCOM_ENTRY,
 	buildGedzip,
@@ -89,5 +90,23 @@ describe("GEDZIP", () => {
 		});
 		expect(remounted).toContain("1 FILE data:image/jpeg;base64,");
 		expect(remounted).not.toContain("1 FILE media/x.jpg");
+	});
+
+	it("strips a UTF-8 BOM from a Geni zip so 0 HEAD survives", async () => {
+		const JSZip = (await import("jszip")).default;
+		const zip = new JSZip();
+		zip.file(
+			"export-geni.ged",
+			"\uFEFF0 HEAD\n1 SOUR Geni.com\n1 CHAR UTF-8\n0 TRLR\n"
+		);
+		const bytes = await zip.generateAsync({ type: "uint8array" });
+
+		const extracted = await extractGedzip(bytes);
+		expect(extracted.gedcomText.startsWith("0 HEAD")).toBe(true);
+
+		const { gedcom } = GedcomTree.parse(extracted.gedcomText, {
+			filename: "export-geni.zip",
+		});
+		expect(gedcom.HEAD?.get("SOUR")?.value).toBe("Geni.com");
 	});
 });
