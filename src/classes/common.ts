@@ -620,7 +620,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 	}
 
 	isGeni() {
-		return this.sourStartsWith("geni");
+		return this.sourStartsWith("geni.com");
 	}
 
 	isAncestry() {

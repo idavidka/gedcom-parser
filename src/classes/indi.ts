@@ -1243,6 +1243,19 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		return list;
 	}
 
+	geniLink() {
+		if (!this.id) {
+			return;
+		}
+		const id = this.id.replace(/@|I/g, "");
+		const given =
+			this.toNaturalName()
+				?.trim()
+				.split(/\s+/)[0]
+				?.replaceAll("/", "") || id;
+		return `https://www.geni.com/people/${given}/${id}`;
+	}
+
 	familySearchLink() {
 		// Check new format first (WWW with _IS_FS Y marker)
 		const wwwTags = this.get("WWW")?.toList();
@@ -1681,6 +1694,10 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 		if (this?.isMyHeritage()) {
 			return this.myheritageLink(poolId, treeToken);
+		}
+
+		if (this?.isGeni()) {
+			return this.geniLink();
 		}
 
 		if (this?.isFamilySearch()) {
