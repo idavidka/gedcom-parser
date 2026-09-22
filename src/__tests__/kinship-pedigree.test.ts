@@ -120,3 +120,38 @@ describe("Hungarian pedigree adjectives follow the direction of the link", () =>
 		);
 	});
 });
+
+describe("English pedigree adjectives follow the direction of the link", () => {
+	it("keeps foster for both the parent and the child", () => {
+		expect(tim?.kinship(ferenc, false, "en")).toEqual("foster father");
+		expect(tim?.kinship(ferenc, true, "en")).toEqual("Tim's foster father");
+		expect(ferenc?.kinship(tim, false, "en")).toEqual("foster son");
+		expect(tim?.kinship(geza, false, "en")).toEqual("foster grandfather");
+	});
+
+	it("calls an adoptive parent adoptive and an adopted child adopted", () => {
+		expect(peti?.kinship(ferenc, false, "en")).toEqual("adoptive father");
+		expect(peti?.kinship(anna, false, "en")).toEqual("adoptive mother");
+		expect(peti?.kinship(geza, false, "en")).toEqual(
+			"adoptive grandfather"
+		);
+		expect(anna?.kinship(peti, false, "en")).toEqual("adopted son");
+	});
+});
+
+describe("Japanese pedigree words follow the direction of the link", () => {
+	it("calls a foster parent 里父/里母 and a foster child 里子", () => {
+		expect(tim?.kinship(ferenc, false, "ja")).toEqual("里父");
+		expect(tim?.kinship(anna, false, "ja")).toEqual("里母");
+		expect(tim?.kinship(ferenc, true, "ja")).toEqual("Timの里父");
+		expect(ferenc?.kinship(tim, false, "ja")).toEqual("里子");
+		expect(tim?.kinship(geza, false, "ja")).toEqual("里祖父");
+	});
+
+	it("calls an adoptive parent 養父/養母 and an adopted child 養子", () => {
+		expect(peti?.kinship(ferenc, false, "ja")).toEqual("養父");
+		expect(peti?.kinship(anna, false, "ja")).toEqual("養母");
+		expect(peti?.kinship(geza, false, "ja")).toEqual("養祖父");
+		expect(anna?.kinship(peti, false, "ja")).toEqual("養子");
+	});
+});

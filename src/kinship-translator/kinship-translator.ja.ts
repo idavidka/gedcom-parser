@@ -67,6 +67,43 @@ const lineal = (level: number, sex: Sex, kind: "asc" | "desc") => {
 	return `${L - 1}世の孫`;
 };
 
+/** 養父 / 養母 are the parents; 養子 / 養女 are the children. */
+const adoptedRelation = (relation: string) => {
+	if (relation === "父") {
+		return "養父";
+	}
+	if (relation === "母") {
+		return "養母";
+	}
+	if (relation === "親") {
+		return "養親";
+	}
+	if (relation === "息子" || relation === "子") {
+		return "養子";
+	}
+	if (relation === "娘") {
+		return "養女";
+	}
+	return `養${relation}`;
+};
+
+/** 里父 / 里母 / 里親 are the parents; 里子 is the child. */
+const fosterRelation = (relation: string) => {
+	if (relation === "父") {
+		return "里父";
+	}
+	if (relation === "母") {
+		return "里母";
+	}
+	if (relation === "親") {
+		return "里親";
+	}
+	if (relation === "息子" || relation === "娘" || relation === "子") {
+		return "里子";
+	}
+	return `里${relation}`;
+};
+
 const cousinPlain = (degree: number) => {
 	if (degree <= 1) {
 		return "いとこ";
@@ -248,11 +285,11 @@ export default class KinshipTranslatorJa extends KinshipTranslatorBasic {
 		}
 
 		if (this.pathN.relation === "adopted") {
-			return `養子の${relation}`;
+			return adoptedRelation(relation);
 		}
 
 		if (this.pathN.relation === "foster") {
-			return `里親の${relation}`;
+			return fosterRelation(relation);
 		}
 
 		return relation;

@@ -248,6 +248,14 @@ export default class KinshipTranslatorEn extends KinshipTranslatorBasic {
 			return relation ?? "";
 		}
 
+		// "adoptive father" is the parent; "adopted son" is the child.
+		// "foster" is the same word in both directions.
+		if (this.pathN.relation === "adopted") {
+			const isAncestor =
+				(this.pathN.level ?? 0) > 0 && (this.pathN.degree ?? 0) === 0;
+			return `${isAncestor ? "adoptive" : "adopted"} ${relation}`;
+		}
+
 		return `${this.pathN.relation} ${relation}`;
 	}
 }
