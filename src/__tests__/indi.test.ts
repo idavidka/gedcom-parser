@@ -109,7 +109,7 @@ describe("Individual (INDI) Class Functionality", () => {
 			});
 
 			it("should be Illés Szabós's grandnephew", () => {
-				expect(indis.DI1?.kinship(indis.ISz1)).toEqual("granduncle");
+				expect(indis.DI1?.kinship(indis.ISz1)).toEqual("great-uncle");
 
 				expect(indis.ISz1?.kinship(indis.DI1)).toEqual("grandnephew");
 			});
@@ -120,23 +120,23 @@ describe("Individual (INDI) Class Functionality", () => {
 				expect(indis.ZsE1?.kinship(indis.DI1)).toEqual("half-brother");
 			});
 
-			it("should be MN1's 7th cousin -1x removed", () => {
+			it("should be MN1's 7th cousin 1x removed", () => {
 				expect(indis.DI1?.kinship(indis.MN1)).toEqual(
 					"half 7th cousin 1x removed"
 				);
 
 				expect(indis.MN1?.kinship(indis.DI1)).toEqual(
-					"half 7th cousin -1x removed"
+					"half 7th cousin 1x removed"
 				);
 			});
 
-			it("should be Mark MN1's 1st cousin -2x removed", () => {
+			it("should be Mark MN1's 1st cousin 2x removed", () => {
 				expect(indis.DI1?.kinship(indis.ASz1)).toEqual(
 					"1st cousin 2x removed"
 				);
 
 				expect(indis.ASz1?.kinship(indis.DI1)).toEqual(
-					"1st cousin -2x removed"
+					"1st cousin 2x removed"
 				);
 			});
 
@@ -170,7 +170,7 @@ describe("Individual (INDI) Class Functionality", () => {
 
 			it("should be wife of Illés Szabós's grandnephew", () => {
 				expect(indis.NB1?.kinship(indis.ISz1)).toEqual(
-					"granduncle of husband"
+					"great-uncle of husband"
 				);
 
 				expect(indis.ISz1?.kinship(indis.NB1)).toEqual(

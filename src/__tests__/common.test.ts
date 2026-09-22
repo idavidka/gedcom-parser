@@ -1,10 +1,4 @@
-import {
-	createCommon,
-	Common,
-	GedCom,
-	IndiType,
-	List,
-} from "../classes";
+import { createCommon, Common, GedCom, IndiType } from "../classes";
 import GedcomTree from "..";
 
 import { textFileLoader } from "./test-utils";
@@ -216,7 +210,7 @@ describe("GEDCOM Common Class Functionality", () => {
 			expect(arrayNotation).toBeUndefined();
 		});
 
-		describe("BIRT with multiple DATE entries", () => {
+		describe("BIRT with a repeated DATE tag", () => {
 			let gedcomMultipleDates: GedCom;
 			let individualMultipleDates: IndiType | undefined;
 
@@ -229,7 +223,7 @@ describe("GEDCOM Common Class Functionality", () => {
 				individualMultipleDates = gedcomMultipleDates.indi("@I1@");
 			});
 
-			it("should return same value for first DATE: get('BIRT.DATE.YEAR'), get('BIRT.0.DATE.0.YEAR'), get('BIRT.items[0].DATE.YEAR')", () => {
+			it("keeps the last DATE because DATE is not listable", () => {
 				const dotNotation =
 					individualMultipleDates?.get("BIRT.DATE.YEAR");
 				const indexedNotation =
@@ -238,36 +232,10 @@ describe("GEDCOM Common Class Functionality", () => {
 					"BIRT.items[0].DATE.YEAR"
 				);
 
-				expect(dotNotation?.toValue()).toBe("1985");
-				expect(indexedNotation?.toValue()).toBe("1985");
-				expect(arrayNotation?.toValue()).toBe("1985");
-
-				// All should return the same value
-				expect(dotNotation?.toValue()).toEqual(
-					indexedNotation?.toValue()
-				);
-				expect(dotNotation?.toValue()).toEqual(
-					arrayNotation?.toValue()
-				);
-				expect(indexedNotation?.toValue()).toEqual(
-					arrayNotation?.toValue()
-				);
-			});
-
-			it("should return same value for second DATE: get('BIRT.DATE.1.YEAR'), get('BIRT.0.DATE.1.YEAR'), get('BIRT.items[0].DATE.items[1].YEAR')", () => {
-				const dotNotation =
-					individualMultipleDates?.get("BIRT.DATE.1.YEAR");
-				const indexedNotation =
-					individualMultipleDates?.get("BIRT.0.DATE.1.YEAR");
-				const arrayNotation = individualMultipleDates?.get(
-					"BIRT.items[0].DATE.items[1].YEAR"
-				);
-
 				expect(dotNotation?.toValue()).toBe("1984");
 				expect(indexedNotation?.toValue()).toBe("1984");
 				expect(arrayNotation?.toValue()).toBe("1984");
 
-				// All should return the same value
 				expect(dotNotation?.toValue()).toEqual(
 					indexedNotation?.toValue()
 				);
@@ -279,7 +247,21 @@ describe("GEDCOM Common Class Functionality", () => {
 				);
 			});
 
-			it("should return same value for first DATE: get('BIRT.DATE'), get('BIRT.0.DATE.0'), get('BIRT.items[0].DATE.items[0]')", () => {
+			it("does not expose a second DATE index", () => {
+				expect(
+					individualMultipleDates?.get("BIRT.DATE.1.YEAR")
+				).toBeUndefined();
+				expect(
+					individualMultipleDates?.get("BIRT.0.DATE.1.YEAR")
+				).toBeUndefined();
+				expect(
+					individualMultipleDates?.get(
+						"BIRT.items[0].DATE.items[1].YEAR"
+					)
+				).toBeUndefined();
+			});
+
+			it("returns the surviving DATE value and ABT note in every notation", () => {
 				const dotNotation = individualMultipleDates?.get("BIRT.DATE");
 				const indexedNotation =
 					individualMultipleDates?.get("BIRT.0.DATE.0");
@@ -287,38 +269,11 @@ describe("GEDCOM Common Class Functionality", () => {
 					"BIRT.items[0].DATE.items[0]"
 				);
 
-				expect(dotNotation?.toValue()).toBeInstanceOf(List);
-				expect(dotNotation?.toValue()?.index(0)).toBe("20 Mar 1985");
-				expect(indexedNotation?.toValue()).toBe("20 Mar 1985");
-				expect(arrayNotation?.toValue()).toBe("20 Mar 1985");
+				expect(dotNotation?.toValue()).toBe("1984");
+				expect(dotNotation?.toNote()).toBe("Abt.");
+				expect(indexedNotation?.toValue()).toBe("1984");
+				expect(arrayNotation?.toValue()).toBe("1984");
 
-				// All should return the same value
-				expect(dotNotation?.toValue()?.index(0)).toEqual(
-					indexedNotation?.toValue()
-				);
-				expect(dotNotation?.toValue()?.index(0)).toEqual(
-					arrayNotation?.toValue()
-				);
-				expect(indexedNotation?.toValue()).toEqual(
-					arrayNotation?.toValue()
-				);
-			});
-
-			it("should return same value for second DATE: get('BIRT.DATE.1'), get('BIRT.0.DATE.1'), get('BIRT.items[0].DATE.items[1]')", () => {
-				const dotNotation = individualMultipleDates?.get("BIRT.DATE.1");
-				const indexedNotation =
-					individualMultipleDates?.get("BIRT.0.DATE.1");
-				const arrayNotation = individualMultipleDates?.get(
-					"BIRT.items[0].DATE.items[1]"
-				);
-
-			// Standard ABT qualifier is normalized into the note channel
-			expect(dotNotation?.toValue()).toBe("1984");
-			expect(indexedNotation?.toValue()).toBe("1984");
-			expect(arrayNotation?.toValue()).toBe("1984");
-			expect(dotNotation?.toNote()).toBe("Abt.");
-
-				// All should return the same value
 				expect(dotNotation?.toValue()).toEqual(
 					indexedNotation?.toValue()
 				);

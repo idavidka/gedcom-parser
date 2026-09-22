@@ -104,10 +104,10 @@ describe("kinship: half-blood collaterals inherit the half prefix", () => {
 			"fél-másodunokatestvér"
 		);
 		expect(indi(15)?.kinship(indi(13), false, "de")).toEqual(
-			"Halb-Cousin 2. Grades"
+			"Halb-Cousine 2. Grades"
 		);
 		expect(indi(15)?.kinship(indi(13), false, "fr")).toEqual(
-			"demi-cousin au 2e degré"
+			"demi-cousine au 2e degré"
 		);
 		expect(indi(15)?.kinship(indi(5))).toEqual("half-great-aunt");
 		expect(indi(15)?.kinship(indi(5), false, "hu")).toEqual(
