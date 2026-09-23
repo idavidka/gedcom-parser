@@ -1,4 +1,5 @@
 import { createCommon } from "../classes/common";
+import { createCommonDate, isCommonDate } from "../classes/date";
 import type { Common } from "../classes/common";
 import type { FamType } from "../classes/fam";
 import type { GedComType } from "../classes/gedcom";
@@ -8,6 +9,47 @@ import { RelationType } from "../types/types";
 import type { FamKey, IndiKey, MultiTag } from "../types/types";
 
 import { resetRelativesCache } from "./cache";
+
+const GEDCOM_MONTHS = [
+	"JAN",
+	"FEB",
+	"MAR",
+	"APR",
+	"MAY",
+	"JUN",
+	"JUL",
+	"AUG",
+	"SEP",
+	"OCT",
+	"NOV",
+	"DEC",
+] as const;
+
+/** Day this person was created in TreeViz. Value is a GEDCOM DATE. */
+export const CREATED_AT_TAG = "_CREATED_AT" as const;
+
+/**
+ * Write `_CREATED_AT` when it is missing or not a DATE. Existing dates stay,
+ * so a later merge does not move the day the person was first added.
+ */
+export const stampCreatedAt = (
+	gedcom: GedComType,
+	indi: IndiType,
+	when: Date = new Date()
+): void => {
+	const existing = indi.get(CREATED_AT_TAG);
+	if (
+		isCommonDate(existing) &&
+		existing.rawValue instanceof Date &&
+		!Number.isNaN(existing.rawValue.getTime())
+	) {
+		return;
+	}
+	const dateNode = createCommonDate(gedcom, undefined, indi, indi);
+	dateNode.type = CREATED_AT_TAG;
+	dateNode.value = `${when.getDate()} ${GEDCOM_MONTHS[when.getMonth()]} ${when.getFullYear()}`;
+	indi.set(CREATED_AT_TAG, dateNode);
+};
 
 const refTypeForTag = (tag: string) => {
 	if (tag === "FAMS" || tag === "FAMC") return "FAM" as const;

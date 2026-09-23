@@ -15,7 +15,7 @@ import type {
 	SnoteKey,
 	MultiTag,
 } from "../types/types";
-import { nextRecordId } from "../utils/family-edit";
+import { nextRecordId, stampCreatedAt } from "../utils/family-edit";
 import { appendGedcomTrailer } from "../utils/gedcom-trailer";
 import {
 	normalizeGedcomVersion,
@@ -1660,6 +1660,7 @@ export const mergeGedcoms = (
 		} else {
 			// This is a new individual - add it to merged GEDCOM
 			if (clonedIndi.id) {
+				stampCreatedAt(mergedGedcom, clonedIndi);
 				mergedGedcom.indis()?.item(clonedIndi.id, clonedIndi);
 			}
 		}

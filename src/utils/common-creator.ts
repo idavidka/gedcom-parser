@@ -68,7 +68,7 @@ export const create = (
 			prevNode = createSour(gedcom, undefined, mainNode, curNode);
 		} else if (type === "OBJE") {
 			prevNode = createObje(gedcom, undefined, mainNode, curNode);
-		} else if (type === "DATE") {
+		} else if (type === "DATE" || type === "_CREATED_AT") {
 			prevNode = createCommonDate(gedcom, undefined, mainNode, curNode);
 		} else if (
 			type === "NOTE" ||
