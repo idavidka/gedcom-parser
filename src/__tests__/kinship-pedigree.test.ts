@@ -109,7 +109,7 @@ describe("Hungarian pedigree adjectives follow the direction of the link", () =>
 	});
 
 	it("uses nevelő in the in-law form", () => {
-		expect(kata?.kinship(ferenc, false, "hu")).toEqual("nevelőapós");
+		expect(kata?.kinship(ferenc, false, "hu")).toEqual("nevelő após");
 	});
 
 	it("calls an adoptive parent örökbefogadó and an adopted child örökbefogadott", () => {

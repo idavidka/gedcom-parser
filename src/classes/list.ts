@@ -592,7 +592,11 @@ export class List<
 
 		(this.entries() as Array<[K, T]>).forEach(([_, item]) => {
 			const validTag = getValidTag(tag);
-			const xref = item.id;
+			// CONT/CONC are continuations of the line above. An internal id
+			// turns them into cross-references, and the following text is
+			// dropped on the next import.
+			const xref =
+				validTag === "CONT" || validTag === "CONC" ? undefined : item.id;
 			const payload = item.exportValue?.() as string | undefined;
 			// Cross-referenced records: `0 @N1@ SNOTE text` (payload optional).
 			// Inline list items: `1 NOTE text`.
