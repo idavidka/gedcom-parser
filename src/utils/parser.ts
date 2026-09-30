@@ -9,11 +9,7 @@ import { Objects } from "../classes/objes";
 import { Repositories } from "../classes/repos";
 import { Sources } from "../classes/sours";
 import { Submitters } from "../classes/subms";
-import {
-	LINE_REG,
-	MAX_FILE_SIZE_TO_SYNC,
-	REF_LINE_REG,
-} from "../constants/constants";
+import { LINE_REG, REF_LINE_REG } from "../constants/constants";
 import type { Settings } from "../types/settings";
 import type { ConvertType, IdType, MultiTag, ListTag } from "../types/types";
 
@@ -75,22 +71,33 @@ type LinesWithFlags = string[] & {
 // 	lastTime = date;
 // };
 
+export type GedcomParseOptions = {
+	settings?: Settings;
+	filename?: string;
+	/**
+	 * Drop NOTE / OBJE / SOUR blocks when the text is larger than
+	 * `maxFileSizeToPurge`. Off unless set to true.
+	 */
+	purgeOversized?: boolean;
+	/** Byte threshold for `purgeOversized`. Ignored when that flag is not true. */
+	maxFileSizeToPurge?: number;
+};
+
 const GedcomTree = {
-	parse: function (
-		content: string,
-		options?: { settings?: Settings; filename?: string }
-	) {
+	parse: function (content: string, options?: GedcomParseOptions) {
 		return this.parseHierarchy(content, options);
 	},
-	parseHierarchy: function (
-		content: string,
-		options?: { settings?: Settings; filename?: string }
-	) {
+	parseHierarchy: function (content: string, options?: GedcomParseOptions) {
 		// printTime{ index: 0, label: "[Debug]", lastTime: Date.now() });
 		// JSZip keeps a leading UTF-8 BOM; File.text() strips it. LINE_REG
 		// then skips `0 HEAD`, and the next line (`1 SOUR ...`) has no parent.
 		content = content.replace(/^\uFEFF+/, "");
-		const { settings, filename = "" } = options ?? {};
+		const {
+			settings,
+			filename = "",
+			purgeOversized = false,
+			maxFileSizeToPurge,
+		} = options ?? {};
 		const { linkedPersons = "skip", linkingKey } = settings ?? {};
 
 		const gedcom = createGedCom();
@@ -239,8 +246,10 @@ const GedcomTree = {
 
 		// printTime{ index: 4, label: "[Debug]" }, { lines: lines.join("\n") });
 		if (
+			purgeOversized &&
+			typeof maxFileSizeToPurge === "number" &&
 			!linesJoined.includes("1 _IS_PURGED true") &&
-			getRawSize(linesJoined) > MAX_FILE_SIZE_TO_SYNC
+			getRawSize(linesJoined) > maxFileSizeToPurge
 		) {
 			linesJoined = linesJoined
 				.replace(

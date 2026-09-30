@@ -20,8 +20,3 @@ export const ID_SPLIT_REG = /^@[_a-zA-Z0-9]+@:/;
 /** Snapshot of the pre-TreeViz HEAD, kept so platform links still resolve. */
 export const ORIG_HEAD_TAG = "_ORIGHEAD";
 
-/**
- * File size limits
- */
-export const MAX_FILE_SIZE_TO_SYNC = 1024 * 1024 * 20; // 20MB
-
