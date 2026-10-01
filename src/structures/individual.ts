@@ -46,6 +46,8 @@ interface IIndividualStructure
 	_TREEVIZ_FS_IGNORE?: Common;
 	_FS_LINK?: Common;
 	_FS_ID?: Common;
+	/** Same person in another TreeViz tree: `<treeUniqueId> <@xref@>`. */
+	_CON_INDI?: Common;
 
 	INDIVIDUALINTERNALHYPERLINK?: Common;
 }
