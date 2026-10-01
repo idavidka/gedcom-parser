@@ -87,7 +87,7 @@ interface Tags {
 	_GUESSEDORIGINAL?: Common;
 	_FS_LINK?: Common; // Legacy: FamilySearch link (now stored in WWW with _IS_FS Y marker)
 	_FS_ID?: Common; // FamilySearch ID
-	_CON_INDI?: Common; // Same person in another TreeViz tree
+	_TREEVIZ_CON_ID?: Common; // Same person in another TreeViz tree
 	_CREATED_AT?: Common; // DATE: day TreeViz created this person
 	_FS_MATCH?: Common; // Legacy: FamilySearch Matches (now stored in MATCH with _IS_FS Y marker)
 	_FS_SOUR?: Common; // Legacy: FamilySearch Sources marker (now _IS_FS Y)
