@@ -1614,6 +1614,26 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			}
 		}
 
+		const fromCache = await resolveLocalMediaUrl("profile-primary", {
+			person: this.id,
+			tree: this.getTreeId?.(),
+			treeName: this.getTreeName?.(),
+			treeAliases,
+			imgId: "primary",
+		});
+		if (fromCache && isRemoteOrEmbeddedMediaUrl(fromCache)) {
+			const fromIdb = {
+				file: fromCache,
+				isPrimary: true,
+			};
+			profilePictureCache<ProfilePicture>(
+				this._gedcom,
+				cacheKey,
+				fromIdb
+			);
+			return fromIdb;
+		}
+
 		const mediaList = await this.multimedia(namespace);
 
 		if (!mediaList) {
@@ -1666,10 +1686,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			...candidates.filter((media) => !media.isPrimary),
 		];
 
-		for (const media of ordered) {
-			if (onlyPrimary && !media.isPrimary) {
-				break;
-			}
+		const tryMedia = async (media: (typeof ordered)[number]) => {
 			const result = await toDisplayableProfile(media, !!media.isPrimary);
 			if (result) {
 				profilePictureCache<ProfilePicture>(
@@ -1678,6 +1695,27 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					result
 				);
 				return result;
+			}
+			return undefined;
+		};
+
+		for (const media of ordered) {
+			if (onlyPrimary && !media.isPrimary) {
+				break;
+			}
+			const result = await tryMedia(media);
+			if (result) {
+				return result;
+			}
+		}
+
+		// Many GEDCOMs never set `_PRIM`. Still show the first cached image.
+		if (onlyPrimary) {
+			for (const media of ordered) {
+				const result = await tryMedia(media);
+				if (result) {
+					return result;
+				}
 			}
 		}
 
