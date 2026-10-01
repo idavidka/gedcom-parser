@@ -17,6 +17,54 @@ export type MediaContentLookup = {
 	person?: string;
 	tree?: string;
 	treeName?: string;
+	/** Extra tree identities (uniqueId, FILE, Ancestry RIN, …) for IDB aliases. */
+	treeAliases?: string[];
+};
+
+const trimIdentity = (value?: unknown) =>
+	typeof value === "string" ? value.trim() : "";
+
+/**
+ * Tree-id / tree-name values that may appear in `{tree}_{name}:person:img`
+ * IndexedDB keys. UniqueId-keyed Redux still has to find filename-keyed
+ * records written before persist isolation.
+ */
+export const collectMediaTreeAliases = (node: {
+	getTreeId?: () => string | undefined;
+	getTreeName?: () => string | undefined;
+	getFromSourceHeads?: <T = unknown>(path: string) => T | undefined;
+}): string[] => {
+	const fromHeads = node.getFromSourceHeads
+		? [
+				node.getFromSourceHeads<string>("SOUR._TID.value"),
+				node.getFromSourceHeads<string>("SOUR._TREE.RIN.value"),
+				node.getFromSourceHeads<string>("SOUR._TREE.value"),
+				node.getFromSourceHeads<string>("FILE.value"),
+				node.getFromSourceHeads<string>("_EXPORTED_FROM_SITE_ID.value"),
+			]
+		: [];
+	const file = trimIdentity(fromHeads[3]);
+	const fileBase = file
+		.replace(/\.ged(com)?$/i, "")
+		.replace(/_/g, " ")
+		.trim();
+	const seen = new Set<string>();
+	const out: string[] = [];
+	for (const raw of [
+		node.getTreeId?.(),
+		node.getTreeName?.(),
+		...fromHeads,
+		fileBase,
+		file.replace(/\.ged(com)?$/i, ""),
+	]) {
+		const value = trimIdentity(raw);
+		if (!value || seen.has(value)) {
+			continue;
+		}
+		seen.add(value);
+		out.push(value);
+	}
+	return out;
 };
 
 export type MediaContentResult = {

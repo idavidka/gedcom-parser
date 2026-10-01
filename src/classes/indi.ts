@@ -49,6 +49,7 @@ import { getFamilyWith } from "../utils/get-family-with";
 import { PlaceType, getPlaces } from "../utils/get-places";
 import type { Place } from "../utils/get-places";
 import {
+	collectMediaTreeAliases,
 	isRemoteOrEmbeddedMediaUrl,
 	resolveLocalMediaUrl,
 } from "../utils/local-media";
@@ -1580,6 +1581,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		}
 
 		const cacheKey = this.id;
+		const treeAliases = collectMediaTreeAliases(this);
 		const cached = profilePictureCache<ProfilePicture | undefined>(
 			this._gedcom,
 			cacheKey
@@ -1593,6 +1595,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					person: this.id,
 					tree: this.getTreeId?.(),
 					treeName: this.getTreeName?.(),
+					treeAliases,
 				});
 				if (
 					resolvedCached &&
@@ -1639,6 +1642,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				person: media.person || this.id,
 				tree: media.tree || this.getTreeId?.(),
 				treeName: this.getTreeName?.(),
+				treeAliases,
 			});
 			if (!resolvedFile || !isRemoteOrEmbeddedMediaUrl(resolvedFile)) {
 				return undefined;
