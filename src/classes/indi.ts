@@ -18,7 +18,11 @@ import type { Language } from "../kinship-translator/types";
 import type IEventDetailStructure from "../structures/event-detail-structure";
 import type IIndividualStructure from "../structures/individual";
 import type { AncestryMedia } from "../types/ancestry-media";
-import { RelationType, PartnerType } from "../types/types";
+import {
+	isBiologicalRelation,
+	RelationType,
+	PartnerType,
+} from "../types/types";
 import type {
 	IndiKey,
 	FamKey,
@@ -330,8 +334,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				father?.id &&
 				(gens.existed[father.id] === Existed.YES ||
 					(!drawNonBiologicalAncestors &&
-						this.getParentType(father.id) !==
-							RelationType.BIOLOGICAL))
+						!isBiologicalRelation(this.getParentType(father.id))))
 			) {
 				// console.info(
 				// 	"Father already in tree",
@@ -346,8 +349,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				mother?.id &&
 				(gens.existed[mother.id] === Existed.YES ||
 					(!drawNonBiologicalAncestors &&
-						this.getParentType(mother.id) !==
-							RelationType.BIOLOGICAL))
+						!isBiologicalRelation(this.getParentType(mother.id))))
 			) {
 				// console.info(
 				// 	"Mother already in tree",
@@ -1250,8 +1252,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			return;
 		}
 		const id = this.id.replace(/@|I/g, "");
-		const given =
-			this.toNaturalName()?.trim().split(/\s+/)[0] || id;
+		const given = this.toNaturalName()?.trim().split(/\s+/)[0] || id;
 		return `https://www.geni.com/people/${given}/${id}`;
 	}
 
@@ -1543,8 +1544,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		const ownAncestryMedia = ownObjes.some(
 			(obje) =>
 				!!obje &&
-				(isAncestryOriginObje(obje) ||
-					isAncestryOriginObje(obje.ref))
+				(isAncestryOriginObje(obje) || isAncestryOriginObje(obje.ref))
 		);
 
 		if (this.isAncestry() || ownAncestryMedia) {
@@ -2379,7 +2379,9 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			  }
 	) {
 		const asList = (value?: MultiTag | MultiTag[]) =>
-			(Array.isArray(value) ? value : [value]).filter(Boolean) as MultiTag[];
+			(Array.isArray(value) ? value : [value]).filter(
+				Boolean
+			) as MultiTag[];
 
 		const isFilterObject =
 			!!filter &&

@@ -40,6 +40,23 @@ export enum RelationType {
 	STEP = "step",
 }
 
+/**
+ * GEDCOM PEDI uses `birth`. TreeViz also stores `biological` as an alias.
+ * Adopted / foster / step / sealing are the non-biological kinds.
+ */
+export const isBiologicalRelation = (
+	value?: string | RelationType | null
+): boolean => {
+	if (!value) {
+		return true;
+	}
+	const normalized = String(value).toLowerCase();
+	return (
+		normalized === RelationType.BIOLOGICAL ||
+		normalized === RelationType.BIRTH
+	);
+};
+
 export enum PartnerType {
 	SPOUSE = "spouse",
 	PARTNER = "partner",

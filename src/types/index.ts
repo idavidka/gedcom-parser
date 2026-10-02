@@ -33,7 +33,7 @@ export type {
 	PlaceOrder,
 	LinkedPersons,
 } from "./types";
-export { RelationType, PartnerType, Range } from "./types";
+export { RelationType, PartnerType, Range, isBiologicalRelation } from "./types";
 
 // Re-export all (includes above, but explicit exports serve as documentation)
 export * from "./ancestry-media";
