@@ -1256,6 +1256,17 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		return `https://www.geni.com/people/${given}/${id}`;
 	}
 
+	/** Explicit profile URL copied from the source tree (Ancestry / MH / …). */
+	originProfileLink() {
+		const wwwTags = this.get("WWW")?.toList();
+		const tagged = wwwTags
+			?.find((wwwTag) => wwwTag.get("_IS_ORIG")?.toValue() === "Y")
+			?.toValue();
+		return typeof tagged === "string" && tagged.trim()
+			? tagged.trim()
+			: undefined;
+	}
+
 	familySearchLink() {
 		// Check new format first (WWW with _IS_FS Y marker)
 		const wwwTags = this.get("WWW")?.toList();
@@ -1687,6 +1698,10 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	}
 
 	link(poolId?: number, treeToken?: string) {
+		const origin = this.originProfileLink();
+		if (origin) {
+			return origin;
+		}
 		if (this?.isAncestry()) {
 			return this.ancestryLink();
 		}

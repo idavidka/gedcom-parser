@@ -109,6 +109,7 @@ interface Tags {
 	_FS_MATCH?: Common; // Legacy: FamilySearch Matches (now stored in MATCH with _IS_FS Y marker)
 	_FS_SOUR?: Common; // Legacy: FamilySearch Sources marker (now _IS_FS Y)
 	_IS_FS?: Common<"Y" | "N">; // Marks FamilySearch-sourced data (replaces _FS_SOUR)
+	_IS_ORIG?: Common<"Y" | "N">; // WWW is the original platform profile (other tree)
 	_IS_ORPHAN_FAMILY?: Common<"Y" | "N">;
 	MATCH?: Common; // Match entries (replaces _FS_MATCH, has _IS_FS Y marker)
 	SCORE?: Common; // Match score
