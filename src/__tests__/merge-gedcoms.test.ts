@@ -390,4 +390,75 @@ describe("mergeGedcoms Function", () => {
 			});
 		});
 	});
+
+	describe("OBJE / SOUR xref remapping", () => {
+		it("does not attach source @O1@ memories to an existing Ancestry @O1@", () => {
+			const targetGed = `0 HEAD
+1 GEDC
+2 VERS 5.5.1
+0 @I1@ INDI
+1 NAME Target /Person/
+1 _FS_ID GSLZ-V6W
+1 OBJE @O1@
+0 @O1@ OBJE
+1 FILE https://ancestry.example/marriage.jpg
+1 TITL Ancestry marriage register
+0 TRLR
+`;
+			const sourceGed = `0 HEAD
+1 GEDC
+2 VERS 5.5
+0 @I1@ INDI
+1 NAME FS /Person/
+1 _FS_ID GSLZ-V6W
+1 OBJE @O1@
+1 SOUR @S1@
+0 @O1@ OBJE
+1 _IS_FS Y
+1 _FS_ID MEM-1
+1 FILE https://api.familysearch.org/platform/memories/memories/MEM-1
+1 TITL FS memory photo
+0 @S1@ SOUR
+1 _IS_FS Y
+1 _FS_ID SRC-1
+1 TITL FS source
+0 TRLR
+`;
+			const { gedcom: target } = GedcomTree.parse(targetGed);
+			const { gedcom: source } = GedcomTree.parse(sourceGed);
+			const merged = mergeGedcoms(target, source, "_FS_ID");
+
+			const person = merged.indi("@I1@");
+			const objePointers =
+				person
+					?.get("OBJE")
+					?.toList()
+					?.values()
+					?.map((ref) => String(ref?.toValue?.() ?? "")) ?? [];
+
+			expect(objePointers).toContain("@O1@");
+			expect(objePointers.some((id) => id !== "@O1@")).toBe(true);
+
+			const ancestry = merged.obje("@O1@");
+			expect(ancestry?.get("TITL")?.toValue()).toBe(
+				"Ancestry marriage register"
+			);
+
+			const fsObjeId = objePointers.find((id) => id !== "@O1@");
+			expect(fsObjeId).toBeTruthy();
+			const fsObje = merged.obje(fsObjeId as `@O${number}@`);
+			expect(fsObje?.get("_IS_FS")?.toValue()).toBe("Y");
+			expect(fsObje?.get("TITL")?.toValue()).toBe("FS memory photo");
+
+			const sourPointers =
+				person
+					?.get("SOUR")
+					?.toList()
+					?.values()
+					?.map((ref) => String(ref?.toValue?.() ?? "")) ?? [];
+			expect(sourPointers.length).toBeGreaterThan(0);
+			const sour = merged.sour(sourPointers[0] as `@S${number}@`);
+			expect(sour?.get("_IS_FS")?.toValue()).toBe("Y");
+		});
+	});
 });

@@ -59,7 +59,7 @@ import { Objects } from "./objes";
 import type { RepoType } from "./repo";
 import type { Repositories } from "./repos";
 import type { SourType } from "./sour";
-import type { Sources } from "./sours";
+import { Sources } from "./sours";
 import type { SubmType } from "./subm";
 import type { Submitters } from "./subms";
 
@@ -1345,6 +1345,8 @@ const valueToString = (value: Common | List | undefined): string => {
  * - Source individuals are always assigned new unique IDs to avoid conflicts
  * - When individuals match by strategy, they are merged (data and relationships combined)
  * - All family relationships (FAMS/FAMC) are preserved with updated ID references
+ * - Top-level OBJE / SOUR records are copied with remapped xrefs so FS (or other)
+ *   `@O1@` memories do not collide with Ancestry `@O1@` media already in the tree
  */
 export const mergeGedcoms = (
 	targetGedcom: GedComType,
@@ -1359,6 +1361,67 @@ export const mergeGedcoms = (
 
 	// Track matching: sourceIndiId -> targetIndiId (for individuals that match by strategy)
 	const matchMap = new Map<IndiKey, IndiKey>();
+
+	const isXref = (value?: string) =>
+		!!value && /^@[A-Za-z0-9_]+@$/.test(value.trim());
+
+	const allocateTopLevelIds = (
+		sourceList:
+			| { forEach: (cb: (item: unknown, id: string) => void) => void }
+			| undefined,
+		targetList:
+			| { forEach: (cb: (item: unknown, id: string) => void) => void }
+			| undefined,
+		prefix: "O" | "S"
+	) => {
+		const used = new Set<string>();
+		targetList?.forEach((_item, id) => {
+			used.add(String(id));
+		});
+		// Pending allocations in this merge pass
+		idMap.forEach((mapped) => {
+			used.add(String(mapped));
+		});
+		sourceList?.forEach((_item, sourceId) => {
+			const sid = String(sourceId);
+			if (!sid || idMap.has(sid as IdType)) {
+				return;
+			}
+			let newId = sid;
+			if (used.has(sid)) {
+				newId = nextRecordId([...used], prefix);
+			}
+			used.add(newId);
+			idMap.set(sid as IdType, newId as IdType);
+		});
+	};
+
+	const remapIndiPointers = (
+		clonedIndi: IndiType,
+		sourceIndi: IndiType,
+		tag: MultiTag
+	) => {
+		const sourcePointers = sourceIndi.get(tag)?.toList();
+		if (!sourcePointers?.length) {
+			return;
+		}
+		clonedIndi.remove(tag);
+		sourcePointers.forEach((ref) => {
+			const oldVal = String(ref?.toValue?.() ?? "").trim();
+			if (!oldVal) {
+				return;
+			}
+			const newVal = isXref(oldVal)
+				? (idMap.get(oldVal as IdType) as string | undefined)
+				: oldVal;
+			if (!newVal) {
+				return;
+			}
+			const pointer = createCommon(mergedGedcom, undefined, clonedIndi);
+			pointer.value = newVal;
+			clonedIndi.assign(tag, pointer, true);
+		});
+	};
 
 	// Get source individuals and families
 	const sourceIndis = sourceGedcom.indis();
@@ -1512,6 +1575,10 @@ export const mergeGedcoms = (
 		}
 	});
 
+	// Step 2b: Allocate unique IDs for top-level OBJE / SOUR from source
+	allocateTopLevelIds(sourceGedcom.objes(), mergedGedcom.objes(), "O");
+	allocateTopLevelIds(sourceGedcom.sours(), mergedGedcom.sours(), "S");
+
 	// Step 3: Clone and remap individuals from source
 	const clonedIndis = new Map<IndiKey, IndiType>();
 	sourceIndis?.forEach((sourceIndi) => {
@@ -1544,7 +1611,37 @@ export const mergeGedcoms = (
 		clonedFams.set(sourceFam.id, clonedFam);
 	});
 
-	// Step 5: Update FAMS and FAMC references in cloned individuals
+	// Step 4b: Copy top-level OBJE / SOUR into the target under remapped IDs
+	sourceGedcom.objes()?.forEach((sourceObje, sourceId) => {
+		if (!sourceObje || !sourceId) return;
+		const newId = idMap.get(sourceId as IdType) as ObjeKey | undefined;
+		if (!newId) return;
+		const cloned = sourceObje.clone(false) as ObjeType;
+		cloned.id = newId;
+		cloned.setGedcom(mergedGedcom);
+		const existing = mergedGedcom.objes();
+		const list = existing ?? new Objects();
+		if (!existing) {
+			mergedGedcom.set("@@OBJE" as MultiTag, list);
+		}
+		list.item(newId, cloned);
+	});
+	sourceGedcom.sours()?.forEach((sourceSour, sourceId) => {
+		if (!sourceSour || !sourceId) return;
+		const newId = idMap.get(sourceId as IdType) as SourKey | undefined;
+		if (!newId) return;
+		const cloned = sourceSour.clone(false) as SourType;
+		cloned.id = newId;
+		cloned.setGedcom(mergedGedcom);
+		const existing = mergedGedcom.sours();
+		const list = existing ?? new Sources();
+		if (!existing) {
+			mergedGedcom.set("@@SOUR" as MultiTag, list);
+		}
+		list.item(newId, cloned);
+	});
+
+	// Step 5: Update FAMS, FAMC, OBJE, SOUR references in cloned individuals
 	clonedIndis.forEach((clonedIndi, originalId) => {
 		const sourceIndi = sourceIndis?.item(originalId);
 		if (!sourceIndi) return;
@@ -1586,6 +1683,9 @@ export const mergeGedcoms = (
 				}
 			}
 		});
+
+		remapIndiPointers(clonedIndi, sourceIndi, "OBJE");
+		remapIndiPointers(clonedIndi, sourceIndi, "SOUR");
 	});
 
 	// Step 6: Update HUSB, WIFE, and CHIL references in cloned families

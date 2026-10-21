@@ -132,7 +132,7 @@ export const makePointer = (
 
 export const nextRecordId = (
 	ids: Array<string | undefined>,
-	prefix: "I" | "F" | "O" | "N"
+	prefix: "I" | "F" | "O" | "N" | "S"
 ) => {
 	let max = 0;
 	ids.forEach((id) => {
