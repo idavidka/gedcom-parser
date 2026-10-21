@@ -199,6 +199,7 @@ interface Tags {
 	ORDI?: Common; // Ordinance (religious)
 	ORDL?: Common; // Ordination (LDS)
 	ORDN?: Common; // Ordination (non-LDS)
+	PAGE?: Common; // Position/page within a source (SOURCE_CITATION)
 	PEDI?: Common; // Pedigree
 	PEDT?: Common; // GEDCOM 7 pedigree (treated as PEDI)
 	PART?: Common; // Partner
