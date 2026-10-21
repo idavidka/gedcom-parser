@@ -251,6 +251,12 @@ const GedcomTree = {
 			!linesJoined.includes("1 _IS_PURGED true") &&
 			getRawSize(linesJoined) > maxFileSizeToPurge
 		) {
+			// join("\n") leaves no trailing newline, but the purge regexes
+			// match line-terminated blocks — normalize so the last tag is
+			// eligible too (e.g. a trailing INDI NOTE).
+			if (!linesJoined.endsWith("\n")) {
+				linesJoined += "\n";
+			}
 			linesJoined = linesJoined
 				.replace(
 					/1\s(NOTE|OBJE|SOUR)([^\n]*\n)([23456789]\s.+\n)*/gm,
