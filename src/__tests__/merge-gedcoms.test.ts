@@ -450,6 +450,18 @@ describe("mergeGedcoms Function", () => {
 			expect(fsObje?.get("_IS_FS")?.toValue()).toBe("Y");
 			expect(fsObje?.get("TITL")?.toValue()).toBe("FS memory photo");
 
+			// Remapped INDI→OBJE pointers must keep refType so FILE resolves
+			// through the proxy (gallery / multimedia).
+			const fsPointer = person
+				?.get("OBJE")
+				?.toList()
+				?.values()
+				?.find((ref) => String(ref?.toValue?.() ?? "") === fsObjeId);
+			expect(fsPointer?.refType).toBe("OBJE");
+			expect(fsPointer?.get("FILE")?.toValue()).toBe(
+				"https://api.familysearch.org/platform/memories/memories/MEM-1"
+			);
+
 			const sourPointers =
 				person
 					?.get("SOUR")
@@ -459,6 +471,99 @@ describe("mergeGedcoms Function", () => {
 			expect(sourPointers.length).toBeGreaterThan(0);
 			const sour = merged.sour(sourPointers[0] as `@S${number}@`);
 			expect(sour?.get("_IS_FS")?.toValue()).toBe("Y");
+			const sourPointer = person?.get("SOUR")?.toList()?.values()?.[0];
+			expect(sourPointer?.refType).toBe("SOUR");
+		});
+
+		it("reuses OBJE / SOUR with the same _FS_ID on re-import (no gallery dupes)", () => {
+			const targetGed = `0 HEAD
+1 GEDC
+2 VERS 5.5.1
+0 @I1@ INDI
+1 NAME Target /Person/
+1 _FS_ID GSLZ-V6W
+1 OBJE @O2@
+1 SOUR @S2@
+0 @O2@ OBJE
+1 _IS_FS Y
+1 _FS_ID MEM-1
+1 FILE https://example.com/old-memory.jpg
+1 TITL FS memory photo
+0 @S2@ SOUR
+1 _IS_FS Y
+1 _FS_ID SRC-1
+1 TITL FS source
+1 WWW https://www.familysearch.org/ark:/61903/1:1:ABC
+1 OBJE @O2@
+0 TRLR
+`;
+			const sourceGed = `0 HEAD
+1 GEDC
+2 VERS 5.5
+0 @I1@ INDI
+1 NAME FS /Person/
+1 _FS_ID GSLZ-V6W
+1 OBJE @O1@
+1 SOUR @S1@
+0 @O1@ OBJE
+1 _IS_FS Y
+1 _FS_ID MEM-1
+1 FILE https://example.com/new-memory.jpg
+1 WWW https://www.familysearch.org/photos/artifacts/MEM-1
+1 TITL FS memory photo
+0 @S1@ SOUR
+1 _IS_FS Y
+1 _FS_ID SRC-1
+1 TITL FS source again
+1 WWW https://www.familysearch.org/ark:/61903/1:1:ABC
+1 OBJE @O1@
+0 TRLR
+`;
+			const { gedcom: target } = GedcomTree.parse(targetGed);
+			const { gedcom: source } = GedcomTree.parse(sourceGed);
+			const merged = mergeGedcoms(target, source, "_FS_ID");
+
+			const person = merged.indi("@I1@");
+			const objePointers =
+				person
+					?.get("OBJE")
+					?.toList()
+					?.values()
+					?.map((ref) => String(ref?.toValue?.() ?? "")) ?? [];
+			expect(objePointers).toEqual(["@O2@"]);
+
+			const sourPointers =
+				person
+					?.get("SOUR")
+					?.toList()
+					?.values()
+					?.map((ref) => String(ref?.toValue?.() ?? "")) ?? [];
+			expect(sourPointers).toEqual(["@S2@"]);
+
+			const fsObjes: string[] = [];
+			merged.objes()?.forEach((obje, id) => {
+				if (obje?.get("_FS_ID")?.toValue() === "MEM-1") {
+					fsObjes.push(String(id));
+				}
+			});
+			expect(fsObjes).toEqual(["@O2@"]);
+
+			const fsSours: string[] = [];
+			merged.sours()?.forEach((sour, id) => {
+				if (sour?.get("_FS_ID")?.toValue() === "SRC-1") {
+					fsSours.push(String(id));
+				}
+			});
+			expect(fsSours).toEqual(["@S2@"]);
+
+			// Re-import fills missing WWW on the reused OBJE.
+			expect(merged.obje("@O2@")?.get("WWW")?.toValue()).toBe(
+				"https://www.familysearch.org/photos/artifacts/MEM-1"
+			);
+			// Existing FILE kept (already a binary URL).
+			expect(merged.obje("@O2@")?.get("FILE")?.toValue()).toBe(
+				"https://example.com/old-memory.jpg"
+			);
 		});
 	});
 });

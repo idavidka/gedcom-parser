@@ -38,6 +38,8 @@ export type MediaList = Record<
 		url: string;
 		contentType: string;
 		downloadName: string;
+		/** Vendor / FamilySearch web page for this memory or source (open in browser). */
+		originUrl?: string;
 	}
 >;
 

@@ -1347,6 +1347,8 @@ const valueToString = (value: Common | List | undefined): string => {
  * - All family relationships (FAMS/FAMC) are preserved with updated ID references
  * - Top-level OBJE / SOUR records are copied with remapped xrefs so FS (or other)
  *   `@O1@` memories do not collide with Ancestry `@O1@` media already in the tree
+ * - Re-import: OBJE / SOUR with the same `_FS_ID` reuse the existing target record
+ *   (no duplicate sources / memories / images in the gallery)
  */
 export const mergeGedcoms = (
 	targetGedcom: GedComType,
@@ -1362,29 +1364,60 @@ export const mergeGedcoms = (
 	// Track matching: sourceIndiId -> targetIndiId (for individuals that match by strategy)
 	const matchMap = new Map<IndiKey, IndiKey>();
 
+	/** Source OBJE/SOUR ids that map onto a pre-existing target record (`_FS_ID`). */
+	const reusedTopLevelIds = new Set<string>();
+
 	const isXref = (value?: string) =>
 		!!value && /^@[A-Za-z0-9_]+@$/.test(value.trim());
 
+	const recordFsId = (item: unknown): string => {
+		const node = item as
+			| { get?: (tag: MultiTag) => { toValue?: () => unknown } | undefined }
+			| undefined;
+		const value = node?.get?.("_FS_ID")?.toValue?.();
+		return typeof value === "string" ? value.trim() : "";
+	};
+
 	const allocateTopLevelIds = (
 		sourceList:
-			| { forEach: (cb: (item: unknown, id: string) => void) => void }
+			| {
+					forEach: (
+						cb: (item: unknown, id: string) => void
+					) => void;
+			  }
 			| undefined,
 		targetList:
-			| { forEach: (cb: (item: unknown, id: string) => void) => void }
+			| {
+					forEach: (
+						cb: (item: unknown, id: string) => void
+					) => void;
+			  }
 			| undefined,
 		prefix: "O" | "S"
 	) => {
 		const used = new Set<string>();
-		targetList?.forEach((_item, id) => {
+		const byFsId = new Map<string, string>();
+		targetList?.forEach((item, id) => {
 			used.add(String(id));
+			const fsId = recordFsId(item);
+			if (fsId && !byFsId.has(fsId)) {
+				byFsId.set(fsId, String(id));
+			}
 		});
 		// Pending allocations in this merge pass
 		idMap.forEach((mapped) => {
 			used.add(String(mapped));
 		});
-		sourceList?.forEach((_item, sourceId) => {
+		sourceList?.forEach((item, sourceId) => {
 			const sid = String(sourceId);
 			if (!sid || idMap.has(sid as IdType)) {
+				return;
+			}
+			const fsId = recordFsId(item);
+			if (fsId && byFsId.has(fsId)) {
+				const existingId = byFsId.get(fsId)!;
+				idMap.set(sid as IdType, existingId as IdType);
+				reusedTopLevelIds.add(sid);
 				return;
 			}
 			let newId = sid;
@@ -1393,6 +1426,9 @@ export const mergeGedcoms = (
 			}
 			used.add(newId);
 			idMap.set(sid as IdType, newId as IdType);
+			if (fsId) {
+				byFsId.set(fsId, newId);
+			}
 		});
 	};
 
@@ -1419,6 +1455,11 @@ export const mergeGedcoms = (
 			}
 			const pointer = createCommon(mergedGedcom, undefined, clonedIndi);
 			pointer.value = newVal;
+			// Without refType, proxy/`ref` cannot resolve `@On@` → top-level
+			// OBJE/SOUR, so gallery FILE URLs stay empty after merge.
+			if (tag === "OBJE" || tag === "SOUR") {
+				pointer.refType = tag;
+			}
 			clonedIndi.assign(tag, pointer, true);
 		});
 	};
@@ -1611,11 +1652,65 @@ export const mergeGedcoms = (
 		clonedFams.set(sourceFam.id, clonedFam);
 	});
 
-	// Step 4b: Copy top-level OBJE / SOUR into the target under remapped IDs
+	// Step 4b: Copy top-level OBJE / SOUR into the target under remapped IDs.
+	// Skip records reused by `_FS_ID` (re-import) — keep the existing target
+	// record and only remap INDI/SOUR pointers onto it.
+	const fillMissingTag = (
+		target: {
+			get: (t: MultiTag) => { toValue?: () => unknown } | undefined;
+			set: (t: MultiTag, v: string) => unknown;
+		},
+		source: {
+			get: (t: MultiTag) => { toValue?: () => unknown } | undefined;
+		},
+		tag: MultiTag
+	) => {
+		const current = target.get(tag)?.toValue?.();
+		if (
+			current !== undefined &&
+			current !== null &&
+			String(current).trim()
+		) {
+			return;
+		}
+		const next = source.get(tag)?.toValue?.();
+		if (typeof next === "string" && next.trim()) {
+			target.set(tag, next);
+		}
+	};
+
+	const isBinaryMediaUrl = (url: string) =>
+		/\.(jpe?g|png|gif|webp|tif{1,2}|pdf)(\?|$)/i.test(url) ||
+		/dist\.jpg/i.test(url);
+
 	sourceGedcom.objes()?.forEach((sourceObje, sourceId) => {
 		if (!sourceObje || !sourceId) return;
+		const sid = String(sourceId);
 		const newId = idMap.get(sourceId as IdType) as ObjeKey | undefined;
 		if (!newId) return;
+		if (reusedTopLevelIds.has(sid)) {
+			const existingObje = mergedGedcom.obje(newId);
+			if (existingObje) {
+				// Keep identity; fill empty viewer fields; upgrade non-image FILE.
+				fillMissingTag(existingObje, sourceObje, "WWW");
+				fillMissingTag(existingObje, sourceObje, "TITL");
+				const curFile = String(
+					existingObje.get("FILE")?.toValue?.() ?? ""
+				).trim();
+				const nextFile = String(
+					sourceObje.get("FILE")?.toValue?.() ?? ""
+				).trim();
+				if (
+					nextFile &&
+					(!curFile ||
+						(isBinaryMediaUrl(nextFile) &&
+							!isBinaryMediaUrl(curFile)))
+				) {
+					existingObje.set("FILE", nextFile);
+				}
+			}
+			return;
+		}
 		const cloned = sourceObje.clone(false) as ObjeType;
 		cloned.id = newId;
 		cloned.setGedcom(mergedGedcom);
@@ -1628,11 +1723,39 @@ export const mergeGedcoms = (
 	});
 	sourceGedcom.sours()?.forEach((sourceSour, sourceId) => {
 		if (!sourceSour || !sourceId) return;
+		const sid = String(sourceId);
 		const newId = idMap.get(sourceId as IdType) as SourKey | undefined;
 		if (!newId) return;
+		if (reusedTopLevelIds.has(sid)) {
+			const existingSour = mergedGedcom.sour(newId);
+			if (existingSour) {
+				fillMissingTag(existingSour, sourceSour, "WWW");
+				fillMissingTag(existingSour, sourceSour, "TITL");
+				fillMissingTag(existingSour, sourceSour, "PAGE");
+			}
+			return;
+		}
 		const cloned = sourceSour.clone(false) as SourType;
 		cloned.id = newId;
 		cloned.setGedcom(mergedGedcom);
+		// Remap nested `1 OBJE @On@` so FS source images do not keep pointing
+		// at Ancestry `@O1@` after top-level OBJE ids are reallocated.
+		const sourObjes = cloned.get("OBJE")?.toList();
+		if (sourObjes?.length) {
+			cloned.remove("OBJE");
+			sourObjes.forEach((ref) => {
+				const oldVal = String(ref?.toValue?.() ?? "").trim();
+				if (!oldVal) return;
+				const newVal = isXref(oldVal)
+					? (idMap.get(oldVal as IdType) as string | undefined)
+					: oldVal;
+				if (!newVal) return;
+				const pointer = createCommon(mergedGedcom, undefined, cloned);
+				pointer.value = newVal;
+				pointer.refType = "OBJE";
+				cloned.assign("OBJE", pointer, true);
+			});
+		}
 		const existing = mergedGedcom.sours();
 		const list = existing ?? new Sources();
 		if (!existing) {
@@ -1660,6 +1783,7 @@ export const mergeGedcoms = (
 						clonedIndi
 					);
 					newFamRef.value = newFamId;
+					newFamRef.refType = "FAM";
 					clonedIndi.assign("FAMS", newFamRef, true);
 				}
 			}
@@ -1679,6 +1803,7 @@ export const mergeGedcoms = (
 						clonedIndi
 					);
 					newFamRef.value = newFamId;
+					newFamRef.refType = "FAM";
 					clonedIndi.assign("FAMC", newFamRef, true);
 				}
 			}
@@ -1704,6 +1829,7 @@ export const mergeGedcoms = (
 					clonedFam
 				);
 				newHusbRef.value = newHusbId;
+				newHusbRef.refType = "INDI";
 				clonedFam.set("HUSB", newHusbRef);
 			}
 		}
@@ -1719,6 +1845,7 @@ export const mergeGedcoms = (
 					clonedFam
 				);
 				newWifeRef.value = newWifeId;
+				newWifeRef.refType = "INDI";
 				clonedFam.set("WIFE", newWifeRef);
 			}
 		}
@@ -1737,6 +1864,7 @@ export const mergeGedcoms = (
 						clonedFam
 					);
 					newChildRef.value = newChildId;
+					newChildRef.refType = "INDI";
 					clonedFam.assign("CHIL", newChildRef, true);
 				}
 			}

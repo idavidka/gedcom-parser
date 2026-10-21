@@ -156,3 +156,147 @@ export const objeXrefKey = (
 
 export const objeNoteValue = (obje?: ObjeGetter): string =>
 	mediaIdValue(obje, "FILE.NOTE") || mediaIdValue(obje, "NOTE") || "";
+
+const FS_WEB_RE = /familysearch\.org/i;
+const FS_ARK_ID_RE = /^(?:ark:\/[^/]+\/)?([123]:[12]:[A-Za-z0-9-]+)$/i;
+
+type TagNode = ObjeGetter & {
+	toValue?: () => unknown;
+	id?: string;
+	ref?: ObjeGetter;
+	get?: (path: MultiTag) => TagNode | ListLike | undefined;
+};
+
+type ListLike = {
+	forEach?: (cb: (item: TagNode | undefined) => void) => void;
+	values?: () => Array<TagNode | undefined>;
+};
+
+type IndiOriginNode = {
+	get?: (path: MultiTag) => TagNode | ListLike | undefined;
+};
+
+const listItems = (list?: ListLike): Array<TagNode | undefined> => {
+	if (!list) {
+		return [];
+	}
+	if (typeof list.values === "function") {
+		return list.values();
+	}
+	if (typeof list.forEach === "function") {
+		const items: Array<TagNode | undefined> = [];
+		list.forEach((item) => items.push(item));
+		return items;
+	}
+	return [];
+};
+
+const toList = (node?: TagNode | ListLike): ListLike | undefined => {
+	if (!node) {
+		return undefined;
+	}
+	const maybe = node as ListLike & { toList?: () => ListLike };
+	if (typeof maybe.toList === "function") {
+		return maybe.toList();
+	}
+	if (
+		typeof maybe.values === "function" ||
+		typeof maybe.forEach === "function"
+	) {
+		return maybe;
+	}
+	return undefined;
+};
+
+const normalizeFsWebUrl = (url: string): string | undefined => {
+	const trimmed = url.trim();
+	if (!trimmed || !FS_WEB_RE.test(trimmed)) {
+		return undefined;
+	}
+	// Prefer human viewer pages over DAS binaries / API hosts.
+	if (/\/dist\.jpg|\/service\/records\/storage\/|\/platform\//i.test(trimmed)) {
+		return undefined;
+	}
+	return trimmed;
+};
+
+/**
+ * FamilySearch viewer URL for an OBJE (WWW, linked SOUR WWW, or `_FS_ID`).
+ * Used by the profile gallery “View on FamilySearch” action.
+ */
+export const familySearchMediaOriginUrl = (
+	obje?: TagNode,
+	indi?: IndiOriginNode
+): string | undefined => {
+	if (!obje) {
+		return undefined;
+	}
+	const resolved =
+		obje.ref && typeof obje.toValue?.() === "string" ? obje.ref : obje;
+
+	const directWww = mediaIdValue(resolved, "WWW") || mediaIdValue(obje, "WWW");
+	const fromWww = directWww ? normalizeFsWebUrl(directWww) : undefined;
+	if (fromWww) {
+		return fromWww;
+	}
+
+	const objeKey = objeXrefKey(obje);
+	const sourItems = listItems(toList(indi?.get?.("SOUR")));
+
+	for (const sour of sourItems) {
+		if (!sour) continue;
+		const sourWww = mediaIdValue(sour, "WWW");
+		const normalized = sourWww ? normalizeFsWebUrl(sourWww) : undefined;
+		if (!normalized) continue;
+
+		const sourIsFs =
+			mediaIdValue(sour, "_IS_FS") === "Y" || FS_WEB_RE.test(normalized);
+		if (!sourIsFs) continue;
+
+		let linksThisObje = false;
+		for (const ref of listItems(toList(sour.get?.("OBJE")))) {
+			if (ref && objeXrefKey(ref) === objeKey) {
+				linksThisObje = true;
+				break;
+			}
+		}
+		const sourFsId = mediaIdValue(sour, "_FS_ID");
+		const objeFsId =
+			mediaIdValue(resolved, "_FS_ID") || mediaIdValue(obje, "_FS_ID");
+		if (
+			linksThisObje ||
+			(sourFsId && objeFsId && sourFsId === objeFsId)
+		) {
+			return normalized;
+		}
+	}
+
+	const isFs =
+		mediaIdValue(resolved, "_IS_FS") === "Y" ||
+		mediaIdValue(obje, "_IS_FS") === "Y";
+	const fsId =
+		mediaIdValue(resolved, "_FS_ID") || mediaIdValue(obje, "_FS_ID");
+	if (!isFs || !fsId) {
+		return undefined;
+	}
+
+	const arkMatch = fsId.match(FS_ARK_ID_RE);
+	if (arkMatch?.[1]) {
+		return `https://www.familysearch.org/ark:/61903/${arkMatch[1]}`;
+	}
+	if (/^\d+$/.test(fsId)) {
+		return `https://www.familysearch.org/photos/artifacts/${fsId}`;
+	}
+
+	for (const sour of sourItems) {
+		if (!sour) continue;
+		if (mediaIdValue(sour, "_FS_ID") !== fsId) continue;
+		const sourWww = mediaIdValue(sour, "WWW");
+		const normalized = sourWww ? normalizeFsWebUrl(sourWww) : undefined;
+		if (normalized) {
+			return normalized;
+		}
+	}
+
+	return undefined;
+};

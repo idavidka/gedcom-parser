@@ -71,6 +71,16 @@ export const mergeMediaListsByObjeKey = (
 		for (const [id, item] of Object.entries(list)) {
 			const objeKey = item.key ? String(item.key) : "";
 			if (objeKey && seen.has(objeKey)) {
+				// First list wins the slot; still fill originUrl from later
+				// resolvers (e.g. universalMedia after ancestryMedia).
+				if (item.originUrl) {
+					const existing = Object.values(merged).find(
+						(entry) => entry.key === objeKey
+					);
+					if (existing && !existing.originUrl) {
+						existing.originUrl = item.originUrl;
+					}
+				}
 				continue;
 			}
 			merged[id] = item;

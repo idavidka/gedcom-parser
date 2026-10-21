@@ -60,6 +60,7 @@ import { implemented } from "../utils/logger";
 import {
 	ANCESTRY_TREE_MEDIA_NAMESPACE,
 	ancestryMediaFileUrl,
+	familySearchMediaOriginUrl,
 	getFileExtension,
 	isAncestryOriginObje,
 	isImageFormat,
@@ -1102,6 +1103,10 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 					if (url && imgId) {
 						const id = `${tree || "gedzip"}-${this.id}-${imgId}`;
+						const originUrl = familySearchMediaOriginUrl(
+							objeRef ?? obje,
+							this
+						);
 						list[id] = {
 							key,
 							isPrimary,
@@ -1119,6 +1124,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 								(title as string) ||
 								key.replaceAll("@", "").toString()
 							).replaceAll(" ", "-")}`,
+							...(originUrl ? { originUrl } : {}),
 						};
 					}
 				})
@@ -1478,9 +1484,21 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			return list;
 		}
 
-		// Get only level 1 OBJE tags (directly under INDI - person's media)
-		const objeList = this.get("OBJE")?.toList().copy() as
-			Objects | undefined;
+		// Level 1 OBJE (person media) plus SOUR-linked OBJE (FS registry pages,
+		// Geni source scans, etc.) so gallery shows imported source images.
+		let objeList = this.get("OBJE")?.toList().copy() as Objects | undefined;
+		const sourList = this.get("SOUR")?.toList();
+		sourList?.forEach((sour) => {
+			const sourObje = sour?.get("OBJE")?.toList() as Objects | undefined;
+			if (!sourObje?.length) {
+				return;
+			}
+			if (!objeList) {
+				objeList = sourObje.copy() as Objects;
+			} else {
+				objeList.merge(sourObje);
+			}
+		});
 
 		if (!objeList || objeList.length === 0) {
 			return list;
@@ -1490,6 +1508,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		const rfn = this.get("RFN")?.toValue() as string | undefined;
 		const treeId = this.getUniversalTreeId() || rfn || "universal";
 
+		const seenFsIds = new Set<string>();
 		objeList.forEach((obje, index) => {
 			if (!obje) {
 				return;
@@ -1498,6 +1517,16 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 			const key = objeXrefKey(obje, index);
 
 			obje.standardizeMedia();
+
+			// Skip duplicate FS memories/sources already linked under another xref.
+			const fsId = obje?.get("_FS_ID")?.toValue?.();
+			if (typeof fsId === "string" && fsId.trim()) {
+				const normalized = fsId.trim();
+				if (seenFsIds.has(normalized)) {
+					return;
+				}
+				seenFsIds.add(normalized);
+			}
 
 			// Get media information
 			const isPrimary = obje?.get("_PRIM")?.toValue() === "Y";
@@ -1524,6 +1553,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 				}`;
 
 				const id = `${treeId}-${this.id}-${imgId}`;
+				const originUrl = familySearchMediaOriginUrl(obje, this);
 				list[id] = {
 					isPrimary,
 					key,
@@ -1540,6 +1570,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 					}_${(
 						(title as string) || key.replaceAll("@", "").toString()
 					).replaceAll(" ", "-")}`,
+					...(originUrl ? { originUrl } : {}),
 				};
 			}
 		});
@@ -1578,7 +1609,28 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		// pictures keep working after a vendor GEDCOM is re-exported.
 		lists.push(this.universalMedia());
 
-		return mergeMediaListsByObjeKey(...lists);
+		const merged = mergeMediaListsByObjeKey(...lists);
+		// Collapse re-import duplicates that share FamilySearch `_FS_ID`
+		// but live under different `@On@` xrefs.
+		const seenFsIds = new Set<string>();
+		const deduped: MediaList = {};
+		for (const [id, media] of Object.entries(merged ?? {})) {
+			const xref = media.key ? String(media.key) : "";
+			const top =
+				xref && this._gedcom
+					? this._gedcom.obje(xref as ObjeKey)
+					: undefined;
+			const fsId = top?.get("_FS_ID")?.toValue?.();
+			if (typeof fsId === "string" && fsId.trim()) {
+				const normalized = fsId.trim();
+				if (seenFsIds.has(normalized)) {
+					continue;
+				}
+				seenFsIds.add(normalized);
+			}
+			deduped[id] = media;
+		}
+		return deduped;
 	}
 
 	async getProfilePicture(
