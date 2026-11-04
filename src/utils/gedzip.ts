@@ -127,7 +127,10 @@ export const buildGedzip = async (
 		zip.file(file.path, file.content, { base64: file.base64 });
 	}
 
-	zip.file(GEDZIP_GEDCOM_ENTRY, rewriteGedcomFilePaths(gedcomText, urlToPath));
+	zip.file(
+		GEDZIP_GEDCOM_ENTRY,
+		rewriteGedcomFilePaths(gedcomText, urlToPath)
+	);
 
 	return zip.generateAsync({ type: "uint8array" });
 };
@@ -274,10 +277,7 @@ export const extractGedzipGedcom = async (
 };
 
 /** True for `.gdz` / FamilySearch GEDZIP MIME / generic zip containers. */
-export const isGedzipContainer = (file: {
-	name?: string;
-	type?: string;
-}) => {
+export const isGedzipContainer = (file: { name?: string; type?: string }) => {
 	const name = (file.name || "").toLowerCase();
 	const type = (file.type || "").toLowerCase();
 	return (
@@ -482,7 +482,12 @@ export const packGedzipBlob = async (
 	const encoder = new TextEncoder();
 
 	const append = (chunk: Uint8Array) => {
-		parts.push(chunk);
+		const buffer = chunk.buffer;
+		parts.push(
+			chunk.byteOffset === 0 && chunk.byteLength === buffer.byteLength
+				? (buffer as ArrayBuffer)
+				: chunk.slice()
+		);
 		offset += chunk.length;
 		if (offset > 0xffffffff) {
 			throw new Error("GEDZIP exceeds 4 GB");
