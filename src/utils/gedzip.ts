@@ -474,7 +474,7 @@ export const packGedzipBlob = async (
 	onProgress?: (done: number, total: number) => void
 ): Promise<Blob> => {
 	const entries = Object.values(media).filter((item) => !!item?.url);
-	const parts: BlobPart[] = [];
+	const parts: ArrayBuffer[] = [];
 	const stored: StoredZipEntry[] = [];
 	const usedPaths = new Set<string>([GEDZIP_GEDCOM_ENTRY]);
 	const urlToPath = new Map<string, string>();
@@ -486,7 +486,7 @@ export const packGedzipBlob = async (
 		parts.push(
 			chunk.byteOffset === 0 && chunk.byteLength === buffer.byteLength
 				? (buffer as ArrayBuffer)
-				: chunk.slice()
+				: chunk.slice().buffer
 		);
 		offset += chunk.length;
 		if (offset > 0xffffffff) {
