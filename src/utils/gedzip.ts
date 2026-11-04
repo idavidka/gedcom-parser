@@ -463,44 +463,43 @@ const nextMediaPath = (
 	return path;
 };
 
+export type GedzipChunkSink = {
+	write: (chunk: Uint8Array) => Promise<void> | void;
+};
+
 /**
- * Build a GEDZIP one image at a time.
- * Pictures are stored uncompressed so the tab does not hold a base64 copy
- * of every file plus a second deflated archive.
+ * Write a GEDZIP one image at a time.
+ * Each picture is dropped after it is written, so the tab does not keep
+ * every file until the archive is finished.
  */
-export const packGedzipBlob = async (
+export const writeGedzip = async (
 	gedcomText: string,
 	media: Record<string, DownloadableGedzipMedia | GedzipMediaInput>,
+	sink: GedzipChunkSink,
 	onProgress?: (done: number, total: number) => void
-): Promise<Blob> => {
+): Promise<void> => {
 	const entries = Object.values(media).filter((item) => !!item?.url);
-	const parts: ArrayBuffer[] = [];
 	const stored: StoredZipEntry[] = [];
 	const usedPaths = new Set<string>([GEDZIP_GEDCOM_ENTRY]);
 	const urlToPath = new Map<string, string>();
 	let offset = 0;
 	const encoder = new TextEncoder();
 
-	const append = (chunk: Uint8Array) => {
-		const buffer = chunk.buffer;
-		parts.push(
-			chunk.byteOffset === 0 && chunk.byteLength === buffer.byteLength
-				? (buffer as ArrayBuffer)
-				: chunk.slice().buffer
-		);
+	const append = async (chunk: Uint8Array) => {
+		await sink.write(chunk);
 		offset += chunk.length;
 		if (offset > 0xffffffff) {
 			throw new Error("GEDZIP exceeds 4 GB");
 		}
 	};
 
-	const writeStored = (path: string, bytes: Uint8Array) => {
+	const writeStored = async (path: string, bytes: Uint8Array) => {
 		const name = encoder.encode(path);
 		const crc = crc32(bytes);
 		const header = localHeader(name, crc, bytes.length);
 		stored.push({ name, crc, size: bytes.length, offset });
-		append(header);
-		append(bytes);
+		await append(header);
+		await append(bytes);
 	};
 
 	for (let i = 0; i < entries.length; i++) {
@@ -524,7 +523,7 @@ export const packGedzipBlob = async (
 			if (content) {
 				const path = nextMediaPath(item, contentType, usedPaths);
 				urlToPath.set(item.url, path);
-				writeStored(path, decodeMediaBytes(content));
+				await writeStored(path, decodeMediaBytes(content));
 			}
 		} catch {
 			// Skip one unreachable image; the GEDCOM entry is still written.
@@ -533,7 +532,7 @@ export const packGedzipBlob = async (
 		await new Promise((resolve) => setTimeout(resolve, 0));
 	}
 
-	writeStored(
+	await writeStored(
 		GEDZIP_GEDCOM_ENTRY,
 		encoder.encode(rewriteGedcomFilePaths(gedcomText, urlToPath))
 	);
@@ -544,8 +543,38 @@ export const packGedzipBlob = async (
 
 	const cdOffset = offset;
 	for (const file of stored) {
-		append(centralHeader(file));
+		await append(centralHeader(file));
 	}
-	append(endOfCentralDirectory(stored.length, offset - cdOffset, cdOffset));
+	await append(
+		endOfCentralDirectory(stored.length, offset - cdOffset, cdOffset)
+	);
+};
+
+/**
+ * Build a GEDZIP one image at a time.
+ * Prefer `writeGedzip` when the file can be written straight to disk.
+ */
+export const packGedzipBlob = async (
+	gedcomText: string,
+	media: Record<string, DownloadableGedzipMedia | GedzipMediaInput>,
+	onProgress?: (done: number, total: number) => void
+): Promise<Blob> => {
+	const parts: ArrayBuffer[] = [];
+	await writeGedzip(
+		gedcomText,
+		media,
+		{
+			write: (chunk) => {
+				const buffer = chunk.buffer;
+				parts.push(
+					chunk.byteOffset === 0 &&
+						chunk.byteLength === buffer.byteLength
+						? (buffer as ArrayBuffer)
+						: chunk.slice().buffer
+				);
+			},
+		},
+		onProgress
+	);
 	return new Blob(parts, { type: GEDZIP_MIME });
 };
