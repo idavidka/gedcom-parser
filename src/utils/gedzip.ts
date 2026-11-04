@@ -353,3 +353,194 @@ export const buildGedzipBlob = async (
 	part.set(bytes);
 	return new Blob([part], { type: GEDZIP_MIME });
 };
+
+const CRC_TABLE = (() => {
+	const table = new Uint32Array(256);
+	for (let n = 0; n < 256; n++) {
+		let c = n;
+		for (let k = 0; k < 8; k++) {
+			c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+		}
+		table[n] = c >>> 0;
+	}
+	return table;
+})();
+
+const crc32 = (bytes: Uint8Array): number => {
+	let c = 0xffffffff;
+	for (let i = 0; i < bytes.length; i++) {
+		c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+	}
+	return (c ^ 0xffffffff) >>> 0;
+};
+
+const decodeMediaBytes = (content: string): Uint8Array => {
+	const marker = "base64,";
+	const idx = content.startsWith("data:") ? content.indexOf(marker) : -1;
+	if (idx >= 0) {
+		const binary = atob(content.slice(idx + marker.length));
+		const bytes = new Uint8Array(binary.length);
+		for (let i = 0; i < binary.length; i++) {
+			bytes[i] = binary.charCodeAt(i);
+		}
+		return bytes;
+	}
+	const bytes = new Uint8Array(content.length);
+	for (let i = 0; i < content.length; i++) {
+		bytes[i] = content.charCodeAt(i) & 0xff;
+	}
+	return bytes;
+};
+
+type StoredZipEntry = {
+	name: Uint8Array;
+	crc: number;
+	size: number;
+	offset: number;
+};
+
+const localHeader = (name: Uint8Array, crc: number, size: number) => {
+	const header = new Uint8Array(30 + name.length);
+	const view = new DataView(header.buffer);
+	view.setUint32(0, 0x04034b50, true);
+	view.setUint16(4, 20, true);
+	view.setUint16(6, 0x0800, true);
+	view.setUint16(8, 0, true);
+	view.setUint32(14, crc, true);
+	view.setUint32(18, size, true);
+	view.setUint32(22, size, true);
+	view.setUint16(26, name.length, true);
+	header.set(name, 30);
+	return header;
+};
+
+const centralHeader = (file: StoredZipEntry) => {
+	const header = new Uint8Array(46 + file.name.length);
+	const view = new DataView(header.buffer);
+	view.setUint32(0, 0x02014b50, true);
+	view.setUint16(4, 20, true);
+	view.setUint16(6, 20, true);
+	view.setUint16(8, 0x0800, true);
+	view.setUint32(16, file.crc, true);
+	view.setUint32(20, file.size, true);
+	view.setUint32(24, file.size, true);
+	view.setUint16(28, file.name.length, true);
+	view.setUint32(42, file.offset, true);
+	header.set(file.name, 46);
+	return header;
+};
+
+const endOfCentralDirectory = (
+	count: number,
+	cdSize: number,
+	cdOffset: number
+) => {
+	const header = new Uint8Array(22);
+	const view = new DataView(header.buffer);
+	view.setUint32(0, 0x06054b50, true);
+	view.setUint16(8, count, true);
+	view.setUint16(10, count, true);
+	view.setUint32(12, cdSize, true);
+	view.setUint32(16, cdOffset, true);
+	return header;
+};
+
+const nextMediaPath = (
+	item: GedzipMediaInput,
+	contentType: string | undefined,
+	usedPaths: Set<string>
+) => {
+	const ext = extensionFor(contentType || item.contentType);
+	const base = sanitizePathSegment(
+		item.imgId || item.title || item.id || "media"
+	);
+	let path = `media/${base}.${ext}`;
+	let suffix = 1;
+	while (usedPaths.has(path)) {
+		path = `media/${base}-${suffix++}.${ext}`;
+	}
+	usedPaths.add(path);
+	return path;
+};
+
+/**
+ * Build a GEDZIP one image at a time.
+ * Pictures are stored uncompressed so the tab does not hold a base64 copy
+ * of every file plus a second deflated archive.
+ */
+export const packGedzipBlob = async (
+	gedcomText: string,
+	media: Record<string, DownloadableGedzipMedia | GedzipMediaInput>,
+	onProgress?: (done: number, total: number) => void
+): Promise<Blob> => {
+	const entries = Object.values(media).filter((item) => !!item?.url);
+	const parts: BlobPart[] = [];
+	const stored: StoredZipEntry[] = [];
+	const usedPaths = new Set<string>([GEDZIP_GEDCOM_ENTRY]);
+	const urlToPath = new Map<string, string>();
+	let offset = 0;
+	const encoder = new TextEncoder();
+
+	const append = (chunk: Uint8Array) => {
+		parts.push(chunk);
+		offset += chunk.length;
+		if (offset > 0xffffffff) {
+			throw new Error("GEDZIP exceeds 4 GB");
+		}
+	};
+
+	const writeStored = (path: string, bytes: Uint8Array) => {
+		const name = encoder.encode(path);
+		const crc = crc32(bytes);
+		const header = localHeader(name, crc, bytes.length);
+		stored.push({ name, crc, size: bytes.length, offset });
+		append(header);
+		append(bytes);
+	};
+
+	for (let i = 0; i < entries.length; i++) {
+		const item = entries[i];
+		try {
+			let content = item.content;
+			let contentType = item.contentType;
+			if (!content) {
+				const resolved = await resolveMediaContent({
+					url: item.url,
+					id: item.id,
+					imgId: item.imgId,
+					key: "key" in item ? item.key : undefined,
+					contentType: item.contentType,
+					person: "person" in item ? item.person : undefined,
+					tree: "tree" in item ? item.tree : undefined,
+				});
+				content = resolved?.content;
+				contentType = resolved?.contentType || contentType;
+			}
+			if (content) {
+				const path = nextMediaPath(item, contentType, usedPaths);
+				urlToPath.set(item.url, path);
+				writeStored(path, decodeMediaBytes(content));
+			}
+		} catch {
+			// Skip one unreachable image; the GEDCOM entry is still written.
+		}
+		onProgress?.(i + 1, entries.length);
+		await new Promise((resolve) => setTimeout(resolve, 0));
+	}
+
+	writeStored(
+		GEDZIP_GEDCOM_ENTRY,
+		encoder.encode(rewriteGedcomFilePaths(gedcomText, urlToPath))
+	);
+
+	if (stored.length > 0xffff) {
+		throw new Error("GEDZIP has too many files");
+	}
+
+	const cdOffset = offset;
+	for (const file of stored) {
+		append(centralHeader(file));
+	}
+	append(endOfCentralDirectory(stored.length, offset - cdOffset, cdOffset));
+	return new Blob(parts, { type: GEDZIP_MIME });
+};
