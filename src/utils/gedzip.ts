@@ -477,14 +477,24 @@ export const writeGedzip = async (
 	media: Record<string, DownloadableGedzipMedia | GedzipMediaInput>,
 	sink: GedzipChunkSink,
 	onProgress?: (done: number, total: number) => void,
-	options?: { includeGedcom?: boolean }
+	options?: {
+		includeGedcom?: boolean;
+		/** Extra entry written after the pictures, such as GenoPro `Data.xml`. */
+		trailer?: {
+			name: string;
+			bytes: (
+				paths: Map<string, string>
+			) => Uint8Array | Promise<Uint8Array>;
+		};
+	}
 ): Promise<void> => {
 	const includeGedcom = options?.includeGedcom !== false;
 	const entries = Object.values(media).filter((item) => !!item?.url);
 	const stored: StoredZipEntry[] = [];
-	const usedPaths = new Set<string>(
-		includeGedcom ? [GEDZIP_GEDCOM_ENTRY] : []
-	);
+	const usedPaths = new Set<string>([
+		...(includeGedcom ? [GEDZIP_GEDCOM_ENTRY] : []),
+		...(options?.trailer ? [options.trailer.name] : []),
+	]);
 	const urlToPath = new Map<string, string>();
 	let offset = 0;
 	const encoder = new TextEncoder();
@@ -540,6 +550,13 @@ export const writeGedzip = async (
 		await writeStored(
 			GEDZIP_GEDCOM_ENTRY,
 			encoder.encode(rewriteGedcomFilePaths(gedcomText, urlToPath))
+		);
+	}
+
+	if (options?.trailer) {
+		await writeStored(
+			options.trailer.name,
+			await options.trailer.bytes(urlToPath)
 		);
 	}
 
