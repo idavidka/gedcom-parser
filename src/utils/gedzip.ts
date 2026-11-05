@@ -601,3 +601,47 @@ export const packGedzipBlob = async (
 	);
 	return new Blob(parts, { type: GEDZIP_MIME });
 };
+
+/**
+ * One stored `Data.xml` entry.
+ * GenoPro's unzipper is the old Info-ZIP: no UTF-8 flag, version 1.0,
+ * and the archive is only the XML. Picture bytes do not belong in a `.gno`.
+ */
+export const writeDataXmlZip = async (
+	xml: Uint8Array,
+	sink: GedzipChunkSink
+): Promise<void> => {
+	const name = new TextEncoder().encode("Data.xml");
+	const crc = crc32(xml);
+	const local = new Uint8Array(30 + name.length);
+	const localView = new DataView(local.buffer);
+	localView.setUint32(0, 0x04034b50, true);
+	localView.setUint16(4, 10, true);
+	localView.setUint16(6, 0, true);
+	localView.setUint16(8, 0, true);
+	localView.setUint32(14, crc, true);
+	localView.setUint32(18, xml.length, true);
+	localView.setUint32(22, xml.length, true);
+	localView.setUint16(26, name.length, true);
+	local.set(name, 30);
+
+	const central = new Uint8Array(46 + name.length);
+	const centralView = new DataView(central.buffer);
+	centralView.setUint32(0, 0x02014b50, true);
+	centralView.setUint16(4, 10, true);
+	centralView.setUint16(6, 10, true);
+	centralView.setUint16(8, 0, true);
+	centralView.setUint32(16, crc, true);
+	centralView.setUint32(20, xml.length, true);
+	centralView.setUint32(24, xml.length, true);
+	centralView.setUint16(28, name.length, true);
+	centralView.setUint32(42, 0, true);
+	central.set(name, 46);
+
+	await sink.write(local);
+	await sink.write(xml);
+	await sink.write(central);
+	await sink.write(
+		endOfCentralDirectory(1, central.length, local.length + xml.length)
+	);
+};
