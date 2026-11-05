@@ -476,11 +476,15 @@ export const writeGedzip = async (
 	gedcomText: string,
 	media: Record<string, DownloadableGedzipMedia | GedzipMediaInput>,
 	sink: GedzipChunkSink,
-	onProgress?: (done: number, total: number) => void
+	onProgress?: (done: number, total: number) => void,
+	options?: { includeGedcom?: boolean }
 ): Promise<void> => {
+	const includeGedcom = options?.includeGedcom !== false;
 	const entries = Object.values(media).filter((item) => !!item?.url);
 	const stored: StoredZipEntry[] = [];
-	const usedPaths = new Set<string>([GEDZIP_GEDCOM_ENTRY]);
+	const usedPaths = new Set<string>(
+		includeGedcom ? [GEDZIP_GEDCOM_ENTRY] : []
+	);
 	const urlToPath = new Map<string, string>();
 	let offset = 0;
 	const encoder = new TextEncoder();
@@ -532,10 +536,12 @@ export const writeGedzip = async (
 		await new Promise((resolve) => setTimeout(resolve, 0));
 	}
 
-	await writeStored(
-		GEDZIP_GEDCOM_ENTRY,
-		encoder.encode(rewriteGedcomFilePaths(gedcomText, urlToPath))
-	);
+	if (includeGedcom) {
+		await writeStored(
+			GEDZIP_GEDCOM_ENTRY,
+			encoder.encode(rewriteGedcomFilePaths(gedcomText, urlToPath))
+		);
+	}
 
 	if (stored.length > 0xffff) {
 		throw new Error("GEDZIP has too many files");
