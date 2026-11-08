@@ -49,8 +49,25 @@ describe("createEmptyGedcom", () => {
 
 		const raw = gedcom.toGedcom(undefined, 0, { gedcomVersion: "5.5.1" });
 		expect(raw).toContain("1 NAME Ada /Cycle/");
+		expect(raw).toContain("2 _CIRC");
 		expect(raw).toContain("0 TRLR");
-		expect(takeGedcomExportCircularLinks()).toBeGreaterThan(0);
+		expect(takeGedcomExportCircularLinks().count).toBeGreaterThan(0);
+	});
+
+	it("marks a parsed record that points back at itself", () => {
+		const { gedcom } = GedcomTree.parse(`0 HEAD
+1 GEDC
+2 VERS 5.5.1
+2 FORM LINEAGE-LINKED
+1 CHAR UTF-8
+0 @I1@ INDI
+1 NAME Ada /Cycle/
+1 _LINK @I1@
+0 TRLR`);
+		const raw = gedcom!.toGedcom(undefined, 0, { gedcomVersion: "5.5.1" });
+		expect(raw).toContain("1 _LINK");
+		expect(raw).toContain("2 _CIRC @I1@");
+		expect(takeGedcomExportCircularLinks().records).toContain("@I1@");
 	});
 
 	it("writes EVEN + TYPE for custom facts", () => {

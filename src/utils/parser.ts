@@ -316,7 +316,12 @@ const GedcomTree = {
 				prevNode = newCommon.prevNode;
 				mainNode = newCommon.mainNode;
 
-				if (prevNode instanceof Common) {
+				const stackAncestor =
+					value && isId(value) && !id
+						? [curNode, ...curPar].find((node) => node.id === value)
+						: undefined;
+
+				if (prevNode instanceof Common && !stackAncestor) {
 					if (mainNode instanceof Indi && type === "_MTTAG") {
 						tags.push(prevNode);
 					}
@@ -344,7 +349,9 @@ const GedcomTree = {
 
 				if (type && type !== "value") {
 					const curCommon = curNode as Common;
-					if (id) {
+					if (stackAncestor) {
+						curCommon.assign(type as MultiTag, stackAncestor);
+					} else if (id) {
 						this.addToList(id, type, curCommon, prevNode);
 					} else {
 						curCommon.assign(type as MultiTag, prevNode);

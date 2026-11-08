@@ -16,7 +16,12 @@ import type {
 	GroupMarker,
 } from "../types/types";
 
-import { enterGedcomExport, getValidTag, leaveGedcomExport } from "./common";
+import {
+	enterGedcomExport,
+	getValidTag,
+	leaveGedcomExport,
+	skippedGedcomExportLines,
+} from "./common";
 import type { Common } from "./common";
 
 export class List<
@@ -589,7 +594,7 @@ export class List<
 
 	toGedcomLines(tag: MultiTag, level = 0, options?: ConvertOptions) {
 		if (!enterGedcomExport(this)) {
-			return [];
+			return skippedGedcomExportLines(this, level);
 		}
 		try {
 			const gedcom: string[] = [];

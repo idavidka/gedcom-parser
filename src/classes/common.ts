@@ -490,7 +490,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 
 	toGedcomLines(tag?: MultiTag, level = 0, options?: ConvertOptions) {
 		if (!enterGedcomExport(this)) {
-			return [];
+			return skippedGedcomExportLines(this, level);
 		}
 		try {
 			this.standardizeObject(tag, options);
@@ -1115,28 +1115,57 @@ export const getListTag = (tag: string) => {
 /** Records already on the current export stack. Cuts FAM/INDI cycles. */
 const gedcomExportStack = new WeakSet<object>();
 let gedcomExportCircularLinks = 0;
+let gedcomExportCircularRecords: string[] = [];
 let lastGedcomExportCircularLinks = 0;
+let lastGedcomExportCircularRecords: string[] = [];
+
+const gedcomExportRecordId = (node: object): string | undefined => {
+	const id = (node as { id?: unknown }).id;
+	return typeof id === "string" && id ? id : undefined;
+};
 
 export const beginGedcomExportTracking = (): void => {
 	gedcomExportCircularLinks = 0;
+	gedcomExportCircularRecords = [];
 	lastGedcomExportCircularLinks = 0;
+	lastGedcomExportCircularRecords = [];
 };
 
 export const finishGedcomExportTracking = (): void => {
 	lastGedcomExportCircularLinks = gedcomExportCircularLinks;
+	lastGedcomExportCircularRecords = gedcomExportCircularRecords;
 	gedcomExportCircularLinks = 0;
+	gedcomExportCircularRecords = [];
 };
 
-/** How many repeated records the last export skipped. Clears the count. */
-export const takeGedcomExportCircularLinks = (): number => {
+/** How many repeated records the last export skipped, and which ones. */
+export const takeGedcomExportCircularLinks = (): {
+	count: number;
+	records: string[];
+} => {
 	const count = lastGedcomExportCircularLinks;
+	const records = lastGedcomExportCircularRecords;
 	lastGedcomExportCircularLinks = 0;
-	return count;
+	lastGedcomExportCircularRecords = [];
+	return { count, records };
+};
+
+/** Line left where a record already on the export stack was not walked again. */
+export const skippedGedcomExportLines = (
+	node: object,
+	level: number
+): string[] => {
+	const id = gedcomExportRecordId(node);
+	return [id ? `${level} _CIRC ${id}` : `${level} _CIRC`];
 };
 
 export const enterGedcomExport = (node: object): boolean => {
 	if (gedcomExportStack.has(node)) {
 		gedcomExportCircularLinks += 1;
+		const id = gedcomExportRecordId(node);
+		if (id) {
+			gedcomExportCircularRecords.push(id);
+		}
 		return false;
 	}
 	gedcomExportStack.add(node);
