@@ -160,10 +160,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		delete this._value;
 	}
 
-	set<T extends Common | List = Common>(
-		name: MultiTag,
-		value: T | string
-	) {
+	set<T extends Common | List = Common>(name: MultiTag, value: T | string) {
 		if (isGedcomTrailerTag(name)) {
 			return undefined;
 		}
@@ -235,28 +232,20 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 				} else {
 					if (usedPart) {
 						last = last.item(usedPart as IdType) as
-							| T
-							| List
-							| undefined;
+							T | List | undefined;
 					} else {
 						last = last?.index(0)?.get(part) as
-							| T
-							| List
-							| undefined;
+							T | List | undefined;
 					}
 				}
 			} else {
 				const usedIndex = Number(itemIndex ?? indexPart);
 				if (!isNaN(usedIndex)) {
 					last = last?.toList().index(usedIndex) as
-						| T
-						| List
-						| undefined;
+						T | List | undefined;
 				} else {
 					last = last?.get((itemId ?? part) as MultiTag) as
-						| T
-						| List
-						| undefined;
+						T | List | undefined;
 				}
 			}
 
@@ -445,7 +434,10 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 					if (override) {
 						this.set(validKey as MultiTag, mergeValue);
 					}
-				} else if (current instanceof Common || current instanceof List) {
+				} else if (
+					current instanceof Common ||
+					current instanceof List
+				) {
 					this.assign(validKey as MultiTag, mergeValue, true);
 				} else if (
 					!current ||
@@ -497,42 +489,48 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 	}
 
 	toGedcomLines(tag?: MultiTag, level = 0, options?: ConvertOptions) {
-		this.standardizeObject(tag, options);
-		const validKeys = getValidKeys(this);
-		const gedcom: string[] = [];
-		const isGedcom7Export = options?.gedcomVersion === "7.0";
+		if (!enterGedcomExport(this)) {
+			return [];
+		}
+		try {
+			this.standardizeObject(tag, options);
+			const validKeys = getValidKeys(this);
+			const gedcom: string[] = [];
+			const isGedcom7Export = options?.gedcomVersion === "7.0";
 
-		validKeys.forEach((key) => {
-			const validKey = key as MultiTag;
-			// GEDCOM 7 dropped CONC; payloads must already be folded / use CONT.
-			if (isGedcom7Export && validKey === "CONC") {
-				return;
-			}
-			const prop = this.get<Common | List>(validKey);
-			if (typeof prop?.toGedcomLines === "function") {
-				if (prop instanceof Common) {
-					const value = prop.exportValue() as string | undefined;
-					gedcom.push(
-						`${level} ${validKey}${value ? ` ${value}` : ""}`
-					);
-					gedcom.push(
-						...prop.toGedcomLines(validKey, level + 1, options)
-					);
-				} else if (prop instanceof List) {
-					gedcom.push(
-						...prop.toGedcomLines(validKey, level, options)
-					);
+			validKeys.forEach((key) => {
+				const validKey = key as MultiTag;
+				// GEDCOM 7 dropped CONC; payloads must already be folded / use CONT.
+				if (isGedcom7Export && validKey === "CONC") {
+					return;
 				}
-			}
-		});
+				const prop = this.get<Common | List>(validKey);
+				if (typeof prop?.toGedcomLines === "function") {
+					if (prop instanceof Common) {
+						const value = prop.exportValue() as string | undefined;
+						gedcom.push(
+							`${level} ${validKey}${value ? ` ${value}` : ""}`
+						);
+						gedcom.push(
+							...prop.toGedcomLines(validKey, level + 1, options)
+						);
+					} else if (prop instanceof List) {
+						gedcom.push(
+							...prop.toGedcomLines(validKey, level, options)
+						);
+					}
+				}
+			});
 
-		return gedcom;
+			return gedcom;
+		} finally {
+			leaveGedcomExport(this);
+		}
 	}
 
 	getHeadRecord() {
 		return (get(this, "HEAD") || get(this.getGedcom(), "HEAD")) as
-			| Common
-			| undefined;
+			Common | undefined;
 	}
 
 	private unwrapHeadRecord(node: unknown): Common | undefined {
@@ -718,8 +716,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 			this.getFromSourceHeads<string>("SOUR._TREE.RIN.value") ||
 			((get(this, "HEAD.SOUR._TREE.RIN.value") ||
 				get(this.getGedcom(), "HEAD.SOUR._TREE.RIN.value")) as
-				| string
-				| undefined)
+				string | undefined)
 		);
 	}
 
@@ -728,8 +725,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 			this.getFromSourceHeads<string>("_EXPORTED_FROM_SITE_ID.value") ||
 			((get(this, "HEAD._EXPORTED_FROM_SITE_ID.value") ||
 				get(this.getGedcom(), "HEAD._EXPORTED_FROM_SITE_ID.value")) as
-				| string
-				| undefined)
+				string | undefined)
 		);
 	}
 
@@ -778,17 +774,16 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 			this.getFromSourceHeads<string>("SOUR._TREE.value") ||
 			((get(this, "HEAD.SOUR._TREE.value") ||
 				get(this.getGedcom(), "HEAD.SOUR._TREE.value")) as
-				| string
-				| undefined)
+				string | undefined)
 		);
 	}
 
 	getMyHeritageTreeName() {
-		const treeDetails = (this.getFromSourceHeads<string>("FILE.value") ||
-			(get(this, "HEAD.FILE.value") ||
+		const treeDetails =
+			this.getFromSourceHeads<string>("FILE.value") ||
+			((get(this, "HEAD.FILE.value") ||
 				get(this.getGedcom(), "HEAD.FILE.value")) as
-				| string
-				| undefined);
+				string | undefined);
 
 		return treeDetails?.match(
 			/Exported by MyHeritage.com from (?<tree>.+) in.+$/
@@ -800,8 +795,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		const rin = (this.getFromSourceHeads<string>("SOUR._TREE.RIN.value") ||
 			get(this, "HEAD.SOUR._TREE.RIN.value") ||
 			get(this.getGedcom(), "HEAD.SOUR._TREE.RIN.value")) as
-			| string
-			| undefined;
+			string | undefined;
 
 		if (rin) {
 			return rin;
@@ -816,8 +810,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		const treeName = (this.getFromSourceHeads<string>("SOUR._TREE.value") ||
 			get(this, "HEAD.SOUR._TREE.value") ||
 			get(this.getGedcom(), "HEAD.SOUR._TREE.value")) as
-			| string
-			| undefined;
+			string | undefined;
 
 		if (treeName) {
 			return treeName;
@@ -901,8 +894,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		// GNO2GED uses _TREE.RIN format (similar to Ancestry/FamilySearch)
 		const rin = (get(this, "HEAD._TREE.RIN.value") ||
 			get(this.getGedcom(), "HEAD._TREE.RIN.value")) as
-			| string
-			| undefined;
+			string | undefined;
 
 		if (rin) {
 			return rin;
@@ -978,8 +970,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		const sourName = (this.getFromSourceHeads<string>("SOUR.NAME.value") ||
 			get(this, "HEAD.SOUR.NAME.value") ||
 			get(this.getGedcom(), "HEAD.SOUR.NAME.value")) as
-			| string
-			| undefined;
+			string | undefined;
 
 		if (sourName) {
 			return `${prefix}${sourName}`;
@@ -1119,6 +1110,41 @@ export const getValidTag = (tag: string) => {
 
 export const getListTag = (tag: string) => {
 	return `@@${tag}` as ListTag;
+};
+
+/** Records already on the current export stack. Cuts FAM/INDI cycles. */
+const gedcomExportStack = new WeakSet<object>();
+let gedcomExportCircularLinks = 0;
+let lastGedcomExportCircularLinks = 0;
+
+export const beginGedcomExportTracking = (): void => {
+	gedcomExportCircularLinks = 0;
+	lastGedcomExportCircularLinks = 0;
+};
+
+export const finishGedcomExportTracking = (): void => {
+	lastGedcomExportCircularLinks = gedcomExportCircularLinks;
+	gedcomExportCircularLinks = 0;
+};
+
+/** How many repeated records the last export skipped. Clears the count. */
+export const takeGedcomExportCircularLinks = (): number => {
+	const count = lastGedcomExportCircularLinks;
+	lastGedcomExportCircularLinks = 0;
+	return count;
+};
+
+export const enterGedcomExport = (node: object): boolean => {
+	if (gedcomExportStack.has(node)) {
+		gedcomExportCircularLinks += 1;
+		return false;
+	}
+	gedcomExportStack.add(node);
+	return true;
+};
+
+export const leaveGedcomExport = (node: object): void => {
+	gedcomExportStack.delete(node);
 };
 
 export const getValidKey = (tag: string, id: string) => {

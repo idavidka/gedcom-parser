@@ -18,8 +18,10 @@ import type {
 import { nextRecordId, stampCreatedAt } from "../utils/family-edit";
 import { appendGedcomTrailer } from "../utils/gedcom-trailer";
 import {
-	normalizeGedcomVersion,
-} from "../utils/gedcom-version";
+	beginGedcomExportTracking,
+	finishGedcomExportTracking,
+} from "./common";
+import { normalizeGedcomVersion } from "../utils/gedcom-version";
 import type { GedcomExportVersion } from "../utils/gedcom-version";
 import { buildGedzip } from "../utils/gedzip";
 import type { GedzipMediaInput } from "../utils/gedzip";
@@ -32,10 +34,7 @@ import {
 	registerExtensionTag,
 } from "../utils/gedcom7-schema";
 import { getVersion } from "../utils/get-product-details";
-import {
-	inferMediaForm,
-	mergeMediaLists,
-} from "../utils/multimedia";
+import { inferMediaForm, mergeMediaLists } from "../utils/multimedia";
 import type {
 	CollectMultimediaOptions,
 	CreateMultimediaInput,
@@ -441,7 +440,11 @@ export class GedCom extends Common implements IGedcom {
 			input.gedcomVersion ?? this.getGedcomVersion()
 		);
 		const form = input.form || inferMediaForm(input.file);
-		const fileNode = createCommon(this as unknown as GedComType, undefined, obje);
+		const fileNode = createCommon(
+			this as unknown as GedComType,
+			undefined,
+			obje
+		);
 		fileNode.value = input.file;
 
 		if (version === "7.0") {
@@ -728,8 +731,7 @@ export class GedCom extends Common implements IGedcom {
 	/** Rewrite HEAD.GEDC (and CHAR/FORM) for the requested export version. */
 	applyExportVersion(version?: string | null) {
 		const head = this.get("HEAD") as
-			| Required<IGedComStructure>["HEAD"]
-			| undefined;
+			Required<IGedComStructure>["HEAD"] | undefined;
 		if (!head) {
 			return;
 		}
@@ -861,73 +863,85 @@ export class GedCom extends Common implements IGedcom {
 			  })
 			| undefined
 	): string {
-		if (options?.super) {
-			return appendGedcomTrailer(super.toGedcom(tag, level, options));
+		const track = !options?.super;
+		if (track) {
+			beginGedcomExportTracking();
 		}
-
-		const requestedVersion = options?.gedcomVersion;
-		// API option wins; else inherit HEAD.GEDC.VERS; else 5.5.1
-		// (via getGedcomVersion → normalizeGedcomVersion).
-		const exportVersion = requestedVersion
-			? normalizeGedcomVersion(requestedVersion)
-			: this.getGedcomVersion();
-
-		// Standardize OBJE for the target version (G7 nesting vs 5.5.1 flat)
-		// whenever we rewrite for download or an explicit version is set.
-		const exportOptions: ConvertOptions & { indis?: IndiKey[] } = {
-			...options,
-			obje: {
-				standardize:
-					options?.obje?.standardize ??
-					(requestedVersion !== undefined || !options?.original),
-				override: options?.obje?.override,
-				namespace: options?.obje?.namespace,
-			},
-		};
-
-		const newGedcom = createGedCom();
-
-		Object.assign(newGedcom, this);
-
-		if (!exportOptions.original) {
-			Object.assign(newGedcom, {
-				HEAD: this.getDownloadHeader(exportVersion),
-			});
-		}
-
-		if (exportOptions.indis?.length) {
-			const newContent = this.getIndiRelatedLists(exportOptions.indis);
-
-			Object.assign(newGedcom, newContent);
-		}
-		const restoreEnums =
-			exportVersion === "7.0"
-				? applyGedcom7Enumerations(newGedcom)
-				: undefined;
-		const restoreDates =
-			exportVersion === "7.0"
-				? applyGedcom7DatePhrases(newGedcom)
-				: undefined;
-		const restoreMetadata =
-			exportVersion === "7.0"
-				? applyGedcom7RecordMetadata(newGedcom)
-				: undefined;
-		const restoreSchema =
-			exportVersion === "7.0"
-				? ensureExtensionSchema(newGedcom)
-				: undefined;
-
 		try {
-			return newGedcom.toGedcom(tag, level, {
-				...exportOptions,
-				gedcomVersion: exportVersion,
-				super: true,
-			});
+			if (options?.super) {
+				return appendGedcomTrailer(super.toGedcom(tag, level, options));
+			}
+
+			const requestedVersion = options?.gedcomVersion;
+			// API option wins; else inherit HEAD.GEDC.VERS; else 5.5.1
+			// (via getGedcomVersion → normalizeGedcomVersion).
+			const exportVersion = requestedVersion
+				? normalizeGedcomVersion(requestedVersion)
+				: this.getGedcomVersion();
+
+			// Standardize OBJE for the target version (G7 nesting vs 5.5.1 flat)
+			// whenever we rewrite for download or an explicit version is set.
+			const exportOptions: ConvertOptions & { indis?: IndiKey[] } = {
+				...options,
+				obje: {
+					standardize:
+						options?.obje?.standardize ??
+						(requestedVersion !== undefined || !options?.original),
+					override: options?.obje?.override,
+					namespace: options?.obje?.namespace,
+				},
+			};
+
+			const newGedcom = createGedCom();
+
+			Object.assign(newGedcom, this);
+
+			if (!exportOptions.original) {
+				Object.assign(newGedcom, {
+					HEAD: this.getDownloadHeader(exportVersion),
+				});
+			}
+
+			if (exportOptions.indis?.length) {
+				const newContent = this.getIndiRelatedLists(
+					exportOptions.indis
+				);
+
+				Object.assign(newGedcom, newContent);
+			}
+			const restoreEnums =
+				exportVersion === "7.0"
+					? applyGedcom7Enumerations(newGedcom)
+					: undefined;
+			const restoreDates =
+				exportVersion === "7.0"
+					? applyGedcom7DatePhrases(newGedcom)
+					: undefined;
+			const restoreMetadata =
+				exportVersion === "7.0"
+					? applyGedcom7RecordMetadata(newGedcom)
+					: undefined;
+			const restoreSchema =
+				exportVersion === "7.0"
+					? ensureExtensionSchema(newGedcom)
+					: undefined;
+
+			try {
+				return newGedcom.toGedcom(tag, level, {
+					...exportOptions,
+					gedcomVersion: exportVersion,
+					super: true,
+				});
+			} finally {
+				restoreSchema?.();
+				restoreMetadata?.();
+				restoreDates?.();
+				restoreEnums?.();
+			}
 		} finally {
-			restoreSchema?.();
-			restoreMetadata?.();
-			restoreDates?.();
-			restoreEnums?.();
+			if (track) {
+				finishGedcomExportTracking();
+			}
 		}
 	}
 
@@ -1372,7 +1386,11 @@ export const mergeGedcoms = (
 
 	const recordFsId = (item: unknown): string => {
 		const node = item as
-			| { get?: (tag: MultiTag) => { toValue?: () => unknown } | undefined }
+			| {
+					get?: (
+						tag: MultiTag
+					) => { toValue?: () => unknown } | undefined;
+			  }
 			| undefined;
 		const value = node?.get?.("_FS_ID")?.toValue?.();
 		return typeof value === "string" ? value.trim() : "";
@@ -1381,16 +1399,12 @@ export const mergeGedcoms = (
 	const allocateTopLevelIds = (
 		sourceList:
 			| {
-					forEach: (
-						cb: (item: unknown, id: string) => void
-					) => void;
+					forEach: (cb: (item: unknown, id: string) => void) => void;
 			  }
 			| undefined,
 		targetList:
 			| {
-					forEach: (
-						cb: (item: unknown, id: string) => void
-					) => void;
+					forEach: (cb: (item: unknown, id: string) => void) => void;
 			  }
 			| undefined,
 		prefix: "O" | "S"

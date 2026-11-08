@@ -16,7 +16,7 @@ import type {
 	GroupMarker,
 } from "../types/types";
 
-import { getValidTag } from "./common";
+import { enterGedcomExport, getValidTag, leaveGedcomExport } from "./common";
 import type { Common } from "./common";
 
 export class List<
@@ -588,39 +588,48 @@ export class List<
 	}
 
 	toGedcomLines(tag: MultiTag, level = 0, options?: ConvertOptions) {
-		const gedcom: string[] = [];
+		if (!enterGedcomExport(this)) {
+			return [];
+		}
+		try {
+			const gedcom: string[] = [];
 
-		(this.entries() as Array<[K, T]>).forEach(([_, item]) => {
-			const validTag = getValidTag(tag);
-			// CONT/CONC are continuations of the line above. An internal id
-			// turns them into cross-references, and the following text is
-			// dropped on the next import.
-			const xref =
-				validTag === "CONT" || validTag === "CONC" ? undefined : item.id;
-			const payload = item.exportValue?.() as string | undefined;
-			// Cross-referenced records: `0 @N1@ SNOTE text` (payload optional).
-			// Inline list items: `1 NOTE text`.
-			if (xref) {
+			(this.entries() as Array<[K, T]>).forEach(([_, item]) => {
+				const validTag = getValidTag(tag);
+				// CONT/CONC are continuations of the line above. An internal id
+				// turns them into cross-references, and the following text is
+				// dropped on the next import.
+				const xref =
+					validTag === "CONT" || validTag === "CONC"
+						? undefined
+						: item.id;
+				const payload = item.exportValue?.() as string | undefined;
+				// Cross-referenced records: `0 @N1@ SNOTE text` (payload optional).
+				// Inline list items: `1 NOTE text`.
+				if (xref) {
+					gedcom.push(
+						`${level} ${xref} ${validTag}${
+							payload ? ` ${payload}` : ""
+						}`
+					);
+				} else {
+					gedcom.push(
+						`${level} ${validTag}${payload ? ` ${payload}` : ""}`
+					);
+				}
 				gedcom.push(
-					`${level} ${xref} ${validTag}${
-						payload ? ` ${payload}` : ""
-					}`
+					...item.toGedcomLines(
+						validTag as MultiTag | undefined,
+						level + 1,
+						options
+					)
 				);
-			} else {
-				gedcom.push(
-					`${level} ${validTag}${payload ? ` ${payload}` : ""}`
-				);
-			}
-			gedcom.push(
-				...item.toGedcomLines(
-					validTag as MultiTag | undefined,
-					level + 1,
-					options
-				)
-			);
-		});
+			});
 
-		return gedcom;
+			return gedcom;
+		} finally {
+			leaveGedcomExport(this);
+		}
 	}
 
 	toValue() {

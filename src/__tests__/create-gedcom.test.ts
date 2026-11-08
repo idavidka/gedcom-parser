@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import GedcomTree, { createEmptyGedcom } from "..";
+import { takeGedcomExportCircularLinks } from "../classes";
 
 const roundtrip = (gedcom: ReturnType<typeof createEmptyGedcom>) => {
 	const { gedcom: again } = GedcomTree.parse(
@@ -38,6 +39,18 @@ describe("createEmptyGedcom", () => {
 		expect(
 			again.indi(person.id!)?.get("OCCU")?.get("PLAC")?.toValue()
 		).toBe("Kolozsvar");
+	});
+
+	it("exports a person who is linked back to themself", () => {
+		const gedcom = createEmptyGedcom({ filename: "cycle.ged" });
+		const person = gedcom.createIndividual();
+		person.set("NAME", "Ada /Cycle/");
+		person.set("NOTE", person);
+
+		const raw = gedcom.toGedcom(undefined, 0, { gedcomVersion: "5.5.1" });
+		expect(raw).toContain("1 NAME Ada /Cycle/");
+		expect(raw).toContain("0 TRLR");
+		expect(takeGedcomExportCircularLinks()).toBeGreaterThan(0);
 	});
 
 	it("writes EVEN + TYPE for custom facts", () => {
@@ -90,6 +103,8 @@ describe("createEmptyGedcom", () => {
 		const raw = gedcom.toGedcom(undefined, undefined, { original: true });
 		expect(raw.match(/^0 TRLR$/gm)).toEqual(["0 TRLR"]);
 		expect(raw.trimEnd().endsWith("0 TRLR")).toBe(true);
-		expect(raw.indexOf("0 TRLR")).toBeGreaterThan(raw.indexOf("0 @I1@ INDI"));
+		expect(raw.indexOf("0 TRLR")).toBeGreaterThan(
+			raw.indexOf("0 @I1@ INDI")
+		);
 	});
 });
