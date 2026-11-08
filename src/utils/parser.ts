@@ -137,110 +137,108 @@ const GedcomTree = {
 		const tags: Common[] = [];
 		// printTime{ index: 3, label: "[Debug]" });
 
-		let lines = content
-			.split(/\r?\n/)
-			.reduce<string[]>((acc, line) => {
-				const lineMatch = line.match(LINE_REG);
+		let lines = content.split(/\r?\n/).reduce<string[]>((acc, line) => {
+			const lineMatch = line.match(LINE_REG);
 
-				if (lineMatch) {
-					const lineIndent = Number(lineMatch?.groups?.indent ?? 0);
-					const lineValue = lineMatch?.groups?.value ?? "";
-					const lineType = lineMatch?.groups?.type ?? "";
-					const linesAcc = acc as LinesWithFlags;
+			if (lineMatch) {
+				const lineIndent = Number(lineMatch?.groups?.indent ?? 0);
+				const lineValue = lineMatch?.groups?.value ?? "";
+				const lineType = lineMatch?.groups?.type ?? "";
+				const linesAcc = acc as LinesWithFlags;
 
-					// Track if we're in HEAD section and if FILE tag exists
-					if (lineIndent === 0 && lineType === "HEAD") {
+				// Track if we're in HEAD section and if FILE tag exists
+				if (lineIndent === 0 && lineType === "HEAD") {
+					acc.push(line);
+					// Mark that we entered HEAD section
+					linesAcc._inHead = true;
+					linesAcc._hasFile = false;
+					return acc;
+				}
+
+				// TRLR is the file terminator, not a stored record.
+				// Keep it out of the parse stream so later assign/set
+				// (people, settings, detective board) cannot land after it.
+				if (lineIndent === 0 && lineType === "TRLR") {
+					if (linesAcc._inHead && filename && !linesAcc._hasFile) {
+						acc.push(`1 FILE ${filename}`);
+					}
+					linesAcc._inHead = false;
+					return acc;
+				}
+
+				// Check if we're leaving HEAD section (next 0-level tag)
+				if (lineIndent === 0 && linesAcc._inHead) {
+					// Add FILE tag if missing and filename is provided
+					if (filename && !linesAcc._hasFile) {
+						acc.push(`1 FILE ${filename}`);
+					}
+					linesAcc._inHead = false;
+					acc.push(line);
+					return acc;
+				}
+
+				// Track if we found FILE tag in HEAD
+				if (
+					linesAcc._inHead &&
+					lineIndent === 1 &&
+					lineType === "FILE"
+				) {
+					linesAcc._hasFile = true;
+				}
+
+				// GEDCOM 5.5.1 CONC concatenates onto the previous payload
+				// without a space. GEDCOM 7 dropped CONC; folding it here
+				// keeps both versions readable as a single value.
+				if (lineType.toUpperCase() === "CONC") {
+					const last = acc[acc.length - 1];
+					if (last !== undefined) {
+						acc[acc.length - 1] = `${last}${lineValue}`;
+						return acc;
+					}
+				}
+
+				if (
+					lineIndent > 0 &&
+					lineIndent > prevLineIndent &&
+					lineValue &&
+					isId(lineValue)
+				) {
+					const refLines = lineValue
+						.split(/,\s*/)
+						.map((id) => line.replace(lineValue, id));
+					if (refLines.length > 1) {
+						prevLineIndent = lineIndent;
+						prevRefLines = refLines;
+					} else {
 						acc.push(line);
-						// Mark that we entered HEAD section
-						linesAcc._inHead = true;
-						linesAcc._hasFile = false;
-						return acc;
 					}
-
-					// TRLR is the file terminator, not a stored record.
-					// Keep it out of the parse stream so later assign/set
-					// (people, settings, detective board) cannot land after it.
-					if (lineIndent === 0 && lineType === "TRLR") {
-						if (linesAcc._inHead && filename && !linesAcc._hasFile) {
-							acc.push(`1 FILE ${filename}`);
-						}
-						linesAcc._inHead = false;
-						return acc;
-					}
-
-					// Check if we're leaving HEAD section (next 0-level tag)
-					if (lineIndent === 0 && linesAcc._inHead) {
-						// Add FILE tag if missing and filename is provided
-						if (filename && !linesAcc._hasFile) {
-							acc.push(`1 FILE ${filename}`);
-						}
-						linesAcc._inHead = false;
-						acc.push(line);
-						return acc;
-					}
-
-					// Track if we found FILE tag in HEAD
-					if (
-						linesAcc._inHead &&
-						lineIndent === 1 &&
-						lineType === "FILE"
-					) {
-						linesAcc._hasFile = true;
-					}
-
-					// GEDCOM 5.5.1 CONC concatenates onto the previous payload
-					// without a space. GEDCOM 7 dropped CONC; folding it here
-					// keeps both versions readable as a single value.
-					if (lineType.toUpperCase() === "CONC") {
-						const last = acc[acc.length - 1];
-						if (last !== undefined) {
-							acc[acc.length - 1] = `${last}${lineValue}`;
-							return acc;
-						}
-					}
-
-					if (
-						lineIndent > 0 &&
-						lineIndent > prevLineIndent &&
-						lineValue &&
-						isId(lineValue)
-					) {
-						const refLines = lineValue
-							.split(/,\s*/)
-							.map((id) => line.replace(lineValue, id));
-						if (refLines.length > 1) {
-							prevLineIndent = lineIndent;
-							prevRefLines = refLines;
+				} else {
+					if (prevRefLines) {
+						if (lineIndent > prevLineIndent) {
+							if (!prevLines) {
+								prevLines = [];
+							}
+							prevLines.push(line);
 						} else {
+							prevRefLines.forEach((prevRefLine) => {
+								acc.push(prevRefLine, ...(prevLines ?? []));
+							});
+							prevLineIndent = 0;
+							prevRefLines = undefined;
+							prevLines = undefined;
 							acc.push(line);
 						}
 					} else {
-						if (prevRefLines) {
-							if (lineIndent > prevLineIndent) {
-								if (!prevLines) {
-									prevLines = [];
-								}
-								prevLines.push(line);
-							} else {
-								prevRefLines.forEach((prevRefLine) => {
-									acc.push(prevRefLine, ...(prevLines ?? []));
-								});
-								prevLineIndent = 0;
-								prevRefLines = undefined;
-								prevLines = undefined;
-								acc.push(line);
-							}
-						} else {
-							acc.push(line);
-						}
-					}
-				} else {
-					if (acc[acc.length - 1] !== undefined) {
-						acc[acc.length - 1] = `${acc[acc.length - 1]}${line}`;
+						acc.push(line);
 					}
 				}
-				return acc;
-			}, []);
+			} else {
+				if (acc[acc.length - 1] !== undefined) {
+					acc[acc.length - 1] = `${acc[acc.length - 1]}${line}`;
+				}
+			}
+			return acc;
+		}, []);
 
 		let linesJoined = lines.join("\n");
 
@@ -316,8 +314,10 @@ const GedcomTree = {
 				prevNode = newCommon.prevNode;
 				mainNode = newCommon.mainNode;
 
+				// `_CIRC` is the export marker for a skipped loop. Keep it as a
+				// pointer so a later rewrite does not wrap another marker around it.
 				const stackAncestor =
-					value && isId(value) && !id
+					value && isId(value) && !id && type !== "_CIRC"
 						? [curNode, ...curPar].find((node) => node.id === value)
 						: undefined;
 

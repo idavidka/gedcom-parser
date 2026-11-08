@@ -261,6 +261,7 @@ interface Tags {
 	MEDI?: Common; // Media type (GEDCOM 5.5.1 sibling of FORM)
 	CHAR?: Common; // Character set (GEDCOM 5.x HEAD)
 	SDATE?: Common; // Sort date (GEDCOM 7)
+	_CIRC?: Common; // Circular reference marker
 }
 
 export type Tag = keyof Tags | keyof NonStandard;

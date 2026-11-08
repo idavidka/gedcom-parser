@@ -67,7 +67,15 @@ describe("createEmptyGedcom", () => {
 		const raw = gedcom!.toGedcom(undefined, 0, { gedcomVersion: "5.5.1" });
 		expect(raw).toContain("1 _LINK");
 		expect(raw).toContain("2 _CIRC @I1@");
+		expect(raw.match(/_CIRC/g)).toEqual(["_CIRC"]);
 		expect(takeGedcomExportCircularLinks().records).toContain("@I1@");
+
+		const { gedcom: again } = GedcomTree.parse(raw);
+		const rewritten = again!.toGedcom(undefined, 0, {
+			gedcomVersion: "5.5.1",
+		});
+		expect(rewritten).toContain("2 _CIRC @I1@");
+		expect(rewritten.match(/_CIRC/g)).toEqual(["_CIRC"]);
 	});
 
 	it("writes EVEN + TYPE for custom facts", () => {
