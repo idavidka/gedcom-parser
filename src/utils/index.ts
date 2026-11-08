@@ -1,4 +1,5 @@
 // Utils exports - barrel file for easier imports
+export * from "./append-lines";
 export * from "./cache";
 export * from "./common-creator";
 export * from "./date-formatter";

@@ -15,6 +15,7 @@ import type {
 	GroupDefinition,
 	GroupMarker,
 } from "../types/types";
+import { appendLines } from "../utils/append-lines";
 
 import { getValidTag } from "./common";
 import type { Common } from "./common";
@@ -611,8 +612,9 @@ export class List<
 					`${level} ${validTag}${payload ? ` ${payload}` : ""}`
 				);
 			}
-			gedcom.push(
-				...item.toGedcomLines(
+			appendLines(
+				gedcom,
+				item.toGedcomLines(
 					validTag as MultiTag | undefined,
 					level + 1,
 					options

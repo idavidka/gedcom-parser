@@ -5,6 +5,7 @@ import type { ConvertOptions } from "../interfaces/common";
 import type ICommon from "../interfaces/common";
 import type IObje from "../interfaces/obje";
 import type { Tag, IdType, MultiTag, ObjeKey, ListTag } from "../types/types";
+import { appendLines } from "../utils/append-lines";
 import { isGedcomTrailerTag } from "../utils/gedcom-trailer";
 import {
 	ANCESTRY_TREE_MEDIA_NAMESPACE,
@@ -515,12 +516,14 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 					gedcom.push(
 						`${level} ${validKey}${value ? ` ${value}` : ""}`
 					);
-					gedcom.push(
-						...prop.toGedcomLines(validKey, level + 1, options)
+					appendLines(
+						gedcom,
+						prop.toGedcomLines(validKey, level + 1, options)
 					);
 				} else if (prop instanceof List) {
-					gedcom.push(
-						...prop.toGedcomLines(validKey, level, options)
+					appendLines(
+						gedcom,
+						prop.toGedcomLines(validKey, level, options)
 					);
 				}
 			}
