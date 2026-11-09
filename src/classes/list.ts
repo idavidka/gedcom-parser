@@ -17,6 +17,7 @@ import type {
 } from "../types/types";
 
 import {
+	appendGedcomLines,
 	enterGedcomExport,
 	getValidTag,
 	leaveGedcomExport,
@@ -622,8 +623,9 @@ export class List<
 						`${level} ${validTag}${payload ? ` ${payload}` : ""}`
 					);
 				}
-				gedcom.push(
-					...item.toGedcomLines(
+				appendGedcomLines(
+					gedcom,
+					item.toGedcomLines(
 						validTag as MultiTag | undefined,
 						level + 1,
 						options

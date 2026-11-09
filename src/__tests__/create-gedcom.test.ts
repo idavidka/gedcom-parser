@@ -133,3 +133,18 @@ describe("createEmptyGedcom", () => {
 		);
 	});
 });
+
+describe("large gedcom export", () => {
+	it("exports a tree whose line list is past the spread limit", () => {
+		const lines = ["0 HEAD", "1 GEDC", "2 VERS 5.5.1", "2 FORM LINEAGE-LINKED"];
+		for (let i = 1; i <= 65000; i++) {
+			lines.push(`0 @I${i}@ INDI`, "1 NAME A /B/");
+		}
+		lines.push("0 TRLR");
+		const { gedcom } = GedcomTree.parse(lines.join("\n"));
+		const exported = gedcom.toGedcom(undefined, undefined, { original: true });
+		expect(exported.startsWith("0 HEAD")).toBe(true);
+		expect(exported.trimEnd().endsWith("0 TRLR")).toBe(true);
+		expect(exported.split("\n").length).toBeGreaterThan(120000);
+	});
+});

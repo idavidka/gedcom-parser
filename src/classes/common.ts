@@ -511,12 +511,14 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 						gedcom.push(
 							`${level} ${validKey}${value ? ` ${value}` : ""}`
 						);
-						gedcom.push(
-							...prop.toGedcomLines(validKey, level + 1, options)
+						appendGedcomLines(
+							gedcom,
+							prop.toGedcomLines(validKey, level + 1, options)
 						);
 					} else if (prop instanceof List) {
-						gedcom.push(
-							...prop.toGedcomLines(validKey, level, options)
+						appendGedcomLines(
+							gedcom,
+							prop.toGedcomLines(validKey, level, options)
 						);
 					}
 				}
@@ -1106,6 +1108,13 @@ export const getValidKeys = <T>(common: Common<T>) => {
 
 export const getValidTag = (tag: string) => {
 	return tag.replace(/^@@/, "");
+};
+
+/** `push(...lines)` throws RangeError once a record list is large enough. */
+export const appendGedcomLines = (target: string[], lines: string[]): void => {
+	for (let i = 0; i < lines.length; i++) {
+		target.push(lines[i]);
+	}
 };
 
 export const getListTag = (tag: string) => {
