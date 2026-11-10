@@ -9,7 +9,10 @@
 
 import JSZip from "jszip";
 
-import { resolveMediaContent } from "./local-media";
+import {
+	isEmbeddableMediaContent,
+	resolveMediaContent,
+} from "./local-media";
 
 export const GEDZIP_MIME = "application/vnd.familysearch.gedcom+zip";
 export const GEDZIP_EXTENSION = "gdz";
@@ -293,9 +296,44 @@ export type DownloadableGedzipMedia = GedzipMediaInput & {
 	key?: string;
 	downloaded?: boolean;
 	tree?: string;
+	treeName?: string;
 	person?: string;
 	downloadName?: string;
 };
+
+export type WriteGedzipResult = {
+	total: number;
+	written: number;
+	failed: number;
+};
+
+/** Picture-only archive had media descriptors but none could be resolved. */
+export class GedzipMediaEmptyError extends Error {
+	readonly total: number;
+
+	constructor(total: number) {
+		super(
+			total === 1
+				? "Could not download the picture for this export"
+				: `Could not download any of the ${total} pictures for this export`
+		);
+		this.name = "GedzipMediaEmptyError";
+		this.total = total;
+	}
+}
+
+const mediaLookupFromItem = (
+	item: DownloadableGedzipMedia | GedzipMediaInput
+) => ({
+	url: item.url,
+	id: item.id,
+	imgId: item.imgId,
+	key: "key" in item ? item.key : undefined,
+	contentType: item.contentType,
+	person: "person" in item ? item.person : undefined,
+	tree: "tree" in item ? item.tree : undefined,
+	treeName: "treeName" in item ? item.treeName : undefined,
+});
 
 /**
  * Resolve media payloads via injected host cache / local paths / fetch.
@@ -313,16 +351,10 @@ export const downloadGedzipMedia = async (
 	await Promise.all(
 		entries.map(async (item) => {
 			try {
-				const resolved = await resolveMediaContent({
-					url: item.url,
-					id: item.id,
-					imgId: item.imgId,
-					key: "key" in item ? item.key : undefined,
-					contentType: item.contentType,
-					person: "person" in item ? item.person : undefined,
-					tree: "tree" in item ? item.tree : undefined,
-				});
-				if (!resolved?.content) {
+				const resolved = await resolveMediaContent(
+					mediaLookupFromItem(item)
+				);
+				if (!isEmbeddableMediaContent(resolved?.content)) {
 					return;
 				}
 				downloaded.push({
@@ -486,8 +518,13 @@ export const writeGedzip = async (
 				paths: Map<string, string>
 			) => Uint8Array | Promise<Uint8Array>;
 		};
+		/**
+		 * When true (picture-only packs), throw if every image failed so the
+		 * caller does not save a 22-byte empty zip.
+		 */
+		requireMedia?: boolean;
 	}
-): Promise<void> => {
+): Promise<WriteGedzipResult> => {
 	const includeGedcom = options?.includeGedcom !== false;
 	const entries = Object.values(media).filter((item) => !!item?.url);
 	const stored: StoredZipEntry[] = [];
@@ -497,6 +534,7 @@ export const writeGedzip = async (
 	]);
 	const urlToPath = new Map<string, string>();
 	let offset = 0;
+	let written = 0;
 	const encoder = new TextEncoder();
 
 	const append = async (chunk: Uint8Array) => {
@@ -521,29 +559,35 @@ export const writeGedzip = async (
 		try {
 			let content = item.content;
 			let contentType = item.contentType;
-			if (!content) {
-				const resolved = await resolveMediaContent({
-					url: item.url,
-					id: item.id,
-					imgId: item.imgId,
-					key: "key" in item ? item.key : undefined,
-					contentType: item.contentType,
-					person: "person" in item ? item.person : undefined,
-					tree: "tree" in item ? item.tree : undefined,
-				});
+			if (!isEmbeddableMediaContent(content)) {
+				const resolved = await resolveMediaContent(
+					mediaLookupFromItem(item)
+				);
 				content = resolved?.content;
 				contentType = resolved?.contentType || contentType;
 			}
-			if (content) {
+			if (isEmbeddableMediaContent(content)) {
 				const path = nextMediaPath(item, contentType, usedPaths);
 				urlToPath.set(item.url, path);
 				await writeStored(path, decodeMediaBytes(content));
+				written += 1;
 			}
 		} catch {
 			// Skip one unreachable image; the GEDCOM entry is still written.
 		}
 		onProgress?.(i + 1, entries.length);
 		await new Promise((resolve) => setTimeout(resolve, 0));
+	}
+
+	const failed = entries.length - written;
+	if (
+		options?.requireMedia &&
+		entries.length > 0 &&
+		written === 0 &&
+		!includeGedcom &&
+		!options.trailer
+	) {
+		throw new GedzipMediaEmptyError(entries.length);
 	}
 
 	if (includeGedcom) {
@@ -571,30 +615,27 @@ export const writeGedzip = async (
 	await append(
 		endOfCentralDirectory(stored.length, offset - cdOffset, cdOffset)
 	);
+
+	return { total: entries.length, written, failed };
 };
 
 /**
  * Build a GEDZIP one image at a time.
  * Prefer `writeGedzip` when the file can be written straight to disk.
+ * Always copy chunk bytes so later writes cannot alias Blob parts.
  */
 export const packGedzipBlob = async (
 	gedcomText: string,
 	media: Record<string, DownloadableGedzipMedia | GedzipMediaInput>,
 	onProgress?: (done: number, total: number) => void
 ): Promise<Blob> => {
-	const parts: ArrayBuffer[] = [];
+	const parts: Uint8Array[] = [];
 	await writeGedzip(
 		gedcomText,
 		media,
 		{
 			write: (chunk) => {
-				const buffer = chunk.buffer;
-				parts.push(
-					chunk.byteOffset === 0 &&
-						chunk.byteLength === buffer.byteLength
-						? (buffer as ArrayBuffer)
-						: chunk.slice().buffer
-				);
+				parts.push(chunk.slice());
 			},
 		},
 		onProgress

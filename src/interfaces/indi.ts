@@ -32,6 +32,8 @@ export type MediaList = Record<
 		id: string;
 		imgId: string;
 		tree: string;
+		/** Display tree name — used for IndexedDB media cache keys. */
+		treeName?: string;
 		person: IndiKey;
 		title: string;
 		note?: string;

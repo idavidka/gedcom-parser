@@ -1107,11 +1107,13 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 							objeRef ?? obje,
 							this
 						);
+						const treeName = this.getTreeName?.();
 						list[id] = {
 							key,
 							isPrimary,
 							id,
 							tree: tree || "gedzip",
+							...(treeName ? { treeName } : {}),
 							imgId,
 							person: this.id!,
 							title: title as string,
@@ -1231,11 +1233,13 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 			if (url && imgId) {
 				const id = `${tree}-${this.id}-${imgId}`;
+				const treeName = this.getTreeName?.();
 				list[id] = {
 					isPrimary,
 					key,
 					id,
 					tree,
+					...(treeName ? { treeName } : {}),
 					imgId,
 					person: this.id!,
 					title: title as string,
@@ -1454,11 +1458,13 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 						: `img-${index}-${Date.now().toString(36)}`);
 
 				const id = `geni-${geniId}-${imgId}`;
+				const treeName = this.getTreeName?.();
 				list[id] = {
 					isPrimary,
 					key,
 					id,
 					tree: geniId,
+					...(treeName ? { treeName } : {}),
 					imgId,
 					person: this.id!,
 					title: title as string,
@@ -1554,11 +1560,13 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 				const id = `${treeId}-${this.id}-${imgId}`;
 				const originUrl = familySearchMediaOriginUrl(obje, this);
+				const treeName = this.getTreeName?.();
 				list[id] = {
 					isPrimary,
 					key,
 					id,
 					tree: treeId,
+					...(treeName ? { treeName } : {}),
 					imgId,
 					person: this.id!,
 					title: title as string,

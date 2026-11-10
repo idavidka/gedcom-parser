@@ -93,38 +93,20 @@ const blobToDataUrl = async (blob: Blob) => {
 	return `data:${mime};base64,${btoa(binary)}`;
 };
 
-/**
- * Resolve media bytes for GEDZIP export: host cache → local path → data URL → fetch.
- */
-export const resolveMediaContent = async (
-	media: MediaContentLookup
+/** True when `content` is already embeddable archive bytes (not a remote URL). */
+export const isEmbeddableMediaContent = (content?: string): content is string =>
+	typeof content === "string" &&
+	content.length > 0 &&
+	(content.startsWith("data:") || !/^https?:\/\//i.test(content)) &&
+	!content.startsWith("blob:");
+
+const fetchMediaAsDataUrl = async (
+	url: string,
+	contentType?: string
 ): Promise<MediaContentResult | undefined> => {
-	const fromHost = await mediaContentResolver?.(media);
-	if (fromHost?.content) {
-		return fromHost;
-	}
-
-	const url = media.url;
-	if (!url) {
-		return undefined;
-	}
-
-	if (url.startsWith("data:") || url.startsWith("blob:")) {
-		return { content: url, contentType: media.contentType };
-	}
-
-	if (!isRemoteOrEmbeddedMediaUrl(url)) {
-		const local = await resolveLocalMediaUrl(url);
-		if (local && isRemoteOrEmbeddedMediaUrl(local)) {
-			return { content: local, contentType: media.contentType };
-		}
-		return undefined;
-	}
-
 	if (typeof fetch !== "function") {
 		return undefined;
 	}
-
 	try {
 		const response = await fetch(url);
 		if (!response.ok) {
@@ -132,10 +114,80 @@ export const resolveMediaContent = async (
 		}
 		const blob = await response.blob();
 		const content = await blobToDataUrl(blob);
-		const contentType =
-			media.contentType || blob.type.split("/").pop() || "bin";
-		return { content, contentType };
+		return {
+			content,
+			contentType: contentType || blob.type.split("/").pop() || "bin",
+		};
 	} catch {
 		return undefined;
 	}
+};
+
+/**
+ * Resolve media bytes for GEDZIP export: host cache → local path → data URL → fetch.
+ * Host resolver failures must not block the parser fetch fallback.
+ */
+export const resolveMediaContent = async (
+	media: MediaContentLookup
+): Promise<MediaContentResult | undefined> => {
+	try {
+		const fromHost = await mediaContentResolver?.(media);
+		if (fromHost?.content) {
+			if (isEmbeddableMediaContent(fromHost.content)) {
+				return fromHost;
+			}
+			if (/^https?:\/\//i.test(fromHost.content)) {
+				const fetched = await fetchMediaAsDataUrl(
+					fromHost.content,
+					fromHost.contentType || media.contentType
+				);
+				if (fetched) {
+					return fetched;
+				}
+			}
+			if (fromHost.content.startsWith("blob:")) {
+				const fetched = await fetchMediaAsDataUrl(
+					fromHost.content,
+					fromHost.contentType || media.contentType
+				);
+				if (fetched) {
+					return fetched;
+				}
+			}
+		}
+	} catch {
+		// Host IndexedDB / cache errors fall through to path + fetch.
+	}
+
+	const url = media.url;
+	if (!url) {
+		return undefined;
+	}
+
+	if (url.startsWith("data:")) {
+		return { content: url, contentType: media.contentType };
+	}
+
+	if (url.startsWith("blob:")) {
+		return fetchMediaAsDataUrl(url, media.contentType);
+	}
+
+	if (!isRemoteOrEmbeddedMediaUrl(url)) {
+		const local = await resolveLocalMediaUrl(url, media);
+		if (local?.startsWith("data:")) {
+			return { content: local, contentType: media.contentType };
+		}
+		if (local && /^https?:\/\//i.test(local)) {
+			const fetched = await fetchMediaAsDataUrl(local, media.contentType);
+			if (fetched) {
+				return fetched;
+			}
+		}
+		if (local?.startsWith("blob:")) {
+			return fetchMediaAsDataUrl(local, media.contentType);
+		}
+		return undefined;
+	}
+
+	return fetchMediaAsDataUrl(url, media.contentType);
 };

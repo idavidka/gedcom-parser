@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 import GedcomTree from "../index";
 import {
 	GEDZIP_GEDCOM_ENTRY,
+	GedzipMediaEmptyError,
 	buildGedzip,
 	extractGedzip,
 	rewriteGedcomFilePaths,
+	writeGedzip,
 } from "../utils/gedzip";
 
 describe("GEDZIP", () => {
@@ -90,6 +92,24 @@ describe("GEDZIP", () => {
 		});
 		expect(remounted).toContain("1 FILE data:image/jpeg;base64,");
 		expect(remounted).not.toContain("1 FILE media/x.jpg");
+	});
+
+	it("throws instead of writing an empty picture-only zip", async () => {
+		await expect(
+			writeGedzip(
+				"",
+				{
+					a: {
+						url: "media/missing.jpg",
+						imgId: "missing",
+						contentType: "jpg",
+					},
+				},
+				{ write: () => undefined },
+				undefined,
+				{ includeGedcom: false, requireMedia: true }
+			)
+		).rejects.toBeInstanceOf(GedzipMediaEmptyError);
 	});
 
 	it("strips a UTF-8 BOM from a Geni zip so 0 HEAD survives", async () => {
