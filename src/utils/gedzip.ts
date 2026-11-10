@@ -354,12 +354,16 @@ export const downloadGedzipMedia = async (
 				const resolved = await resolveMediaContent(
 					mediaLookupFromItem(item)
 				);
-				if (!isEmbeddableMediaContent(resolved?.content)) {
+				const resolvedContent = resolved?.content;
+				if (
+					!resolvedContent ||
+					!isEmbeddableMediaContent(resolvedContent)
+				) {
 					return;
 				}
 				downloaded.push({
 					...item,
-					content: resolved.content,
+					content: resolvedContent,
 					contentType: resolved.contentType || item.contentType,
 				});
 			} catch {
@@ -566,7 +570,7 @@ export const writeGedzip = async (
 				content = resolved?.content;
 				contentType = resolved?.contentType || contentType;
 			}
-			if (isEmbeddableMediaContent(content)) {
+			if (content && isEmbeddableMediaContent(content)) {
 				const path = nextMediaPath(item, contentType, usedPaths);
 				urlToPath.set(item.url, path);
 				await writeStored(path, decodeMediaBytes(content));

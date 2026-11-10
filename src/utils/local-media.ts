@@ -93,8 +93,12 @@ const blobToDataUrl = async (blob: Blob) => {
 	return `data:${mime};base64,${btoa(binary)}`;
 };
 
-/** True when `content` is already embeddable archive bytes (not a remote URL). */
-export const isEmbeddableMediaContent = (content?: string): content is string =>
+/**
+ * True when `content` is already embeddable archive bytes (not a remote URL).
+ * A plain boolean: `false` is still a string (`https:` / `blob:`), so a
+ * `content is string` predicate would narrow the rest of the function to `never`.
+ */
+export const isEmbeddableMediaContent = (content?: string): boolean =>
 	typeof content === "string" &&
 	content.length > 0 &&
 	(content.startsWith("data:") || !/^https?:\/\//i.test(content)) &&
