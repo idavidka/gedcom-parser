@@ -307,6 +307,16 @@ export type WriteGedzipResult = {
 	failed: number;
 };
 
+/** The user stopped a picture download. Bytes already cached stay put. */
+export class GedzipDownloadCancelled extends Error {
+	readonly cancelled = true;
+
+	constructor() {
+		super("Picture download was stopped");
+		this.name = "GedzipDownloadCancelled";
+	}
+}
+
 /** Picture-only archive had media descriptors but none could be resolved. */
 export class GedzipMediaEmptyError extends Error {
 	readonly total: number;
@@ -527,6 +537,8 @@ export const writeGedzip = async (
 		 * caller does not save a 22-byte empty zip.
 		 */
 		requireMedia?: boolean;
+		/** Stop before the next picture. Already resolved bytes stay cached. */
+		shouldStop?: () => boolean;
 	}
 ): Promise<WriteGedzipResult> => {
 	const includeGedcom = options?.includeGedcom !== false;
@@ -559,6 +571,9 @@ export const writeGedzip = async (
 	};
 
 	for (let i = 0; i < entries.length; i++) {
+		if (options?.shouldStop?.()) {
+			throw new GedzipDownloadCancelled();
+		}
 		const item = entries[i];
 		try {
 			let content = item.content;
@@ -631,7 +646,8 @@ export const writeGedzip = async (
 export const packGedzipBlob = async (
 	gedcomText: string,
 	media: Record<string, DownloadableGedzipMedia | GedzipMediaInput>,
-	onProgress?: (done: number, total: number) => void
+	onProgress?: (done: number, total: number) => void,
+	options?: { shouldStop?: () => boolean }
 ): Promise<Blob> => {
 	const parts: Uint8Array[] = [];
 	await writeGedzip(
@@ -642,7 +658,8 @@ export const packGedzipBlob = async (
 				parts.push(chunk.slice());
 			},
 		},
-		onProgress
+		onProgress,
+		options
 	);
 	return new Blob(parts, { type: GEDZIP_MIME });
 };
