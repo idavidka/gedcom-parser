@@ -128,6 +128,7 @@ interface Tags {
 	ADDR?: Common; // Address, usually mailing address
 	ADR1?: Common; // First line of an address
 	ADR2?: Common; // Second line of an address
+	ADR3?: Common; // Third line of an address
 	ADOP?: Common; // Adoption
 	AFN?: Common; // Ancestral File number (LDS)
 	AGE?: Common; // Age at time of event
