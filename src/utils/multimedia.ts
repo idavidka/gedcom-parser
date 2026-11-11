@@ -29,6 +29,8 @@ export type AttachMultimediaOptions = {
 export type CollectMultimediaOptions = {
 	indiIds?: IndiKey[];
 	namespace?: string | number;
+	/** Stop before the next batch. Already visited people are discarded. */
+	shouldStop?: () => boolean;
 };
 
 /**

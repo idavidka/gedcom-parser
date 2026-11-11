@@ -1,6 +1,7 @@
 import { APP_BRANDING } from "../constants/constants";
 import type { ConvertOptions } from "../interfaces/common";
 import type IGedcom from "../interfaces/gedcom";
+import type { MediaList } from "../interfaces/indi";
 import type IEventDetailStructure from "../structures/event-detail-structure";
 import type IGedComStructure from "../structures/gedcom";
 import type {
@@ -17,22 +18,18 @@ import type {
 } from "../types/types";
 import { nextRecordId, stampCreatedAt } from "../utils/family-edit";
 import { appendGedcomTrailer } from "../utils/gedcom-trailer";
-import {
-	beginGedcomExportTracking,
-	finishGedcomExportTracking,
-} from "./common";
 import { normalizeGedcomVersion } from "../utils/gedcom-version";
 import type { GedcomExportVersion } from "../utils/gedcom-version";
-import { buildGedzip } from "../utils/gedzip";
-import type { GedzipMediaInput } from "../utils/gedzip";
-import { applyGedcom7Enumerations } from "../utils/gedcom7-enumerations";
 import { applyGedcom7DatePhrases } from "../utils/gedcom7-dates";
+import { applyGedcom7Enumerations } from "../utils/gedcom7-enumerations";
 import { applyGedcom7RecordMetadata } from "../utils/gedcom7-metadata";
 import {
 	ensureExtensionSchema,
 	getExtensionSchema,
 	registerExtensionTag,
 } from "../utils/gedcom7-schema";
+import type { GedzipMediaInput } from "../utils/gedzip";
+import { buildGedzip, GedzipDownloadCancelled } from "../utils/gedzip";
 import { getVersion } from "../utils/get-product-details";
 import { inferMediaForm, mergeMediaLists } from "../utils/multimedia";
 import type {
@@ -40,9 +37,13 @@ import type {
 	CreateMultimediaInput,
 } from "../utils/multimedia";
 import { createGedcomUid } from "../utils/uid";
-import type { MediaList } from "../interfaces/indi";
+import {
+	beginGedcomExportTracking,
+	finishGedcomExportTracking,
+	Common,
+	createCommon,
+} from "./common";
 
-import { Common, createCommon } from "./common";
 import { createFam } from "./fam";
 import type { FamType } from "./fam";
 import { Families } from "./fams";
@@ -560,9 +561,23 @@ export class GedCom extends Common implements IGedcom {
 			});
 		}
 
-		const lists = await Promise.all(
-			people.map((indi) => indi.multimedia(options?.namespace))
-		);
+		// One person walks every OBJE synchronously. Doing all of them in
+		// one turn freezes the tab before the download overlay can paint.
+		const BATCH = 25;
+		const lists: Array<MediaList | undefined> = [];
+		for (let index = 0; index < people.length; index += BATCH) {
+			if (options?.shouldStop?.()) {
+				throw new GedzipDownloadCancelled();
+			}
+			const slice = people.slice(index, index + BATCH);
+			const part = await Promise.all(
+				slice.map((indi) => indi.multimedia(options?.namespace))
+			);
+			lists.push(...part);
+			await new Promise<void>((resolve) => {
+				setTimeout(resolve, 0);
+			});
+		}
 		return mergeMediaLists(...lists);
 	}
 
