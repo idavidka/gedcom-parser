@@ -94,6 +94,7 @@ interface Tags {
 	_WLNK?: Common;
 	_MARNM?: Common;
 	_UID?: Common;
+	_UPD?: Common; // MyHeritage last-update timestamp
 	_TID?: Common;
 	_TREE?: Common;
 	_TREEVIZ_LIFE_STORY?: Common;
@@ -105,6 +106,7 @@ interface Tags {
 	_FS_LINK?: Common; // Legacy: FamilySearch link (now stored in WWW with _IS_FS Y marker)
 	_FS_ID?: Common; // FamilySearch ID
 	_TREEVIZ_CON_ID?: Common; // Same person in another TreeViz tree
+	_TREEVIZ_CONNECTOR_ID?: Common; // Source person id stored by the TreeViz Connector
 	_CREATED_AT?: Common; // DATE: day TreeViz created this person
 	_FS_MATCH?: Common; // Legacy: FamilySearch Matches (now stored in MATCH with _IS_FS Y marker)
 	_FS_SOUR?: Common; // Legacy: FamilySearch Sources marker (now _IS_FS Y)
