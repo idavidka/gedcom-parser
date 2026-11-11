@@ -649,13 +649,15 @@ export const packGedzipBlob = async (
 	onProgress?: (done: number, total: number) => void,
 	options?: { shouldStop?: () => boolean }
 ): Promise<Blob> => {
-	const parts: Uint8Array[] = [];
+	const parts: Uint8Array<ArrayBuffer>[] = [];
 	await writeGedzip(
 		gedcomText,
 		media,
 		{
 			write: (chunk) => {
-				parts.push(chunk.slice());
+				const part = new Uint8Array(chunk.byteLength);
+				part.set(chunk);
+				parts.push(part);
 			},
 		},
 		onProgress,
