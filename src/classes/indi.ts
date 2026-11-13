@@ -2055,10 +2055,21 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	}
 
 	isDead() {
+		const raw = this.get("DEAT")?.toValue();
+		const flag = typeof raw === "string" ? raw.trim().toUpperCase() : "";
+		if (flag === "N") {
+			return false;
+		}
+		if (flag === "Y") {
+			return true;
+		}
+		const filled = (value: unknown) =>
+			typeof value === "string"
+				? value.trim() !== ""
+				: value !== undefined && value !== null;
 		return (
-			this.get('DEAT')?.toValue()?.toUpperCase() === 'Y' ||
-			this.get("DEAT.DATE")?.toValue() !== undefined ||
-			this.get("DEAT.PLAC")?.toValue() !== undefined
+			filled(this.get("DEAT.DATE")?.toValue()) ||
+			filled(this.get("DEAT.PLAC")?.toValue())
 		);
 	}
 
