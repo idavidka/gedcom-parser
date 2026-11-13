@@ -2033,19 +2033,30 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		}
 		const now = new Date().getFullYear();
 		const limit = getLivingYears();
-		const years = [
-			birthYearOf(this),
-			...marriageYearsOf(this),
-			lastChildBirthYearOf(this),
-		].filter((year): year is number => year !== undefined);
-		if (years.length === 0) {
-			return true;
+		const tooOld = (year: number) => now - year >= limit;
+
+		const birthYear = birthYearOf(this);
+		if (birthYear !== undefined && tooOld(birthYear)) {
+			return false;
 		}
-		return years.every((year) => now - year < limit);
+
+		for (const year of marriageYearsOf(this)) {
+			if (tooOld(year)) {
+				return false;
+			}
+		}
+
+		const childYear = lastChildBirthYearOf(this);
+		if (childYear !== undefined && tooOld(childYear)) {
+			return false;
+		}
+
+		return true;
 	}
 
 	isDead() {
 		return (
+			this.get('DEAT')?.toValue()?.toUpperCase() === 'Y' ||
 			this.get("DEAT.DATE")?.toValue() !== undefined ||
 			this.get("DEAT.PLAC")?.toValue() !== undefined
 		);
