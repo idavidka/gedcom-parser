@@ -261,5 +261,29 @@ describe("Individual (INDI) Class Functionality", () => {
 			expect(gedcom.indi("@I1@" as IndiKey)?.isLiving()).toBe(false);
 			expect(gedcom.indi("@I2@" as IndiKey)?.isLiving()).toBe(false);
 		});
+
+		it("treats a parent as dead when a child died outside the limit", () => {
+			const raw = `0 HEAD
+1 GEDC
+2 VERS 5.5.1
+0 @I1@ INDI
+1 NAME Nicolas /Reichstätter/
+1 SEX M
+1 FAMS @F1@
+0 @I2@ INDI
+1 NAME Franz /Reichstätter/
+1 SEX M
+1 FAMC @F1@
+1 DEAT
+2 DATE 12 Mar 1800
+0 @F1@ FAM
+1 HUSB @I1@
+1 CHIL @I2@
+0 TRLR
+`;
+			const { gedcom } = GedcomTree.parse(raw);
+			expect(gedcom.indi("@I1@" as IndiKey)?.isLiving()).toBe(false);
+			expect(gedcom.indi("@I2@" as IndiKey)?.isLiving()).toBe(false);
+		});
 	});
 });

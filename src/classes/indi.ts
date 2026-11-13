@@ -244,6 +244,10 @@ const birthYearOf = (indi: {
 	get?: (tag: "BIRT.DATE") => unknown;
 }): number | undefined => yearOfNode(indi.get?.("BIRT.DATE"));
 
+const deathYearOf = (indi: {
+	get?: (tag: "DEAT.DATE") => unknown;
+}): number | undefined => yearOfNode(indi.get?.("DEAT.DATE"));
+
 const marriageYearsOf = (indi: {
 	getFamilies?: (type: "FAMS") => {
 		forEach: (
@@ -2049,14 +2053,17 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		}
 
 		const children = this.getChildren();
-		let childMarriageTooOld = false;
+		let childEventTooOld = false;
 		children?.forEach((child) => {
-			if (childMarriageTooOld || !child) {
+			if (childEventTooOld || !child) {
 				return;
 			}
-			childMarriageTooOld = marriageYearsOf(child).some(tooOld);
+			const deathYear = deathYearOf(child);
+			childEventTooOld =
+				marriageYearsOf(child).some(tooOld) ||
+				(deathYear !== undefined && tooOld(deathYear));
 		});
-		if (childMarriageTooOld) {
+		if (childEventTooOld) {
 			return false;
 		}
 
