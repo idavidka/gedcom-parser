@@ -197,4 +197,69 @@ describe("Individual (INDI) Class Functionality", () => {
 			});
 		});
 	});
+
+	describe("isLiving", () => {
+		it("ignores a birth date that has no year", () => {
+			const raw = `0 HEAD
+1 GEDC
+2 VERS 5.5.1
+0 @I1@ INDI
+1 NAME Felix /Nideggen/
+1 SEX M
+1 FAMS @F1@
+0 @I2@ INDI
+1 NAME Mathias /Nideggen/
+1 FAMC @F1@
+1 BIRT
+2 DATE 11 Oct
+0 @I3@ INDI
+1 NAME Anna /Nideggen/
+1 FAMC @F1@
+1 BIRT
+2 DATE 24 May
+0 @I4@ INDI
+1 NAME Elisabeth /Nideggen/
+1 FAMC @F1@
+1 BIRT
+2 DATE 7 Jan 1800
+0 @F1@ FAM
+1 HUSB @I1@
+1 CHIL @I2@
+1 CHIL @I3@
+1 CHIL @I4@
+0 TRLR
+`;
+			const { gedcom } = GedcomTree.parse(raw);
+			expect(gedcom.indi("@I1@" as IndiKey)?.isLiving()).toBe(false);
+		});
+
+		it("treats a parent as dead when a child married outside the limit", () => {
+			const raw = `0 HEAD
+1 GEDC
+2 VERS 5.5.1
+0 @I1@ INDI
+1 NAME Nicolas /Reichstätter/
+1 SEX M
+1 FAMS @F1@
+0 @I2@ INDI
+1 NAME Franz /Reichstätter/
+1 SEX M
+1 FAMC @F1@
+1 FAMS @F2@
+1 BIRT
+2 PLAC Landskron
+0 @F1@ FAM
+1 HUSB @I1@
+1 CHIL @I2@
+0 @F2@ FAM
+1 HUSB @I2@
+1 MARR
+2 DATE Jan 1763
+0 TRLR
+`;
+			const { gedcom } = GedcomTree.parse(raw);
+			expect(gedcom.indi("@I1@" as IndiKey)?.isLiving()).toBe(false);
+			expect(gedcom.indi("@I2@" as IndiKey)?.isLiving()).toBe(false);
+		});
+	});
 });

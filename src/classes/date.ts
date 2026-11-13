@@ -296,6 +296,22 @@ export class CommonDate extends Common<string> {
 		return note;
 	}
 
+	/**
+	 * Year written in the GEDCOM date. A Date parsed from a day and month
+	 * alone (for example "11 Oct") must not supply a year.
+	 */
+	sourceYear(): number | undefined {
+		if (typeof this._value !== "string") {
+			return undefined;
+		}
+		const match = this._value.match(/\b(\d{3,4})\b/);
+		if (!match) {
+			return undefined;
+		}
+		const year = Number(match[1]);
+		return Number.isFinite(year) ? year : undefined;
+	}
+
 	toValue(
 		dateFormat = "dd MMM yyyy",
 		locale?: Locale | null

@@ -233,46 +233,43 @@ const relativesOnDegreeCache = relativesCache("relativesOnDegreeCache");
 
 const PRIVATE_RESN = new Set(["privacy", "confidential", "locked"]);
 
-const yearOf = (date: string | undefined): number | undefined => {
-	const match = date?.match(/\b(\d{3,4})\b/);
-	if (!match) {
-		return undefined;
-	}
-	const year = Number(match[1]);
-	return Number.isFinite(year) ? year : undefined;
+const yearOfNode = (node: unknown): number | undefined => {
+	const dated = node as { sourceYear?: () => number | undefined } | undefined;
+	return typeof dated?.sourceYear === "function"
+		? dated.sourceYear()
+		: undefined;
 };
 
-const birthYearOf = (
-	indi: NonNullable<Parameters<typeof dateFormatter>[0]>
-): number | undefined =>
-	yearOf(
-		dateFormatter(
-			indi,
-			false,
-			false,
-			false,
-			true,
-			false,
-			undefined,
-			false,
-			"yyyy"
-		).birth
-	);
+const birthYearOf = (indi: {
+	get?: (tag: "BIRT.DATE") => unknown;
+}): number | undefined => yearOfNode(indi.get?.("BIRT.DATE"));
 
 const marriageYearsOf = (indi: {
-	getMarriageDates?: () => Array<string | undefined>;
-}): number[] =>
-	(indi.getMarriageDates?.() ?? []).flatMap((date) => {
-		const year = yearOf(typeof date === "string" ? date : undefined);
-		return year === undefined ? [] : [year];
+	getFamilies?: (type: "FAMS") => {
+		forEach: (
+			fn: (family: {
+				MARR?: { toList: () => { values: () => unknown[] } };
+			}) => void
+		) => void;
+	};
+}): number[] => {
+	const years: number[] = [];
+	indi.getFamilies?.("FAMS").forEach((family) => {
+		(family?.MARR?.toList().values() ?? []).forEach((event) => {
+			const date = (event as { DATE?: unknown } | undefined)?.DATE;
+			const year = yearOfNode(date);
+			if (year !== undefined) {
+				years.push(year);
+			}
+		});
 	});
+	return years;
+};
 
 const lastChildBirthYearOf = (indi: {
 	getChildren?: () => {
 		forEach: (
-			fn: (
-				child: NonNullable<Parameters<typeof dateFormatter>[0]>
-			) => void
+			fn: (child: { get?: (tag: "BIRT.DATE") => unknown }) => void
 		) => void;
 	};
 }): number | undefined => {
@@ -2048,6 +2045,18 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 
 		const childYear = lastChildBirthYearOf(this);
 		if (childYear !== undefined && tooOld(childYear)) {
+			return false;
+		}
+
+		const children = this.getChildren();
+		let childMarriageTooOld = false;
+		children?.forEach((child) => {
+			if (childMarriageTooOld || !child) {
+				return;
+			}
+			childMarriageTooOld = marriageYearsOf(child).some(tooOld);
+		});
+		if (childMarriageTooOld) {
 			return false;
 		}
 
