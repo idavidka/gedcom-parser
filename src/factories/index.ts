@@ -15,3 +15,4 @@ export * from "./i18n-factory";
 export * from "./kinship-factory";
 export * from "./place-parser-provider";
 export * from "./place-translator-provider";
+export * from "./living-years";

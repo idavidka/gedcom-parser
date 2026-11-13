@@ -6,6 +6,7 @@ import {
 	getMarriageAscAndChildBirth,
 } from "../constants/orders";
 import { getKinshipTranslatorClass } from "../factories/kinship-factory";
+import { getLivingYears } from "../factories/living-years";
 import type {
 	MediaList,
 	GeneratedIndiMethods,
@@ -229,6 +230,65 @@ const CustomFactRenderers: Partial<
 
 const relativesOnLevelCache = relativesCache("relativesOnLevelCache");
 const relativesOnDegreeCache = relativesCache("relativesOnDegreeCache");
+
+const PRIVATE_RESN = new Set(["privacy", "confidential", "locked"]);
+
+const yearOf = (date: string | undefined): number | undefined => {
+	const match = date?.match(/\b(\d{3,4})\b/);
+	if (!match) {
+		return undefined;
+	}
+	const year = Number(match[1]);
+	return Number.isFinite(year) ? year : undefined;
+};
+
+const birthYearOf = (
+	indi: NonNullable<Parameters<typeof dateFormatter>[0]>
+): number | undefined =>
+	yearOf(
+		dateFormatter(
+			indi,
+			false,
+			false,
+			false,
+			true,
+			false,
+			undefined,
+			false,
+			"yyyy"
+		).birth
+	);
+
+const marriageYearsOf = (indi: {
+	getMarriageDates?: () => Array<string | undefined>;
+}): number[] =>
+	(indi.getMarriageDates?.() ?? []).flatMap((date) => {
+		const year = yearOf(typeof date === "string" ? date : undefined);
+		return year === undefined ? [] : [year];
+	});
+
+const lastChildBirthYearOf = (indi: {
+	getChildren?: () => {
+		forEach: (
+			fn: (
+				child: NonNullable<Parameters<typeof dateFormatter>[0]>
+			) => void
+		) => void;
+	};
+}): number | undefined => {
+	const children = indi.getChildren?.();
+	if (!children) {
+		return undefined;
+	}
+	let last: number | undefined;
+	children.forEach((child) => {
+		const year = birthYearOf(child);
+		if (year !== undefined && (last === undefined || year > last)) {
+			last = year;
+		}
+	});
+	return last;
+};
 
 export class Indi extends Common<string, IndiKey> implements IIndi {
 	private _isUnknownAncestor?: boolean;
@@ -1957,6 +2017,31 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		});
 
 		return marriageDates;
+	}
+
+	isPrivate() {
+		const value = this.RESN?.toValue?.();
+		return (
+			typeof value === "string" &&
+			PRIVATE_RESN.has(value.trim().toLowerCase())
+		);
+	}
+
+	isLiving() {
+		if (this.isDead()) {
+			return false;
+		}
+		const now = new Date().getFullYear();
+		const limit = getLivingYears();
+		const years = [
+			birthYearOf(this),
+			...marriageYearsOf(this),
+			lastChildBirthYearOf(this),
+		].filter((year): year is number => year !== undefined);
+		if (years.length === 0) {
+			return true;
+		}
+		return years.every((year) => now - year < limit);
 	}
 
 	isDead() {

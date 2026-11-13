@@ -62,6 +62,12 @@ interface IIndi extends Common<string, IndiKey> {
 
 	getDeathPlace: () => string | undefined;
 
+	/** RESN is privacy, confidential, or locked. */
+	isPrivate: () => boolean;
+
+	/** No death record, and every known year falls inside the living-years threshold. */
+	isLiving: () => boolean;
+
 	isParentOf: (indi?: IndiKey | IndiType) => IndiKey | boolean;
 
 	isChildOf: (indi?: IndiKey | IndiType) => IndiKey | boolean;
