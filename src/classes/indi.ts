@@ -2020,7 +2020,7 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 	}
 
 	isPrivate() {
-		const value = this.RESN?.toValue?.();
+		const value = this.get("RESN")?.toValue();
 		return (
 			typeof value === "string" &&
 			PRIVATE_RESN.has(value.trim().toLowerCase())
