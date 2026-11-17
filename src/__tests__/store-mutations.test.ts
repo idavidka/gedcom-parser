@@ -1,6 +1,7 @@
 import { readFileSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
+import { vi } from "vitest";
 
 import GedcomTree from "../index";
 import { getStoreLink } from "../store/session";
