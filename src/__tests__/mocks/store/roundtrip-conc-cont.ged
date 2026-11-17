@@ -1,0 +1,8 @@
+0 HEAD
+1 SOUR TreeViz
+0 @I1@ INDI
+1 NAME Long /Name/
+1 NOTE This is a long note that continues
+2 CONC  on the same line via CONC
+2 CONT And a new line via CONT
+0 TRLR

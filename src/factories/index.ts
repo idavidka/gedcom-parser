@@ -11,6 +11,7 @@ export type { PlaceTranslatorFunction } from "./place-translator-provider";
 // Export all factory functions
 export * from "./cache-factory";
 export * from "./date-locale-factory";
+export * from "./gedcom-connection";
 export * from "./i18n-factory";
 export * from "./kinship-factory";
 export * from "./place-parser-provider";
