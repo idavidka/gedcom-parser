@@ -256,13 +256,20 @@ export const flushStoreLink = async (
 		};
 
 		// Records removed from the live graph since the last flush.
+		// If the graph cannot see the store (filtered list, failed lookup),
+		// do not wipe IndexedDB.
+		const missing: string[] = [];
 		for (const id of link.cache.keys()) {
 			if (id === "HEAD") {
 				continue;
 			}
 			if (!resolveLive(id) && !deleteIds.includes(id)) {
-				deleteIds.push(id);
+				missing.push(id);
 			}
+		}
+		const storedCount = Math.max(1, link.cache.size - 1);
+		if (missing.length > 0 && missing.length < storedCount) {
+			deleteIds.push(...missing);
 		}
 
 		const upserts: GedcomRecord[] = [];

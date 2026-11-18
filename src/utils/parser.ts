@@ -128,7 +128,7 @@ type GedcomTreeApi = {
 	) => ParseResult;
 	open: (
 		connection: string,
-		options?: { filename?: string }
+		options?: { filename?: string; attached?: boolean }
 	) => Promise<ParseResult>;
 	create: (
 		connection: string,
@@ -575,7 +575,10 @@ const GedcomTree: GedcomTreeApi = {
 		curValue.item(id as IdType, prev);
 	},
 
-	open: async function (connection: string, options?: { filename?: string }) {
+	open: async function (
+		connection: string,
+		options?: { filename?: string; attached?: boolean }
+	) {
 		const parsed = parseConnection(connection);
 		const store = resolveStore(parsed.connection);
 		const meta = await store.getMeta(parsed.treeId);
@@ -586,6 +589,17 @@ const GedcomTree: GedcomTreeApi = {
 		}
 		const records = await store.getAllRecords(parsed.treeId);
 		const gedcom = fromRecords(records, { filename: options?.filename });
+		// A read-only open must not register a store session. Order and
+		// generator walk the graph, and a connected session would flush those
+		// reads back into IndexedDB and drop the people.
+		if (options?.attached === false) {
+			return {
+				gedcom,
+				raw: "",
+				revision: meta.revision,
+				connection: parsed.connection,
+			};
+		}
 		const link = buildStoreLink({
 			connection: parsed.connection,
 			treeId: parsed.treeId,
@@ -596,7 +610,7 @@ const GedcomTree: GedcomTreeApi = {
 		const connected = connectGedcom(gedcom, link) as ConnectedGedCom;
 		return {
 			gedcom: connected,
-			raw: connected.toGedcom(),
+			raw: "",
 			revision: meta.revision,
 			connection: parsed.connection,
 		};
