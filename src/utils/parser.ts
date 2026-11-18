@@ -13,6 +13,7 @@ import { Submitters } from "../classes/subms";
 import { LINE_REG, REF_LINE_REG } from "../constants/constants";
 import { parseConnection } from "../store/connection";
 import { lexGedcom } from "../store/lex";
+import { fromRecords, toRecords } from "../store/records";
 import {
 	buildStoreLink,
 	connectGedcom,
@@ -20,7 +21,6 @@ import {
 	resolveStore,
 	type ConnectedGedCom,
 } from "../store/session";
-import { fromRecords, toRecords } from "../store/records";
 import type { GedcomTreeMeta } from "../store/types";
 import type { Settings } from "../types/settings";
 import type { ConvertType, IdType, MultiTag, ListTag } from "../types/types";
@@ -109,13 +109,31 @@ export type GedcomParseOptions = {
 
 type GedcomTreeApi = {
 	parse: {
-		(content: string, options?: GedcomParseOptions & { connection?: undefined }): ParseResult;
-		(content: string, options: GedcomParseOptions & { connection: string }): Promise<ParseResult>;
-		(content: string, options?: GedcomParseOptions): ParseResult | Promise<ParseResult>;
+		(
+			content: string,
+			options?: GedcomParseOptions & { connection?: undefined }
+		): ParseResult;
+		(
+			content: string,
+			options: GedcomParseOptions & { connection: string }
+		): Promise<ParseResult>;
+		(
+			content: string,
+			options?: GedcomParseOptions
+		): ParseResult | Promise<ParseResult>;
 	};
-	parseHierarchy: (content: string, options?: GedcomParseOptions) => ParseResult;
-	open: (connection: string, options?: { filename?: string }) => Promise<ParseResult>;
-	create: (connection: string, options?: { filename?: string }) => Promise<ParseResult>;
+	parseHierarchy: (
+		content: string,
+		options?: GedcomParseOptions
+	) => ParseResult;
+	open: (
+		connection: string,
+		options?: { filename?: string }
+	) => Promise<ParseResult>;
+	create: (
+		connection: string,
+		options?: { filename?: string }
+	) => Promise<ParseResult>;
 	delete: (connection: string) => Promise<void>;
 	close: (connection: string) => void;
 	addToList: (
@@ -584,7 +602,10 @@ const GedcomTree: GedcomTreeApi = {
 		};
 	},
 
-	create: async function (connection: string, options?: { filename?: string }) {
+	create: async function (
+		connection: string,
+		options?: { filename?: string }
+	) {
 		const text = emptyTreeText(options?.filename);
 		return parseIntoStore(text, {
 			connection,
