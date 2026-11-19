@@ -278,20 +278,32 @@ export const flushStoreLink = async (
 		};
 
 		// Records removed from the live graph since the last flush.
-		// If the graph cannot see the store (filtered list, failed lookup),
-		// do not wipe IndexedDB.
+		// A failed lookup (empty family list, half the people) must not
+		// delete the rest of IndexedDB. Only a graph that still holds
+		// nearly every stored INDI and FAM may drop the few missing ids.
 		const missing: string[] = [];
-		for (const id of link.cache.keys()) {
-			if (id === "HEAD") {
+		let cachedIndi = 0;
+		let cachedFam = 0;
+		for (const [id, record] of link.cache) {
+			if (record.tag === "INDI") {
+				cachedIndi += 1;
+			} else if (record.tag === "FAM") {
+				cachedFam += 1;
+			}
+			if (id === "HEAD" || deleteIds.includes(id) || resolveLive(id)) {
 				continue;
 			}
-			if (!resolveLive(id) && !deleteIds.includes(id)) {
-				missing.push(id);
-			}
+			missing.push(id);
 		}
-		const storedCount = Math.max(1, link.cache.size - 1);
-		if (missing.length > 0 && missing.length < storedCount) {
-			deleteIds.push(...missing);
+		const liveIndi = session.gedcom.indis()?.length ?? 0;
+		const liveFam = session.gedcom.fams()?.length ?? 0;
+		const graphLooksComplete =
+			liveIndi >= cachedIndi * 0.9 &&
+			(cachedFam === 0 || liveFam >= cachedFam * 0.9);
+		if (graphLooksComplete) {
+			for (const id of missing) {
+				deleteIds.push(id);
+			}
 		}
 
 		const upserts: GedcomRecord[] = [];
@@ -303,7 +315,9 @@ export const flushStoreLink = async (
 			const existing = link.cache.get(id);
 			const tag = existing?.tag ?? (live?.type as string) ?? "INDI";
 			if (!live) {
-				deleteIds.push(id);
+				if (graphLooksComplete) {
+					deleteIds.push(id);
+				}
 				continue;
 			}
 			const node = nodeToRecord(live, tag);
