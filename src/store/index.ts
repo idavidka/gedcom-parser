@@ -14,6 +14,8 @@ export {
 	getOpenSession,
 	detachStoreLink,
 	RevisionConflictError,
+	setGedcomFlushListener,
+	discardOpenGedcomStores,
 	type ConnectedGedCom,
 } from "./session";
 export { markDirty, markDeleted } from "./session";

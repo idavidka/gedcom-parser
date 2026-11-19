@@ -201,6 +201,27 @@ export const createIndexedDbGedcomStore = (
 
 const indexedStores = new Map<string, GedcomStore>();
 
+/** Tree ids stored in the `treeviz-gedcom` database (meta store). */
+export const listIndexedDbGedcomTreeIds = async (
+	databaseName: string = GEDCOM_STORE_DB_NAME
+): Promise<string[]> => {
+	if (typeof indexedDB === "undefined") {
+		return [];
+	}
+	try {
+		const db = await getDb(databaseName);
+		const tx = db.transaction(META_STORE, "readonly");
+		const rows = await reqToPromise(
+			tx.objectStore(META_STORE).getAll() as IDBRequest<GedcomTreeMeta[]>
+		);
+		return (rows ?? [])
+			.map((row) => row.treeId)
+			.filter((id): id is string => !!id);
+	} catch {
+		return [];
+	}
+};
+
 export const getIndexedDbGedcomStore = (
 	databaseName: string = GEDCOM_STORE_DB_NAME
 ): GedcomStore => {

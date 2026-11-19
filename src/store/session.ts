@@ -43,6 +43,14 @@ export const detachStoreLink = (connection: string) => {
 	}
 };
 
+/** Drop open sessions so a later flush cannot rewrite IndexedDB. */
+export const discardOpenGedcomStores = (): void => {
+	gedcomStoresDiscarded = true;
+	for (const connection of [...openSessions.keys()]) {
+		detachStoreLink(connection);
+	}
+};
+
 export const getOpenSession = (connection: string) =>
 	openSessions.get(connection);
 
@@ -98,8 +106,19 @@ export const markDeleted = (id: string, link: StoreLink) => {
 
 const pendingFlush = new WeakMap<StoreLink, Promise<FlushResult>>();
 
+type FlushListener = (treeId: string, result: FlushResult) => void;
+let flushListener: FlushListener | undefined;
+let gedcomStoresDiscarded = false;
+
+/** App hook: every IndexedDB flush (auto or explicit) can push tree_records. */
+export const setGedcomFlushListener = (
+	listener: FlushListener | undefined
+): void => {
+	flushListener = listener;
+};
+
 const scheduleAutoFlush = (link: StoreLink) => {
-	if (link.isFork) {
+	if (gedcomStoresDiscarded || link.isFork) {
 		return;
 	}
 	if (pendingFlush.has(link)) {
@@ -191,7 +210,7 @@ export const flushStoreLink = async (
 	link: StoreLink,
 	gedcom?: GedComType
 ): Promise<FlushResult> => {
-	if (link.isFork) {
+	if (gedcomStoresDiscarded || link.isFork) {
 		return { revision: link.revision, upserts: [], deletes: [] };
 	}
 
@@ -211,6 +230,9 @@ export const flushStoreLink = async (
 	ensureBroadcast();
 
 	return withLock(link.treeId, async () => {
+		if (gedcomStoresDiscarded) {
+			return { revision: link.revision, upserts: [], deletes: [] };
+		}
 		const store = resolveStore(link.connection);
 		const remoteMeta = await store.getMeta(link.treeId);
 		if (
@@ -331,7 +353,17 @@ export const flushStoreLink = async (
 		};
 		ensureBroadcast()?.postMessage(message);
 
-		return { revision: nextRevision, upserts, deletes: deleteIds };
+		const flushed = {
+			revision: nextRevision,
+			upserts,
+			deletes: deleteIds,
+		};
+		try {
+			flushListener?.(link.treeId, flushed);
+		} catch {
+			// The cloud bridge must not fail the local flush.
+		}
+		return flushed;
 	});
 };
 
