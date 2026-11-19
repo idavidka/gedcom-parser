@@ -1,6 +1,7 @@
 import { Common, getListTag, isId } from "../classes/common";
 import { Families } from "../classes/fams";
 import { createGedCom } from "../classes/gedcom";
+import type { GedComType } from "../classes/gedcom";
 import { Indi } from "../classes/indi";
 import type { IndiType } from "../classes/indi";
 import { Individuals } from "../classes/indis";
@@ -10,6 +11,17 @@ import { Repositories } from "../classes/repos";
 import { Sources } from "../classes/sours";
 import { Submitters } from "../classes/subms";
 import { LINE_REG, REF_LINE_REG } from "../constants/constants";
+import { parseConnection } from "../store/connection";
+import { lexGedcom } from "../store/lex";
+import { fromRecords, toRecords } from "../store/records";
+import {
+	buildStoreLink,
+	connectGedcom,
+	detachStoreLink,
+	resolveStore,
+	type ConnectedGedCom,
+} from "../store/session";
+import type { GedcomTreeMeta } from "../store/types";
 import type { Settings } from "../types/settings";
 import type { ConvertType, IdType, MultiTag, ListTag } from "../types/types";
 
@@ -23,6 +35,13 @@ const isDev = isDevelopment();
 type LinesWithFlags = string[] & {
 	_inHead?: boolean;
 	_hasFile?: boolean;
+};
+
+export type ParseResult = {
+	gedcom: GedComType;
+	raw: string;
+	revision?: number;
+	connection?: string;
 };
 
 // let lastTime: number | undefined;
@@ -81,12 +100,115 @@ export type GedcomParseOptions = {
 	purgeOversized?: boolean;
 	/** Byte threshold for `purgeOversized`. Ignored when that flag is not true. */
 	maxFileSizeToPurge?: number;
+	/**
+	 * When set, parse writes records into the store and returns a connected
+	 * proxy. Async. Omit for today's sync in-memory parse.
+	 */
+	connection?: string;
 };
 
-const GedcomTree = {
+type GedcomTreeApi = {
+	parse: {
+		(
+			content: string,
+			options?: GedcomParseOptions & { connection?: undefined }
+		): ParseResult;
+		(
+			content: string,
+			options: GedcomParseOptions & { connection: string }
+		): Promise<ParseResult>;
+		(
+			content: string,
+			options?: GedcomParseOptions
+		): ParseResult | Promise<ParseResult>;
+	};
+	parseHierarchy: (
+		content: string,
+		options?: GedcomParseOptions
+	) => ParseResult;
+	open: (
+		connection: string,
+		options?: { filename?: string; attached?: boolean }
+	) => Promise<ParseResult>;
+	create: (
+		connection: string,
+		options?: { filename?: string }
+	) => Promise<ParseResult>;
+	delete: (connection: string) => Promise<void>;
+	close: (connection: string) => void;
+	addToList: (
+		id: string,
+		type: MultiTag,
+		common: Common,
+		prev: Common
+	) => void;
+};
+
+const emptyTreeText = (filename?: string) => {
+	const fileLine = filename ? `\n1 FILE ${filename}` : "";
+	return `0 HEAD
+1 GEDC
+2 VERS 5.5.1
+2 FORM LINEAGE-LINKED
+1 CHAR UTF-8${fileLine}
+0 TRLR
+`;
+};
+
+/**
+ * Parse text once, write records into the connection, return a connected proxy.
+ */
+const parseIntoStore = async (
+	content: string,
+	options: GedcomParseOptions & { connection: string }
+): Promise<ParseResult> => {
+	const parsed = parseConnection(options.connection);
+	const store = resolveStore(parsed.connection);
+	const lexed = lexGedcom(content, { filename: options.filename });
+	// Build the live graph with the existing sync parser (BOM already handled
+	// inside parseHierarchy). Source slices come from lexed, not from raw.
+	const { gedcom, raw } = GedcomTree.parseHierarchy(content, options);
+	const records = toRecords(gedcom, lexed, parsed.treeId);
+	const meta: GedcomTreeMeta = {
+		treeId: parsed.treeId,
+		revision: 1,
+		bom: lexed.bom,
+		trailer: lexed.trailer,
+		filename: options.filename,
+		recordCount: records.length,
+		updatedAt: Date.now(),
+	};
+	await store.deleteTree(parsed.treeId);
+	await store.putRecords(parsed.treeId, records);
+	await store.putMeta(meta);
+
+	const link = buildStoreLink({
+		connection: parsed.connection,
+		treeId: parsed.treeId,
+		meta,
+		records,
+		cleanExport: true,
+	});
+	const connected = connectGedcom(gedcom, link) as ConnectedGedCom;
+	return {
+		gedcom: connected,
+		raw,
+		revision: meta.revision,
+		connection: parsed.connection,
+	};
+};
+
+const GedcomTree: GedcomTreeApi = {
 	parse: function (content: string, options?: GedcomParseOptions) {
+		if (options?.connection) {
+			return parseIntoStore(
+				content,
+				options as GedcomParseOptions & { connection: string }
+			);
+		}
 		return this.parseHierarchy(content, options);
-	},
+	} as GedcomTreeApi["parse"],
+
 	parseHierarchy: function (content: string, options?: GedcomParseOptions) {
 		// printTime{ index: 0, label: "[Debug]", lastTime: Date.now() });
 		// JSZip keeps a leading UTF-8 BOM; File.text() strips it. LINE_REG
@@ -451,6 +573,70 @@ const GedcomTree = {
 
 		common.set(listTag, curValue);
 		curValue.item(id as IdType, prev);
+	},
+
+	open: async function (
+		connection: string,
+		options?: { filename?: string; attached?: boolean }
+	) {
+		const parsed = parseConnection(connection);
+		const store = resolveStore(parsed.connection);
+		const meta = await store.getMeta(parsed.treeId);
+		if (!meta) {
+			throw new Error(
+				`GEDCOM store: tree not found for connection ${parsed.connection}`
+			);
+		}
+		const records = await store.getAllRecords(parsed.treeId);
+		const gedcom = fromRecords(records, { filename: options?.filename });
+		// A read-only open must not register a store session. Order and
+		// generator walk the graph, and a connected session would flush those
+		// reads back into IndexedDB and drop the people.
+		if (options?.attached === false) {
+			return {
+				gedcom,
+				raw: "",
+				revision: meta.revision,
+				connection: parsed.connection,
+			};
+		}
+		const link = buildStoreLink({
+			connection: parsed.connection,
+			treeId: parsed.treeId,
+			meta,
+			records,
+			cleanExport: true,
+		});
+		const connected = connectGedcom(gedcom, link) as ConnectedGedCom;
+		return {
+			gedcom: connected,
+			raw: "",
+			revision: meta.revision,
+			connection: parsed.connection,
+		};
+	},
+
+	create: async function (
+		connection: string,
+		options?: { filename?: string }
+	) {
+		const text = emptyTreeText(options?.filename);
+		return parseIntoStore(text, {
+			connection,
+			filename: options?.filename,
+		});
+	},
+
+	delete: async function (connection: string) {
+		const parsed = parseConnection(connection);
+		detachStoreLink(parsed.connection);
+		const store = resolveStore(parsed.connection);
+		await store.deleteTree(parsed.treeId);
+	},
+
+	close: function (connection: string) {
+		const parsed = parseConnection(connection);
+		detachStoreLink(parsed.connection);
 	},
 };
 

@@ -27,6 +27,9 @@ export * from "./interfaces";
 // Type structures
 export * from "./structures";
 
+// GEDCOM IndexedDB / memory store
+export * from "./store";
+
 // Utils - commonly used utilities
 // Export type Range with alias to avoid conflict with enum Range from types
 export type {

@@ -18,6 +18,30 @@ import { List } from "./list";
 
 // import GedcomTree from "../../../utils/parser";
 
+/**
+ * Connected store sessions register a dirty callback keyed by the root GedCom.
+ * Nested set/assign/remove walk `_gedcom` so kinship stays sync and IDB is not
+ * touched from the trap.
+ */
+const storeDirtyByGedcom = new WeakMap<object, (node: Common) => void>();
+
+export const registerStoreDirtyHandler = (
+	gedcom: object,
+	handler: ((node: Common) => void) | undefined
+) => {
+	if (handler) {
+		storeDirtyByGedcom.set(gedcom, handler);
+	} else {
+		storeDirtyByGedcom.delete(gedcom);
+	}
+};
+
+const notifyStoreDirty = (node: Common) => {
+	const gedcom = node.getGedcom?.() ?? (node as unknown as object);
+	const handler = storeDirtyByGedcom.get(gedcom as object);
+	handler?.(node);
+};
+
 export class Common<T = string, I extends IdType = IdType> implements ICommon<
 	T,
 	I
@@ -173,6 +197,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		} else {
 			set(this, name, value);
 		}
+		notifyStoreDirty(this);
 		return get(this, name) as T | undefined;
 	}
 
@@ -207,6 +232,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 		} else {
 			this.set(name, value);
 		}
+		notifyStoreDirty(this);
 		return get(this, name) as T | undefined;
 	}
 
@@ -259,6 +285,7 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 
 	remove(name: MultiTag) {
 		unset(this, name);
+		notifyStoreDirty(this);
 	}
 
 	getGedcom() {
@@ -1032,7 +1059,33 @@ export class Common<T = string, I extends IdType = IdType> implements ICommon<
 }
 
 export type ProxyOriginal<T extends Common> = T & { unwrapped: T };
-export const createProxy = <T extends Common>(target: T): T => {
+
+/** Optional store link for connected proxies (IndexedDB / memory store). */
+export type CommonStoreLink = {
+	dirty: Set<string>;
+	deleted: Set<string>;
+	cleanExport: boolean;
+	isFork?: boolean;
+	/** Mark owning level-0 record dirty. Injected by the store session. */
+	markDirty?: (node: Common) => void;
+};
+
+const MUTATION_METHODS = new Set([
+	"set",
+	"assign",
+	"remove",
+	"removeValue",
+	"addRef",
+]);
+
+export const createProxy = <T extends Common>(
+	target: T,
+	store?: CommonStoreLink
+): T => {
+	const mark = (node: Common) => {
+		store?.markDirty?.(node);
+	};
+
 	return new Proxy<T>(target, {
 		get(t, prop: string | symbol, receiver) {
 			if (prop === "unwrapped") {
@@ -1040,7 +1093,22 @@ export const createProxy = <T extends Common>(target: T): T => {
 			}
 
 			if (prop in t) {
-				return Reflect.get(t, prop, receiver);
+				const value = Reflect.get(t, prop, receiver);
+				if (
+					store &&
+					typeof prop === "string" &&
+					MUTATION_METHODS.has(prop) &&
+					typeof value === "function"
+				) {
+					return (...args: unknown[]) => {
+						const result = (
+							value as (...a: unknown[]) => unknown
+						).apply(receiver, args);
+						mark(receiver as Common);
+						return result;
+					};
+				}
+				return value;
 			}
 			if (!isOnlyMainProp(prop)) {
 				const ref = t.ref as T;
@@ -1048,6 +1116,20 @@ export const createProxy = <T extends Common>(target: T): T => {
 					return Reflect.get(ref, prop, receiver);
 				}
 			}
+		},
+		set(t, prop, value, receiver) {
+			const ok = Reflect.set(t, prop, value, receiver);
+			if (store && typeof prop === "string") {
+				mark(receiver as Common);
+			}
+			return ok;
+		},
+		deleteProperty(t, prop) {
+			const ok = Reflect.deleteProperty(t, prop);
+			if (store) {
+				mark(t);
+			}
+			return ok;
 		},
 	});
 };
