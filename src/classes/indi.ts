@@ -1846,11 +1846,16 @@ export class Indi extends Common<string, IndiKey> implements IIndi {
 		const families = new Families();
 
 		list?.forEach((fam, famId) => {
-			const family = fam?.ref as FamType | undefined;
-
-			if (family) {
-				families.item(famId as FamKey, family);
+			const pointed = fam?.ref;
+			// An unresolved pointer's ref is the tag itself, not a FAM record.
+			if (!pointed || pointed === fam) {
+				return;
 			}
+			const family = pointed as FamType;
+			if (typeof family.getChildren !== "function") {
+				return;
+			}
+			families.item(famId as FamKey, family);
 		});
 
 		return families;
